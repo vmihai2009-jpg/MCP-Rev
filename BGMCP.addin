@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>BG MCP</Name>
+    <Assembly>BGMCP\BGMCP.Revit.dll</Assembly>
+    <AddInId>3e9b6f21-7c4a-4d58-a1f0-8b2c5d9e4a63</AddInId>
+    <FullClassName>BarrGazetas.RevitMcp.App</FullClassName>
+    <VendorId>BARRGAZETAS</VendorId>
+    <VendorDescription>Barr Gazetas</VendorDescription>
+  </AddIn>
+</RevitAddIns>

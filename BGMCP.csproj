@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Barr Gazetas MCP: the Revit 2025 add-in Claude connects to (Revit 2025 runs on .NET 8). -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyName>BGMCP.Revit</AssemblyName>
+    <RootNamespace>BarrGazetas.RevitMcp</RootNamespace>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Version>1.5.2</Version>
+    <!-- Version conflicts between Revit's own references: harmless, Revit supplies its copies at run time. -->
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+    <!-- Another Revit folder: dotnet build -p:RevitDir="D:\Revit 2025" -->
+    <RevitDir Condition="'$(RevitDir)' == ''">C:\Program Files\Autodesk\Revit 2025</RevitDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="RevitAPI">
+      <HintPath>$(RevitDir)\RevitAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>$(RevitDir)\RevitAPIUI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reads DWG text and drawings Revit's CAD link cannot give (MIT; the same reader and version Survey to Revit uses).
+         Shipped next to BGMCP.Revit.dll; App resolves it from there. -->
+    <PackageReference Include="ACadSharp" Version="3.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- the test project is built on its own -->
+    <Compile Remove="tests\**" />
+    <Compile Remove="dist\**" />
+  </ItemGroup>
+
+</Project>

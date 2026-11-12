@@ -1,0 +1,8 @@
+# build output
+bin/
+obj/
+dist/
+*.user
+.vs/
+# release zips are built by package.ps1, never committed
+*.zip
