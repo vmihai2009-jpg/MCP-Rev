@@ -104,6 +104,18 @@ _Write your entries here, newest first. Use the "Revit run results" template for
 
 <!-- First entry goes here. -->
 
+### 2026-11-12 (later): Revit run results + fix: elevations decide window heights (1.9.16)
+- Tested: MCP-Rev main 1.9.16 (includes your #3, merged as c6dde03, and this commit). Revit 2025.4, testmcp (7 Swallow Place, Survey to Revit build).
+- Found: the plans' S/H labels and the elevations disagree on every facade window by a steady amount per floor (heads: elevation 150 mm higher on the first floor, 250 on the third, 330 on the fourth; sills: elevation ~50 mm lower). Checked in the elevation DWG itself: on Elevation 3 the window-layer frame lines are at 41.48-41.50 (sills) and 43.22 (heads) and the surveyor's own level marks beside them read 41.47 and 43.24. So the elevation is right outside; the S/H labels are measured inside the room (window board, internal head). survey_autofix had been setting windows to the internal labels.
+- Changed (please keep when you rebase #2/#4):
+  - `Survey/ElevationFit.cs` MatchFacade: an elevation opening may only pair with a window on that window's own storey (level to next level); before, a window with a wrong sill could take the opening drawn on the storey above or below ("elevation sill -2082").
+  - `Survey/Fidelity.cs` Measure: where an elevation draws a window, its sill/head decide and the S/H labels are not held against it (labels still used where no elevation draws the window).
+  - `SurveyAutofixTools.cs`: FixOpenings takes sill/head from the guarded elevation match when there is one (changes over 600 mm are left "for review"), labels otherwise; before/after scores now include the elevations, so they match survey_fidelity.
+- Ran and applied on testmcp: survey_autofix walls=false (111 windows reshaped, 12 placed), then openings=false (69 walls fitted). Score per floor, start of the day -> now: Basement 0.663 -> 0.744, Ground 0.624 -> 0.629, Ground Mezz 0.636 -> 0.651, First 0.617 -> 0.584 (now also scored on its elevations), Second 0.680 -> 0.688, Third 0.756 -> 0.789, Fourth 0.692 -> 0.693, Fifth 0.744 -> 0.682 (elevations), Sixth 0.600 -> 0.626, Seventh 0.735 -> 0.764. Walls within 10 mm: Basement 23.9 -> 38.1%, Ground Mezz 17.6 -> 33.9%, Sixth 18.1 -> 31.8%.
+- Errors (exact), for you: survey_autofix walls: `"Can't make Extrusion." ... "Ceiling sketch is invalid." for elements 316992, 316993` (moving wall 315589 breaks a ceiling sketched on it); `"Element is reversed" for elements 317161. "Can't make Wall."` (walls 317184, 317162, 318381); `"Can't cut instance of Concept Door 850x2100 out of Wall."` (wall 317200). Openings: still `Can't make type "Windows_Sgl_Plain : Concept Window 4930x3900"` (317313, 319214, 319216) and `"Can't cut instance of 890x2350 out of Wall." for elements 320018` when placing.
+- Output files: runs/2026-11-12/survey_autofix-openings-applied-1.9.16.json, survey_autofix-walls-applied-1.9.16.json.
+- Version: 1.9.16 on main. Next: missing walls (252 wall_missing), the ceiling room lookup, floors stepped where the survey steps.
+
 ### 2026-11-12: Revit run results: main 1.9.9-1.9.14 on 7 Swallow Place (testmcp)
 - Tested: MCP-Rev `main` 1.9.9 to 1.9.14 (1.9.14 = commit f85ded2), loaded through BGMCP.Loader (hot reload, no Revit restarts). Survey to Revit: the build installed on this machine (its MCP tools answered: survey_status, survey_review, survey_score...). None of your open PRs (#2, #3, #4) loaded yet.
 - Revit version: 2025.4.
