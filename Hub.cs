@@ -40,7 +40,7 @@ namespace BarrGazetas.RevitMcp
             Settings = McpSettings.Load();
             Log.Enabled = () => Settings.LogCalls;
 
-            _own = RevitTools.All().Concat(RevitTools.Repair()).Concat(BuildTools.All()).Concat(SurveyTools.All()).Concat(SurveyTools.Facade()).Concat(SurveyTools.Phase1()).Select(t => new ToolInfo
+            _own = RevitTools.All().Concat(RevitTools.Repair()).Concat(BuildTools.All()).Concat(SurveyTools.All()).Concat(SurveyTools.Facade()).Concat(SurveyTools.Phase1()).Concat(SurveyTools.Phase2()).Concat(SurveyTools.Phase2Index()).Select(t => new ToolInfo
             {
                 Name = t.Name, Description = t.Description, InputSchema = t.InputSchema, Write = t.Write,
                 Invoke = async args => (string)await _dispatcher.InvokeAsync(app =>

@@ -171,13 +171,18 @@ namespace BarrGazetas.RevitMcp.Survey
             return names[(int)Math.Round(bearing / 45) % 8];
         }
 
-        private static readonly Regex Street = new Regex(@"\b(street|st|road|rd|place|pl|lane|mews|square|sq|row|court|yard|avenue|ave|terrace|gardens|walk|hill|way|passage|alley|close)\b\.?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        // a street name: words ending in a street word ("Swallow Place", "REGENT STREET"); not drawing notes such as
+        // "Basement Yard" or "Security Mesh Over Basement Yard"
+        private static readonly Regex Street = new Regex(@"^\s*[A-Za-z'\.\- ]{2,40}\s(street|st|road|rd|place|pl|lane|mews|square|sq|row|avenue|ave|terrace|gardens|walk|hill|way|passage|alley|close|crescent)\.?\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        private static readonly Regex NotStreet = new Regex(@"\b(basement|mesh|over|light|well|roof|plant|store|bin|bike|cycle|stair|lift|void|level|floor)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        public static bool LooksLikeStreet(string s) => !string.IsNullOrWhiteSpace(s) && Street.IsMatch(s) && !NotStreet.IsMatch(s) && !s.Any(char.IsDigit);
 
         /// <summary>A street name from the drawings: text naming a street, outside the run and within 25 m of it.</summary>
         public static string StreetNear(FacadeRun r, IEnumerable<DwgText> texts)
         {
             double mx = (r.A.X + r.B.X) / 2, my = (r.A.Y + r.B.Y) / 2, dx = -r.OutY, dy = r.OutX;
-            var best = texts.Where(t => !string.IsNullOrWhiteSpace(t.Value) && t.Value.Length <= 60 && Street.IsMatch(t.Value) && !t.Value.Any(char.IsDigit))
+            var best = texts.Where(t => LooksLikeStreet(t.Value))
                 .Select(t => (t, outDist: (t.At.X - mx) * r.OutX + (t.At.Y - my) * r.OutY, along: Math.Abs((t.At.X - mx) * dx + (t.At.Y - my) * dy)))
                 .Where(x => x.outDist > 0 && x.outDist < 25000 && x.along < r.LengthMm / 2 + 10000)
                 .OrderBy(x => x.outDist + x.along / 2).FirstOrDefault();

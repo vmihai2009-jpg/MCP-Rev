@@ -60,6 +60,16 @@ namespace SurveyCoreTests
 
         static void FacadeTests()
         {
+            // a sheet with two elevations 6 m apart: two parts
+            var sheet = new List<DwgLine> { L(1000, 30000, 1000, 32000), L(2000, 30000, 2000, 32000), L(4000, 30000, 4000, 32000), L(20000, 30000, 20000, 33000), L(21000, 30000, 21000, 33000) };
+            var parts = ElevationFit.SheetParts(sheet);
+            T.Check(parts.Count == 2 && parts[0].x1 == 4000 && parts[1].x0 == 20000 && parts[1].y1 == 33000, "a sheet of elevations side by side splits into its drawings");
+            T.Check(Facades.LooksLikeStreet("SWALLOW PLACE") && Facades.LooksLikeStreet("Regent Street") && !Facades.LooksLikeStreet("Basement Yard") && !Facades.LooksLikeStreet("Security Mesh Over Basement Yard") && !Facades.LooksLikeStreet("FFL 26.47"), "street names, not drawing notes");
+            var lab = Fidelity.LabelsFor(new Pt(0, 0), new[] { new DwgText { Value = "S 0.94", At = new Pt(0, 600) }, new DwgText { Value = "H 3.27", At = new Pt(0, 700) }, new DwgText { Value = "S 1.10", At = new Pt(2500, 600) } });
+            T.Check(lab.sill == 940 && lab.head == 3270, "a window's own labels");
+            var amb = Fidelity.LabelsFor(new Pt(0, 0), new[] { new DwgText { Value = "S 0.94", At = new Pt(-500, 600) }, new DwgText { Value = "S 1.10", At = new Pt(500, 600) } });
+            T.Check(amb.sill == null, "two windows' labels equally near: no guess");
+
             // the 10 x 6 m room on two floors, plus an internal wall across it; angle 0 (model north is grid north)
             var walls = new List<FacadeWall>();
             foreach (var (lv, z) in new[] { ("Ground", 0.0), ("First", 3000.0) })

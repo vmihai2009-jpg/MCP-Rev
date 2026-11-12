@@ -144,7 +144,7 @@ namespace BarrGazetas.RevitMcp
                             string path = CadLink.FilePath(doc, imp);
                             if (path == null || !File.Exists(path)) continue;
                             var file = DwgFile.Read(path);
-                            var cand = file.Texts.Where(t => t.Value != null && t.Value.Length <= 60 && System.Text.RegularExpressions.Regex.IsMatch(t.Value, @"(?i)\b(street|road|place|lane|mews|square|row|court|yard|avenue|terrace|gardens|walk|way|passage|close)\b")).ToList();
+                            var cand = file.Texts.Where(t => Facades.LooksLikeStreet(t.Value)).ToList();
                             if (cand.Count == 0) continue;
                             var map = CadLink.FileToModel(doc, imp, file, out _);
                             if (map == null) continue;
@@ -186,6 +186,9 @@ namespace BarrGazetas.RevitMcp
                             ["walls"] = ordered.Count,
                             ["wallIds"] = new JsonArray(ordered.Select(x => (JsonNode)x).ToArray()),
                         });
+                        // a main facade: a street front from the ground up, not a setback, a roof parapet or a basement wall
+                        int win = outRuns[outRuns.Count - 1]["windows"].GetValue<int>();
+                        outRuns[outRuns.Count - 1]["main"] = r.Levels.Count >= 3 || win >= 8;
                     }
                     var saved = new JsonObject
                     {
@@ -201,9 +204,17 @@ namespace BarrGazetas.RevitMcp
                         var ids = (JsonArray)o["wallIds"];
                         if (ids.Count > 12) o["wallIds"] = new JsonArray(ids.Take(12).Select(x => (JsonNode)x.GetValue<long>()).ToArray());
                     }
+                    var main = outRuns.Where(o => o["main"].GetValue<bool>()).ToList();
+                    var minor = outRuns.Where(o => !o["main"].GetValue<bool>()).Select(o => (JsonNode)new JsonObject
+                    {
+                        ["id"] = o["id"].GetValue<string>(), ["name"] = o["name"].GetValue<string>(), ["lengthMm"] = o["lengthMm"].GetValue<double>(),
+                        ["levels"] = o["levels"].DeepClone(), ["windows"] = o["windows"].GetValue<int>(),
+                    }).ToArray();
                     return new JsonObject
                     {
-                        ["facades"] = new JsonArray(outRuns.Select(o => (JsonNode)o).ToArray()), ["count"] = outRuns.Count,
+                        ["facades"] = new JsonArray(main.Select(o => (JsonNode)o).ToArray()), ["count"] = outRuns.Count, ["mainCount"] = main.Count,
+                        ["others"] = new JsonArray(minor.Take(80).ToArray()),
+                        ["othersNote"] = "setbacks, roof-level walls, lightwells and basement walls: their full rows are in the saved file",
                         ["externalWalls"] = runs.Sum(r => r.WallIds.Count), ["wallsLookedAt"] = walls.Count,
                         ["saved"] = file2,
                         ["note"] = "line runs left to right as seen from outside, as an elevation is drawn: give the id to dwg_elevation (facade) and along_direction 1.",
@@ -314,6 +325,7 @@ namespace BarrGazetas.RevitMcp
             var wallLevels = new HashSet<long>(new FilteredElementCollector(doc).OfClass(typeof(Wall)).Select(e => e.LevelId.Value));
             var storeys = levels.Where(lv => wallLevels.Contains(lv.Id.Value)).Select(lv => (lv.Name, lv.Elevation * Mm)).ToList();
             var (matched, _, missing) = ElevationFit.MatchFacade(winLines, reveal, inserts, heights, along, ModelZ, fl, storeys);
+            foreach (var m in missing) { m.X = fa.X + ux * m.U; m.Y = fa.Y + uy * m.U; }
             // only trust the matches when the elevation sits on the facade well enough
             bool trusted = along.Matched >= 4 && along.Matched >= along.ElevationJambs * 0.3;
             string name = Args.Str(spec, "facade") ?? $"{Path.GetFileName(path)} x {xMin:0}-{xMax:0}";

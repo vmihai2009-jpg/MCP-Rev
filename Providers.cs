@@ -120,6 +120,25 @@ namespace BarrGazetas.RevitMcp
             return tools;
         }
 
+        /// <summary>
+        /// Calls another add-in's tool from a hub tool that is already running on Revit's thread (so not through the
+        /// dispatcher, which would wait on itself). Null when no add-in offers that tool. The add-in is reached only
+        /// through its provider contract, never by referencing its assembly.
+        /// </summary>
+        public string CallHere(object app, string tool, JsonObject args)
+        {
+            foreach (var provider in All())
+            {
+                string[][] rows;
+                try { rows = provider.List.Invoke(null, null) as string[][] ?? Array.Empty<string[]>(); }
+                catch { continue; }
+                if (!rows.Any(r => r != null && r.Length > 0 && r[0] == tool)) continue;
+                try { return provider.Call.Invoke(null, new object[] { app, tool, (args ?? new JsonObject()).ToJsonString() }) as string ?? ""; }
+                catch (Exception ex) { throw new InvalidOperationException($"{provider.Name} {tool}: {McpServer.Unwrap(ex).Message}"); }
+            }
+            return null;
+        }
+
         public List<PromptInfo> Prompts()
         {
             var prompts = new List<PromptInfo>();

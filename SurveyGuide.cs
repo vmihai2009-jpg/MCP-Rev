@@ -19,29 +19,31 @@ Rules
    mcp_status, get_model_info. If nothing is built: survey_status, survey_analyze (the survey folder),
    survey_layers if floors look thin, then survey_build (preview, then confirm). survey_coordinates: the
    survey point should carry the survey's coordinates.
-2. WALLS, per floor
-   dwg_wall_fit for the floor: walls off the DWG faces, and walls the DWG has that the model lacks.
-   dwg_wall_fit_apply (moderate ones). Then look at each 'review' one with cad_lines and wall_info, and fix
-   with set_wall_line / change_type / split_wall (a wall that is thicker at piers: model the wall at the
-   window plane, add the piers with model_extrusion). Missing walls: create_walls with the DWG line and
-   thickness. dwg_wall_fit again: the count should drop.
-3. WINDOWS AND DOORS, per floor
-   survey_review for the floor's gaps. For each opening: cad_lines (glazing lines) for position and width,
-   dwg_read near it for its labels ('S 0.94' sill, 'H 3.27' head: metres above the floor). place_inserts or
-   set_insert. Blocked windows and solid wall stay solid. survey_review_tick with a note.
-4. FLOORS, ROOFS, OPENINGS
+2. KEY AND SCORE 0
+   facade_list (the facades and their ids), then elevation_index with the elevation DWGs (it matches each
+   elevation to its facade; check the matches it reports). survey_fidelity on every floor: this is the
+   baseline. Report its numbers.
+3. AUTOFIX, per failing floor (one call each; a job on big floors)
+   survey_autofix with levels [the floor]: walls fitted to the DWG faces, windows given their labelled sills
+   and heads and their plan widths, windows the elevations draw placed, window-column gaps filled. It scores
+   the floor again and returns only what still fails. dry_run first if unsure.
+4. YOUR QUEUE: only the stillFailing items, worst first (each says what it was measured against and how to fix)
+   wall_face / wall_thickness: cad_lines + wall_info, then set_wall_line / change_type / split_wall (a wall
+   thicker at piers: the wall at the window plane, piers with model_extrusion). wall_missing: create_walls
+   with the DWG line and thickness after checking it with cad_lines. opening: dwg_read near it for its labels,
+   set_insert. opening_missing: place_inserts. level: set the level's Elevation, then re-score. Blocked
+   windows and solid wall stay solid. survey_review_tick what Survey to Revit listed. save_model per floor.
+5. FLOORS, ROOFS, OPENINGS
    Slab edges from the plan outline (create_floor with replace_id); stair and lift voids (create_opening);
    roofs from the roof plan and sections (create_roof, a slope per edge for mansards). Levels from spot
    heights (dwg_read with contains '+' or the level layer) and the sections.
-5. FACADE
-   dwg_read with path = each elevation DWG, what = both: its lines give the heights of cornices, string
-   courses, parapets, sills and window heads, in the drawing's coordinates (heights as drawn: usually metres
-   above datum, so subtract the Ground Floor level). model_sweep for cornices, string courses, copings and
-   plinths along the facade line; model_extrusion for piers, pilasters, quoins and window surrounds. Check
-   each against the plan's facade line (cad_lines) so it sits on the wall face.
-6. CHECK
-   dwg_wall_fit and survey_review on every floor; get_warnings. Report per floor: what was fixed, what is
-   left for a person (with element ids), and every value you could not read from the drawings.";
+6. FACADE
+   dwg_elevation with facade = the id and the index's sheet_x_range, include_lines: the elevation's lines on
+   the facade plane in model mm. model_sweep for cornices, string courses, copings and plinths along the
+   facade line; model_extrusion for piers, pilasters, quoins and window surrounds.
+7. FINAL SCORE
+   survey_fidelity on every floor must pass. Report per floor: the numbers before and after, what is left for
+   a person (with element ids), and every value you could not read from the drawings.";
 
         public const string ConfigGuide = @"BUILD FROM A LINKED DWG BY LAYER RULES
 1. survey_coordinates: check base points; keep the model near the internal origin.

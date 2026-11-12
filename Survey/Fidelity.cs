@@ -144,6 +144,23 @@ namespace BarrGazetas.RevitMcp.Survey
             return (char.ToUpperInvariant(m.Groups[1].Value[0]), double.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture) * 1000);
         }
 
+        /// <summary>
+        /// The S and H labels that belong to a window: the nearest of each within 1.2 m, and only when no other label
+        /// of that kind is within 200 mm as near (two windows' labels between them would be a guess).
+        /// </summary>
+        public static (double? sill, double? head) LabelsFor(Pt at, IEnumerable<DwgText> labels)
+        {
+            var parsed = labels.Select(t => (t.At, lab: Label(t.Value))).Where(x => x.lab != null).Select(x => (at: x.At, kind: x.lab.Value.kind, mm: x.lab.Value.mm, d: x.At.Dist2D(at))).ToList();
+            double? Pick(char k)
+            {
+                var c = parsed.Where(x => x.kind == k && x.d <= 1200).OrderBy(x => x.d).ToList();
+                if (c.Count == 0) return null;
+                if (c.Count > 1 && c[1].d - c[0].d < 200 && Math.Abs(c[1].mm - c[0].mm) > 1) return null;
+                return c[0].mm;
+            }
+            return (Pick('S'), Pick('H'));
+        }
+
         /// <summary>One floor against the gate. Issues come back in the floor's own list (all of them, worst first).</summary>
         public static (FloorScore score, List<FidIssue> issues) Measure(FidelityInput f, FidelityGate g)
         {
@@ -177,8 +194,12 @@ namespace BarrGazetas.RevitMcp.Survey
                     double off = side * w.ThicknessMm / 2;
                     var devs = new List<double>();
                     int samples = 0;
-                    for (double t = Math.Min(EndSkipMm, L / 2); t <= L - Math.Min(EndSkipMm, L / 2) + 1e-6; t += SampleStepMm)
+                    // evenly spread samples, ends skipped; a short pier gets its middle
+                    double usable = L - 2 * EndSkipMm;
+                    int count = usable <= 0 ? 1 : (int)Math.Floor(usable / SampleStepMm) + 1;
+                    for (int si = 0; si < count; si++)
                     {
+                        double t = count == 1 ? L / 2 : EndSkipMm + usable * si / (count - 1);
                         samples++;
                         double px = w.A.X + ux * t + nx * off, py = w.A.Y + uy * t + ny * off;
                         double best = double.MaxValue;
@@ -221,6 +242,9 @@ namespace BarrGazetas.RevitMcp.Survey
 
             // ---- thickness: the DWG face pair each wall sits between ----
             var pairs = WallFit.Fit(f.Walls, f.WallFaces, new FitOptions { MinChangeMm = -1, RoundThicknessMm = 1 });
+            // only pairs that clearly belong to the wall (both faces along most of it, a modest change): a weak pair
+            // is usually a pier, a reveal or the next wall's face, and says nothing about this wall's thickness
+            pairs = pairs.Where(p => p.Confidence == "moderate").ToList();
             s.Walls.ThicknessChecked = pairs.Count;
             foreach (var p in pairs)
             {
@@ -270,8 +294,9 @@ namespace BarrGazetas.RevitMcp.Survey
                         Take(dev, $"plan jambs (left {j.Value.left:0}, right {j.Value.right:0} mm)");
                     }
                 }
-                // labels: the nearest S and H within 1.2 m
-                double? Near(char k) => labels.Where(l => l.kind == k && l.at.Dist2D(ins.At) <= 1200).OrderBy(l => l.at.Dist2D(ins.At)).Select(l => (double?)l.mm).FirstOrDefault();
+                // labels (windows only: a door's sill is the floor): the nearest S and H within 1.2 m
+                bool isWindow = ins.Category == null || ins.Category.IndexOf("Window", StringComparison.OrdinalIgnoreCase) >= 0;
+                double? Near(char k) => !isWindow ? null : labels.Where(l => l.kind == k && l.at.Dist2D(ins.At) <= 1200).OrderBy(l => l.at.Dist2D(ins.At)).Select(l => (double?)l.mm).FirstOrDefault();
                 double? sl = Near('S'), hl = Near('H');
                 bool labelChecked = false, labelOver = false;
                 if (ins.Sill is double sill && sl is double slv)
@@ -280,17 +305,14 @@ namespace BarrGazetas.RevitMcp.Survey
                 { labelChecked = true; double d = head - hlv; labelOver |= Math.Abs(d) > g.OpeningMm; Take(d, $"head label H {hlv / 1000:0.00}"); }
                 if (labelChecked) { s.Openings.LabelChecked++; if (labelOver) s.Openings.LabelOver++; }
 
-                // elevation
-                if (elevById.TryGetValue(ins.Id, out var e))
+                // elevation: sill and head of windows (frame lines, as the labels measure them). Widths and jamb
+                // positions come from the plan, which cuts through the opening; an elevation's reveal lines can
+                // be the surround's and read wide.
+                if (isWindow && elevById.TryGetValue(ins.Id, out var e) && (ins.Sill != null || ins.Head != null))
                 {
                     s.Openings.ElevationChecked++;
-                    double dw = ins.W - e.Width;
-                    double dj = Math.Max(Math.Abs(e.U0 - (e.Insert.U - e.Insert.W / 2)), Math.Abs(e.U1 - (e.Insert.U + e.Insert.W / 2)));
                     double ds = ins.Sill is double s2 ? s2 - e.Sill : 0, dh = ins.Head is double h2 ? h2 - e.Head : 0;
-                    bool over = Math.Abs(dw) > g.OpeningMm || dj > g.OpeningMm || Math.Abs(ds) > g.OpeningMm || Math.Abs(dh) > g.OpeningMm;
-                    if (over) s.Openings.ElevationOver++;
-                    Take(dw, $"elevation width {e.Width:0}" + (e.FromReveal ? " (masonry opening)" : " (frame)"));
-                    Take(dj, "elevation jambs");
+                    if (Math.Abs(ds) > g.OpeningMm || Math.Abs(dh) > g.OpeningMm) s.Openings.ElevationOver++;
                     if (ins.Sill != null) Take(ds, $"elevation sill {e.Sill:0}");
                     if (ins.Head != null) Take(dh, $"elevation head {e.Head:0}");
                 }

@@ -746,6 +746,30 @@ namespace BarrGazetas.RevitMcp
 
         // ================================================================ windows and doors
 
+        /// <summary>place_inserts for one item, inside a transaction the caller runs (survey_autofix).</summary>
+        internal static object PlaceInsertHere(Document doc, JsonObject it) => PlaceInsert(doc, it);
+
+        /// <summary>set_insert's reshape and slide, inside a transaction the caller runs (survey_autofix).</summary>
+        internal static void ReshapeInsert(Document doc, FamilyInstance fi, double? widthMm, double? heightMm, double? sillMm, XYZ slideTo = null)
+        {
+            if (widthMm != null || heightMm != null)
+            {
+                var (cw, ch) = InsertSize(doc, fi);
+                var sym = SizedSymbol(doc, fi.Symbol, widthMm ?? cw ?? 0, heightMm ?? ch ?? 0);
+                if (sym.Id != fi.Symbol.Id) fi.Symbol = sym;
+                SetInstanceSize(fi, widthMm, heightMm);
+            }
+            if (sillMm is double sill) SetSill(fi, sill);
+            if (slideTo != null && fi.Host is Wall host && fi.Location is LocationPoint lp)
+            {
+                var target = Project(((LocationCurve)host.Location).Curve, new XYZ(slideTo.X, slideTo.Y, lp.Point.Z));
+                var move = new XYZ(target.X - lp.Point.X, target.Y - lp.Point.Y, 0);
+                if (move.GetLength() > 1e-6) ElementTransformUtils.MoveElement(doc, fi.Id, move);
+            }
+        }
+
+        internal static (double? w, double? h) InsertSizeOf(Document doc, FamilyInstance fi) => InsertSize(doc, fi);
+
         private static object PlaceInsert(Document doc, JsonObject it)
         {
             string catName = (Str(it, "category") ?? "Windows").ToLowerInvariant();

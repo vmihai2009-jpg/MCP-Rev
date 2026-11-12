@@ -68,6 +68,8 @@ namespace BarrGazetas.RevitMcp.Survey
     public class ElevMissing
     {
         public double U, W, Z0, Z1;
+        /// <summary>Where it is in plan (model mm), set by whoever knows the facade line.</summary>
+        public double X, Y;
         public string Level;
         public double? Sill, Head;
     }
@@ -203,6 +205,27 @@ namespace BarrGazetas.RevitMcp.Survey
             fit.WorstMm = Math.Round(pairs.Max(p => Math.Abs(fit.Height(p.y) - p.z)), 1);
             fit.Note = $"{pairs.Count} level marks; scale {fit.A:0.0000}; worst mark off by {fit.WorstMm:0.#} mm.";
             return fit;
+        }
+
+        /// <summary>
+        /// The separate drawings on a sheet of elevations side by side: window lines grouped along x where a clear
+        /// gap of gapMm separates them. Each part's x and y extent (sheet units as read, mm).
+        /// </summary>
+        public static List<(double x0, double x1, double y0, double y1)> SheetParts(IEnumerable<DwgLine> windowLines, double gapMm = 2500)
+        {
+            var lines = windowLines.Where(l => Math.Abs(l.A.Y - l.B.Y) >= 300 || Math.Abs(l.A.X - l.B.X) >= 300).OrderBy(l => Math.Min(l.A.X, l.B.X)).ToList();
+            var parts = new List<(double, double, double, double)>();
+            if (lines.Count == 0) return parts;
+            double x0 = Math.Min(lines[0].A.X, lines[0].B.X), x1 = Math.Max(lines[0].A.X, lines[0].B.X);
+            double y0 = Math.Min(lines[0].A.Y, lines[0].B.Y), y1 = Math.Max(lines[0].A.Y, lines[0].B.Y);
+            foreach (var l in lines.Skip(1))
+            {
+                double lx0 = Math.Min(l.A.X, l.B.X), lx1 = Math.Max(l.A.X, l.B.X);
+                if (lx0 > x1 + gapMm) { parts.Add((x0, x1, y0, y1)); x0 = lx0; x1 = lx1; y0 = Math.Min(l.A.Y, l.B.Y); y1 = Math.Max(l.A.Y, l.B.Y); continue; }
+                x1 = Math.Max(x1, lx1); y0 = Math.Min(y0, Math.Min(l.A.Y, l.B.Y)); y1 = Math.Max(y1, Math.Max(l.A.Y, l.B.Y));
+            }
+            parts.Add((x0, x1, y0, y1));
+            return parts;
         }
 
         /// <summary>True when most marks (60%+) agree, within 30 mm, on a 1:1 scale: then b is their mean offset.</summary>
