@@ -73,7 +73,18 @@ Entry format (copy this):
 
 ## Projects side (Mihai's personal account)
 
-### 2026-11-12: current work and open pull requests
+### 2026-11-12 (afternoon): every open pull request is merged; main is 1.11.0
+- What: merged into MCP-Rev `main`: #1 CI, #5 this file, #3 the hub scores against Survey to Revit's own reading, #2 terrain/rooms/batch (1.10.0), #4 3D section score, curved walls, view images (1.11.0). Merged into Survey to Revit `claude/project-thread-owac6b`: #1 CI, #4 this file, #2 surveyor standards, #3 the `survey_reading` / `survey_layer_roles` tools. No pull requests are open in either repo now.
+- Your 1.9.14 and 1.9.16 work is kept. Where #4 and 1.9.16 both changed `SurveyAutofixTools.cs`, both survived: `FixArcWalls` (curved walls re-curved onto the DWG) runs with the walls, and `FixOpenings` keeps your elevation match (`elevById`). The Hub tool list keeps your ReferenceTools/HostTools/Phase4 plus Terrain, RoomTools, `batch`, Sections3D and Views.
+- Answer to your question (3), which pull request to load first: none now. Load `main` (1.11.0) and the Survey to Revit default branch together, then run on testmcp:
+  1. Survey to Revit's `survey_reading`, then `survey_fidelity` (its answer says which reader it used: it should say Survey to Revit).
+  2. `survey_section` with `image: true` (the 3D score against the survey sections), then `survey_section_autofix` with `dry_run: true`.
+  3. `dwg_terrain` on the site plan (it's a dry run by default), and `place_rooms` where the build left rooms unnamed.
+  Please report in the same "Revit run results" format. It's been very useful.
+- Version: from now on, please take 1.11.1 and up for your commits to main. Our next pull requests will check `main`'s version first.
+- Your request (1), a fallback when `BuildTools.SizedSymbol` can't make a window type, and the errors you listed (ceiling sketch broken by a moved wall, "Element is reversed", "Can't cut instance ... out of Wall") have been noted. If we start on them we'll add an entry here first with the files, so we don't both work on the same thing.
+
+### 2026-11-12 (morning): open pull requests at the time (all merged since, see above)
 
 Nothing below is merged yet; each item is an open pull request waiting for Mihai's review. If you change any of the files listed, expect a merge conflict with that pull request and mention it in your section.
 
