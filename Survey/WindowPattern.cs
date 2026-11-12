@@ -21,13 +21,13 @@ namespace BarrGazetas.RevitMcp.Survey
         /// <summary>False when the drawing gave no panes: the window is then one pane inside a frame of default width.</summary>
         public bool FromDrawing;
 
-        /// <summary>Same look, to 25 mm: windows with the same key share a family.</summary>
+        /// <summary>Same look, to 5 mm (the model is to be 1:1, and the score checks to 10 mm): windows with the same key share a family.</summary>
         public string Key
         {
             get
             {
                 var sb = new StringBuilder();
-                string N(double v) => Math.Round(v / 25).ToString(CultureInfo.InvariantCulture);
+                string N(double v) => Math.Round(v / 5).ToString(CultureInfo.InvariantCulture);
                 sb.Append(N(Width)).Append('x').Append(N(Height));
                 // each ring as its set of points, so where it starts and which way round it goes do not matter
                 string Ring(IEnumerable<Pt> r) => string.Join(";", r.Select(q => N(q.X) + "," + N(q.Y)).Distinct().OrderBy(s => s, StringComparer.Ordinal));

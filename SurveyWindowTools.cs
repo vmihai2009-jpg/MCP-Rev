@@ -174,12 +174,12 @@ namespace BarrGazetas.RevitMcp
                     XYZ At(Pt q, double off) => mid + right * ((q.X - p.Width / 2) / Mm) + XYZ.BasisZ * (z0 + q.Y / Mm) + ext * (off / Mm);
                     CurveArray Loop(IList<Pt> ring, double off)
                     {
+                        // points closer than 2 mm merged first (Revit refuses shorter lines), so the loop stays closed
+                        var pts = new List<Pt>();
+                        foreach (var q in ring) if (pts.Count == 0 || q.Dist2D(pts[pts.Count - 1]) >= 2) pts.Add(q);
+                        while (pts.Count > 3 && pts[pts.Count - 1].Dist2D(pts[0]) < 2) pts.RemoveAt(pts.Count - 1);
                         var ca = new CurveArray();
-                        for (int i = 0; i < ring.Count; i++)
-                        {
-                            var a0 = At(ring[i], off); var b0 = At(ring[(i + 1) % ring.Count], off);
-                            if (a0.DistanceTo(b0) * Mm >= 0.5) ca.Append(Line.CreateBound(a0, b0));
-                        }
+                        for (int i = 0; i < pts.Count; i++) ca.Append(Line.CreateBound(At(pts[i], off), At(pts[(i + 1) % pts.Count], off)));
                         return ca;
                     }
 
@@ -207,14 +207,18 @@ namespace BarrGazetas.RevitMcp
                     var frameProfile = new CurveArrArray();
                     frameProfile.Append(Loop(p.Outline, face - reveal));
                     foreach (var pane in p.Panes) frameProfile.Append(Loop(pane, face - reveal));
-                    var frame = fdoc.FamilyCreate.NewExtrusion(true, frameProfile, sp, depth / Mm);
+                    Extrusion frame;
+                    try { frame = fdoc.FamilyCreate.NewExtrusion(true, frameProfile, sp, depth / Mm); }
+                    catch (Exception ex) { throw new InvalidOperationException("frame: " + McpServer.Unwrap(ex).Message + $" (outline {p.Outline.Count} points, {p.Panes.Count} panes, opening {(cut ? "cut to the outline" : "the template's")})"); }
                     frame.get_Parameter(BuiltInParameter.MATERIAL_ID_PARAM)?.Set(frameMat);
                     // glass: in the middle of the frame
                     double gOff = face - reveal - depth / 2 + 4;
                     var gsp = SketchPlane.Create(fdoc, Plane.CreateByNormalAndOrigin(ext.Negate(), At(new Pt(0, 0), gOff)));
                     var glassProfile = new CurveArrArray();
                     foreach (var pane in p.Panes) glassProfile.Append(Loop(pane, gOff));
-                    var glass = fdoc.FamilyCreate.NewExtrusion(true, glassProfile, gsp, 8 / Mm);
+                    Extrusion glass;
+                    try { glass = fdoc.FamilyCreate.NewExtrusion(true, glassProfile, gsp, 8 / Mm); }
+                    catch (Exception ex) { throw new InvalidOperationException("glass: " + McpServer.Unwrap(ex).Message); }
                     glass.get_Parameter(BuiltInParameter.MATERIAL_ID_PARAM)?.Set(glassMat);
                     try
                     {
@@ -223,7 +227,7 @@ namespace BarrGazetas.RevitMcp
                         if (subs.Contains("Frame/Mullion")) frame.Subcategory = subs.get_Item("Frame/Mullion");
                     }
                     catch { }
-                    t.Commit();
+                    if (t.Commit() != TransactionStatus.Committed) throw new InvalidOperationException("Revit would not keep the family's geometry");
                 }
                 fdoc.SaveAs(path, new SaveAsOptions { OverwriteExistingFile = true });
                 return path;

@@ -343,8 +343,12 @@ namespace BarrGazetas.RevitMcp
                 double? sl, hl;
                 if (elevById != null && elevById.TryGetValue(ins.Id, out var em))
                 {
-                    // the elevation decides; a change of more than 600 mm is more likely a wrong pairing than a wrong window
-                    bool sane = Math.Abs(em.Sill - curSill) <= 600 && Math.Abs(em.Head - curHead) <= 600 && em.Head - em.Sill >= 300;
+                    // the elevation decides; a change of more than 600 mm is more likely a wrong pairing than a wrong window,
+                    // unless the drawn opening is also this window's width (within 150 mm): then the pairing is sure, and a
+                    // window Survey to Revit made 1.2 m too short is put right
+                    // (and not a part of it: a transom light drawn alone is far shorter than the window)
+                    bool sameWidth = Math.Abs(em.Width - ins.W) <= 150 && em.Head - em.Sill >= Math.Min(0.6 * (curHead - curSill), 1200);
+                    bool sane = (sameWidth || Math.Abs(em.Sill - curSill) <= 600 && Math.Abs(em.Head - curHead) <= 600) && em.Head - em.Sill >= 300;
                     if (!sane) { log.Unconfirmed.Add($"{level.Name}: window {ins.Id}: the elevation gives sill {em.Sill:0} head {em.Head:0} against the model's {curSill:0}/{curHead:0}; left for a look"); sl = hl = null; }
                     else { sl = Math.Round(em.Sill); hl = Math.Round(em.Head); }
                 }
