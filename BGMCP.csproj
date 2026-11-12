@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Barr Gazetas MCP: the Revit 2025 add-in Claude connects to (Revit 2025 runs on .NET 8). -->
   <PropertyGroup>
@@ -12,7 +12,7 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <Version>1.12.0</Version>
+    <Version>1.12.1</Version>
     <!-- Version conflicts between Revit's own references: harmless, Revit supplies its copies at run time. -->
     <NoWarn>$(NoWarn);MSB3277</NoWarn>
     <!-- Another Revit folder: dotnet build -p:RevitDir="D:\Revit 2025" -->

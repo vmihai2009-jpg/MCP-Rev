@@ -86,6 +86,53 @@ namespace SurveyCoreTests
             var o = new List<CmpItem> { new CmpItem { Id = 11, Key = "Windows", C = new Pt(20, 0, 0), Sx = 1000, Sy = 200, Sz = 1500 } };
             var m = ModelCompare.Match(r, o, 1000);
             T.Check(m.Pairs.Count == 1 && m.Pairs[0].Ref.Id == 1 && m.Missing.Count == 1 && m.Missing[0].Id == 2, "compare: nearest pairs, the other is missing");
+
+            WindowPatterns();
+        }
+
+        static DwgLine L(double x1, double y1, double x2, double y2) => new DwgLine { A = new Pt(x1, y1), B = new Pt(x2, y2), Layer = "Ss_25_30_95-Window" };
+        static IEnumerable<DwgLine> Box(double x0, double y0, double x1, double y1) => new[] { L(x0, y0, x1, y0), L(x1, y0, x1, y1), L(x1, y1, x0, y1), L(x0, y1, x0, y0) };
+
+        static void WindowPatterns()
+        {
+            Console.WriteLine("window patterns (1.9.17)");
+            // a sliding sash: two panes with a 60 mm meeting rail, reveals 70 mm outside them
+            var sash = Box(70, 60, 930, 1100).Concat(Box(70, 1160, 930, 2200)).ToList();
+            var op = new ElevOpening { Left = 70, Right = 930, Bottom = 60, Top = 2200, HasReveal = true, RevealLeft = 0, RevealRight = 1000, RevealBottom = 60, RevealTop = 2200 };
+            var w = WindowPattern.Read(sash, op);
+            T.Check(w.FromDrawing && w.Panes.Count == 2 && !w.Arched, $"sash: two panes, flat ({w.Panes.Count})");
+            T.Check(T.Near(w.Width, 1000, 1e-6) && T.Near(w.Height, 2140, 1e-6), "sash: the opening is the reveal width, sill to head");
+            T.Check(w.Describe() == "1 wide x 2 high", "sash: described " + w.Describe());
+            T.Check(w.Panes.All(p => p.All(q => q.X >= 25 - 1e-6 && q.X <= 975 + 1e-6 && q.Y >= 25 - 1e-6 && q.Y <= 2115 + 1e-6)), "sash: panes kept inside a frame");
+            var m2 = w.Mirrored();
+            T.Check(m2.Key == w.Key, "sash: symmetric, so mirrored is the same look");
+
+            // a frame drawn round the panes on the same layer: the panes are the innermost loops
+            var framed = Box(0, 0, 1000, 2000).Concat(Box(60, 60, 470, 1940)).Concat(Box(530, 60, 940, 1940)).ToList();
+            var w2 = WindowPattern.Read(framed, new ElevOpening { Left = 0, Right = 1000, Bottom = 0, Top = 2000 });
+            T.Check(w2.Panes.Count == 2 && w2.Describe() == "2 wide x 1 high", "framed: the two inner loops are the panes (" + w2.Describe() + ")");
+
+            // a round-headed window: sides to 1500, a semicircle above; the opening is found up to the crown
+            var arch = new List<DwgLine> { L(0, 0, 1000, 0), L(1000, 0, 1000, 1500), L(0, 1500, 0, 0) };
+            for (int i = 0; i < 24; i++)
+            {
+                double t0 = Math.PI * i / 24, t1 = Math.PI * (i + 1) / 24;
+                arch.Add(L(500 + 500 * Math.Cos(t0), 1500 + 500 * Math.Sin(t0), 500 + 500 * Math.Cos(t1), 1500 + 500 * Math.Sin(t1)));
+            }
+            var ops = ElevationFit.Openings(arch, 0, 1000);
+            T.Check(ops.Count == 1 && T.Near(ops[0].Top, 2000, 1), $"arch: the opening reaches the crown ({(ops.Count > 0 ? ops[0].Top : 0):0})");
+            var w3 = WindowPattern.Read(arch, ops[0]);
+            T.Check(w3.Arched && w3.Panes.Count == 1 && w3.Outline.Count > 6 && T.Near(w3.Outline.Max(q => q.Y), 2000, 1), "arch: arched outline up to the crown");
+            T.Check(w3.Describe().StartsWith("arched"), "arch: described " + w3.Describe());
+
+            // two windows either side of a pier: the pier's two facing jambs are not an opening
+            var pair = Box(0, 0, 900, 1000).Concat(Box(0, 1060, 900, 2000)).Concat(Box(1800, 0, 2700, 1000)).Concat(Box(1800, 1060, 2700, 2000)).ToList();
+            T.Check(ElevationFit.Openings(pair, 900, 1800).Count == 0, "pier: the jambs either side of it are two windows', not one opening");
+            T.Check(ElevationFit.Openings(pair, 0, 900).Count == 1, "pier: each window is still found");
+
+            // nothing drawn: one pane in a default frame
+            var w4 = WindowPattern.Read(new List<DwgLine>(), new ElevOpening { Left = 0, Right = 900, Bottom = 0, Top = 1500 });
+            T.Check(!w4.FromDrawing && w4.Panes.Count == 1 && w4.Describe() == "plain", "nothing drawn: plain");
         }
     }
 }

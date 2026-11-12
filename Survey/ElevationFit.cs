@@ -62,6 +62,10 @@ namespace BarrGazetas.RevitMcp.Survey
         public double Sill, Head;
         public bool FromReveal;
         public double Width => Math.Abs(U1 - U0);
+        /// <summary>What the elevation draws inside the opening (panes, arched head), seen from outside.</summary>
+        public WindowPattern Pattern;
+        /// <summary>The opening on the sheet (sheet units).</summary>
+        public ElevOpening Sheet;
     }
 
     /// <summary>An opening the elevation draws with no model insert at that place and storey.</summary>
@@ -109,6 +113,7 @@ namespace BarrGazetas.RevitMcp.Survey
                 {
                     Insert = m, U0 = Math.Min(u0, u1), U1 = Math.Max(u0, u1), FromReveal = op.HasReveal,
                     Sill = modelZ(op.Bottom) - m.LevelZ, Head = modelZ(op.Top) - m.LevelZ,
+                    Pattern = WindowPattern.Read(windowLines, op, Math.Abs(heights.A)), Sheet = op,
                 });
             }
 
@@ -327,14 +332,34 @@ namespace BarrGazetas.RevitMcp.Survey
                 // a frame drawn in pieces (sashes, a meeting rail, a transom) is one opening: gaps up to 150 mm close
                 for (; j < jambs.Count && jambs[j].y0 <= t + 150; j++)
                 { t = Math.Max(t, jambs[j].y1); l = Math.Min(l, jambs[j].x); r = Math.Max(r, jambs[j].x); }
-                if (r - l >= (hi - lo) * 0.5) // a single jamb line is not an opening
+                double width = r - l;
+                // the two jambs are one window's only when its line work runs across between them (a pane's top or bottom,
+                // a meeting rail): the facing jambs of two windows either side of a pier have nothing across the pier
+                var cover = lines.Where(x => Math.Abs(x.A.Y - x.B.Y) < 2 && x.A.Y >= b - 200 && x.A.Y <= t + 200
+                                             && Math.Min(x.A.X, x.B.X) >= l - 300 && Math.Max(x.A.X, x.B.X) <= r + 300)
+                                 .Select(x => (a: Math.Max(Math.Min(x.A.X, x.B.X), l), z: Math.Min(Math.Max(x.A.X, x.B.X), r)))
+                                 .Where(s => s.z - s.a > 1).OrderBy(s => s.a).ToList();
+                double covered = 0, reach = l;
+                foreach (var (sa, sz) in cover) { if (sz > reach) { covered += sz - Math.Max(sa, reach); reach = sz; } }
+                bool spanned = width > 0 && covered >= width * 0.5;
+                if (width >= (hi - lo) * 0.5 && spanned) // a single jamb line is not an opening
                 {
                     // a sill or head drawn as a line across, a little past the jambs' ends, belongs to it
-                    double width = r - l;
                     var across = lines.Where(x => Math.Abs(x.A.Y - x.B.Y) < 2 && Math.Abs(x.A.X - x.B.X) >= width * 0.5
                                                   && Math.Min(x.A.X, x.B.X) <= l + pad && Math.Max(x.A.X, x.B.X) >= r - pad).ToList();
                     double bb = across.Where(x => x.A.Y >= b - 200 && x.A.Y <= b + 200).Select(x => x.A.Y).DefaultIfEmpty(b).Min();
                     double tt = across.Where(x => x.A.Y >= t - 200 && x.A.Y <= t + 200).Select(x => x.A.Y).DefaultIfEmpty(t).Max();
+                    // an arched head: the line work above the jambs that joins on to them (the arch), up to its crown
+                    double crownCap = Math.Max(t, tt) + width * 0.75;
+                    var above = lines.Where(x => Math.Min(x.A.X, x.B.X) >= l - 5 && Math.Max(x.A.X, x.B.X) <= r + 5
+                                                 && Math.Max(x.A.Y, x.B.Y) > t + 5 && Math.Max(x.A.Y, x.B.Y) <= crownCap
+                                                 && Math.Abs(x.A.X - x.B.X) < width * 0.6).ToList();
+                    for (bool grew = true; grew;)
+                    {
+                        grew = false;
+                        foreach (var x in above)
+                            if (Math.Min(x.A.Y, x.B.Y) <= tt + 5 && Math.Max(x.A.Y, x.B.Y) > tt + 0.5) { tt = Math.Max(x.A.Y, x.B.Y); grew = true; }
+                    }
                     var o = new ElevOpening { Left = l, Right = r, Bottom = Math.Min(b, bb), Top = Math.Max(t, tt) };
                     // the masonry opening round the frame (the reveal lines on the wall layer, up to 200 mm outside
                     // the frame and alongside most of it): the outermost each side
