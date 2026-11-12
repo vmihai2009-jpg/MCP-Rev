@@ -1,0 +1,467 @@
+﻿{
+    "dryRun":  false,
+    "plans":  "Survey to Revit is not loaded (or has no survey_reading), so the hub read the linked plans itself with its own layer names",
+    "floors":  [
+                   {
+                       "level":  "Basement",
+                       "pass":  false,
+                       "failedOn":  [
+                                        "walls",
+                                        "thickness",
+                                        "missing walls",
+                                        "openings"
+                                    ],
+                       "score":  {
+                                     "before":  0.663,
+                                     "after":  0.663
+                                 },
+                       "walls":  {
+                                     "fitted":  0,
+                                     "failed":  0,
+                                     "withinTolPct":  {
+                                                          "before":  23.9,
+                                                          "after":  23.9
+                                                      },
+                                     "missing":  36
+                                 },
+                       "openings":  {
+                                        "reshaped":  0,
+                                        "placed":  0,
+                                        "gapsFilled":  0,
+                                        "failed":  0
+                                    },
+                       "levelDevMm":  0,
+                       "stillFailing":  [
+
+                                        ],
+                       "stillFailingTotal":  254,
+                       "forReviewTotal":  0,
+                       "undo":  "nothing changed"
+                   },
+                   {
+                       "level":  "Ground Floor",
+                       "pass":  false,
+                       "failedOn":  [
+                                        "walls",
+                                        "thickness",
+                                        "missing walls",
+                                        "openings"
+                                    ],
+                       "score":  {
+                                     "before":  0.608,
+                                     "after":  0.614
+                                 },
+                       "walls":  {
+                                     "fitted":  0,
+                                     "failed":  0,
+                                     "withinTolPct":  {
+                                                          "before":  18.9,
+                                                          "after":  18.9
+                                                      },
+                                     "missing":  17
+                                 },
+                       "openings":  {
+                                        "reshaped":  1,
+                                        "placed":  0,
+                                        "gapsFilled":  0,
+                                        "failed":  1
+                                    },
+                       "levelDevMm":  0,
+                       "stillFailing":  [
+
+                                        ],
+                       "stillFailingTotal":  123,
+                       "problems":  [
+                                        "window 317313: Revit refused the change, so nothing was changed. \"Can\u0027t make type \"Windows_Sgl_Plain : Concept Window 4930x3900\".\" for elements 317313, 353635. Try another way: stop the joins first (set_wall_joins), split the wall (split_wall), or move the elements named."
+                                    ],
+                       "forReview":  [
+                                         "Ground Floor: window 317310: the elevation gives sill 1482 head 3179 against the model\u0027s 960/2260; left for a look",
+                                         "Ground Floor: window 317342: the elevation gives sill 1482 head 3179 against the model\u0027s 960/4860; left for a look",
+                                         "Ground Floor: window 317355: the elevation gives sill 2787 head 3291 against the model\u0027s 960/4860; left for a look",
+                                         "Ground Floor: window 317356: the elevation gives sill 2787 head 3291 against the model\u0027s 960/4860; left for a look",
+                                         "Ground Floor: window 317362: the elevation gives sill 2194 head 2683 against the model\u0027s 1550/2100; left for a look",
+                                         "Ground Floor: window 317365: the elevation gives sill 2194 head 2683 against the model\u0027s 1550/2100; left for a look"
+                                     ],
+                       "forReviewTotal":  6,
+                       "undo":  "one undo step in Revit for this floor"
+                   },
+                   {
+                       "level":  "Ground Floor Mezzanine",
+                       "pass":  false,
+                       "failedOn":  [
+                                        "walls",
+                                        "thickness",
+                                        "missing walls",
+                                        "openings",
+                                        "missing openings"
+                                    ],
+                       "score":  {
+                                     "before":  0.536,
+                                     "after":  0.536
+                                 },
+                       "walls":  {
+                                     "fitted":  0,
+                                     "failed":  0,
+                                     "withinTolPct":  {
+                                                          "before":  17.6,
+                                                          "after":  17.6
+                                                      },
+                                     "missing":  8
+                                 },
+                       "openings":  {
+                                        "reshaped":  0,
+                                        "placed":  0,
+                                        "gapsFilled":  0,
+                                        "failed":  0
+                                    },
+                       "levelDevMm":  0,
+                       "stillFailing":  [
+
+                                        ],
+                       "stillFailingTotal":  45,
+                       "forReview":  [
+                                         "Ground Floor Mezzanine: window 318415: the elevation gives sill 313 head 2212 against the model\u0027s 1360/2360; left for a look",
+                                         "Ground Floor Mezzanine: the elevation draws a 469 wide window at -8175,7866 (sill 2243) but the plan shows no opening there",
+                                         "Ground Floor Mezzanine: the elevation draws a 2372 wide window at -1962,-10809 (sill 313) but the plan shows no opening there"
+                                     ],
+                       "forReviewTotal":  3,
+                       "undo":  "nothing changed"
+                   },
+                   {
+                       "level":  "First Floor",
+                       "pass":  false,
+                       "failedOn":  [
+                                        "walls",
+                                        "thickness",
+                                        "missing walls",
+                                        "openings",
+                                        "missing openings"
+                                    ],
+                       "score":  {
+                                     "before":  0.517,
+                                     "after":  0.571
+                                 },
+                       "walls":  {
+                                     "fitted":  0,
+                                     "failed":  0,
+                                     "withinTolPct":  {
+                                                          "before":  30.9,
+                                                          "after":  30.9
+                                                      },
+                                     "missing":  37
+                                 },
+                       "openings":  {
+                                        "reshaped":  16,
+                                        "placed":  0,
+                                        "gapsFilled":  0,
+                                        "failed":  2
+                                    },
+                       "levelDevMm":  0,
+                       "stillFailing":  [
+
+                                        ],
+                       "stillFailingTotal":  173,
+                       "problems":  [
+                                        "window 319214: Revit refused the change, so nothing was changed. \"Can\u0027t make type \"Windows_Sgl_Plain : Concept Window 765x2942\".\" for elements 319214, 353673. Try another way: stop the joins first (set_wall_joins), split the wall (split_wall), or move the elements named.",
+                                        "window 319216: Revit refused the change, so nothing was changed. \"Can\u0027t make type \"Windows_Sgl_Plain : Concept Window 785x2920\".\" for elements 319216, 353676. Try another way: stop the joins first (set_wall_joins), split the wall (split_wall), or move the elements named."
+                                    ],
+                       "forReview":  [
+                                         "First Floor: window 319129: the elevation gives sill 991 head 3918 against the model\u0027s 990/2890; left for a look",
+                                         "First Floor: window 319135: the elevation gives sill 991 head 3918 against the model\u0027s 1010/2860; left for a look",
+                                         "First Floor: window 319147: the elevation gives sill 2047 head 3543 against the model\u0027s 1420/2920; left for a look",
+                                         "First Floor: window 319150: the elevation gives sill 993 head 3916 against the model\u0027s 970/2420; left for a look",
+                                         "First Floor: window 319174: the elevation gives sill 975 head 3907 against the model\u0027s 1000/3000; left for a look",
+                                         "First Floor: window 319183: the elevation gives sill 783 head 3928 against the model\u0027s 970/2920; left for a look",
+                                         "First Floor: window 319190: the elevation gives sill 2448 head 3914 against the model\u0027s 1010/2860; left for a look",
+                                         "First Floor: window 319191: the elevation gives sill 783 head 3928 against the model\u0027s 1010/2860; left for a look",
+                                         "First Floor: window 319192: the elevation gives sill 2425 head 3928 against the model\u0027s 1010/2860; left for a look",
+                                         "First Floor: window 319193: the elevation gives sill 2425 head 3928 against the model\u0027s 1010/2860; left for a look",
+                                         "First Floor: window 319211: the elevation gives sill 783 head 3928 against the model\u0027s 1010/2860; left for a look",
+                                         "First Floor: window 319224: the elevation gives sill 975 head 3896 against the model\u0027s 1000/3000; left for a look",
+                                         "First Floor: window 319225: the elevation gives sill 975 head 3896 against the model\u0027s 1000/3000; left for a look",
+                                         "First Floor: the elevation draws a 884 wide window at 2695,24641 (sill 975) but the plan shows no opening there",
+                                         "First Floor: the elevation draws a 911 wide window at 488,24641 (sill 975) but the plan shows no opening there"
+                                     ],
+                       "forReviewTotal":  28,
+                       "undo":  "one undo step in Revit for this floor"
+                   },
+                   {
+                       "level":  "Second Floor",
+                       "pass":  false,
+                       "failedOn":  [
+                                        "walls",
+                                        "thickness",
+                                        "missing walls",
+                                        "openings",
+                                        "missing openings"
+                                    ],
+                       "score":  {
+                                     "before":  0.573,
+                                     "after":  0.693
+                                 },
+                       "walls":  {
+                                     "fitted":  0,
+                                     "failed":  0,
+                                     "withinTolPct":  {
+                                                          "before":  37.9,
+                                                          "after":  37.9
+                                                      },
+                                     "missing":  28
+                                 },
+                       "openings":  {
+                                        "reshaped":  33,
+                                        "placed":  4,
+                                        "gapsFilled":  0,
+                                        "failed":  1
+                                    },
+                       "levelDevMm":  0,
+                       "stillFailing":  [
+
+                                        ],
+                       "stillFailingTotal":  116,
+                       "problems":  [
+                                        "window at 15196,-19480: Revit refused the change, so nothing was changed. \"Can\u0027t cut instance of 890x2350 out of Wall.\" for elements 320018, 353786. Try another way: stop the joins first (set_wall_joins), split the wall (split_wall), or move the elements named."
+                                    ],
+                       "forReview":  [
+                                         "Second Floor: window 320242: the elevation gives sill 916 head 3325 against the model\u0027s 920/2720; left for a look",
+                                         "Second Floor: window 320244: the elevation gives sill 916 head 3325 against the model\u0027s 920/2720; left for a look",
+                                         "Second Floor: window 320245: the elevation gives sill 916 head 3325 against the model\u0027s 920/2720; left for a look",
+                                         "Second Floor: window 320254: the elevation gives sill 890 head 3313 against the model\u0027s 930/2380; left for a look",
+                                         "Second Floor: the elevation draws a 1256 wide window at -8952,18823 (sill 916) but the plan shows no opening there",
+                                         "Second Floor: the elevation draws a 1019 wide window at 15192,-7198 (sill 890) but the plan shows no opening there"
+                                     ],
+                       "forReviewTotal":  6,
+                       "undo":  "one undo step in Revit for this floor"
+                   },
+                   {
+                       "level":  "Third Floor",
+                       "pass":  false,
+                       "failedOn":  [
+                                        "walls",
+                                        "thickness",
+                                        "missing walls",
+                                        "openings",
+                                        "missing openings"
+                                    ],
+                       "score":  {
+                                     "before":  0.665,
+                                     "after":  0.781
+                                 },
+                       "walls":  {
+                                     "fitted":  0,
+                                     "failed":  0,
+                                     "withinTolPct":  {
+                                                          "before":  53.6,
+                                                          "after":  53.6
+                                                      },
+                                     "missing":  30
+                                 },
+                       "openings":  {
+                                        "reshaped":  31,
+                                        "placed":  1,
+                                        "gapsFilled":  0,
+                                        "failed":  1
+                                    },
+                       "levelDevMm":  0,
+                       "stillFailing":  [
+
+                                        ],
+                       "stillFailingTotal":  125,
+                       "problems":  [
+                                        "window 347258: Revit refused the change, so nothing was changed. \"Can\u0027t cut instance of 1380x2570 out of Wall.\" for elements 321566, 347258. Try another way: stop the joins first (set_wall_joins), split the wall (split_wall), or move the elements named."
+                                    ],
+                       "forReviewTotal":  0,
+                       "undo":  "one undo step in Revit for this floor"
+                   },
+                   {
+                       "level":  "Fourth Floor",
+                       "pass":  false,
+                       "failedOn":  [
+                                        "walls",
+                                        "thickness",
+                                        "missing walls",
+                                        "openings",
+                                        "missing openings"
+                                    ],
+                       "score":  {
+                                     "before":  0.597,
+                                     "after":  0.686
+                                 },
+                       "walls":  {
+                                     "fitted":  0,
+                                     "failed":  0,
+                                     "withinTolPct":  {
+                                                          "before":  39.7,
+                                                          "after":  39.7
+                                                      },
+                                     "missing":  44
+                                 },
+                       "openings":  {
+                                        "reshaped":  25,
+                                        "placed":  1,
+                                        "gapsFilled":  0,
+                                        "failed":  0
+                                    },
+                       "levelDevMm":  0,
+                       "stillFailing":  [
+
+                                        ],
+                       "stillFailingTotal":  135,
+                       "forReview":  [
+                                         "Fourth Floor: window 323700: the elevation gives sill 997 head 2709 against the model\u0027s 1990/2390; left for a look",
+                                         "Fourth Floor: window 323703: the elevation gives sill 1010 head 2696 against the model\u0027s 2280/2730; left for a look",
+                                         "Fourth Floor: the elevation draws a 502 wide window at -3069,24640 (sill 1005) but the plan shows no opening there",
+                                         "Fourth Floor: the elevation draws a 488 wide window at -3636,24640 (sill 1005) but the plan shows no opening there",
+                                         "Fourth Floor: the elevation draws a 1016 wide window at -4446,24640 (sill 1005) but the plan shows no opening there",
+                                         "Fourth Floor: the elevation draws a 502 wide window at -5240,24640 (sill 1005) but the plan shows no opening there",
+                                         "Fourth Floor: the elevation draws a 483 wide window at -5810,24640 (sill 1005) but the plan shows no opening there",
+                                         "Fourth Floor: the elevation draws a 1016 wide window at -6622,24640 (sill 1005) but the plan shows no opening there",
+                                         "Fourth Floor: the elevation draws a 545 wide window at -7402,24640 (sill 1005) but the plan shows no opening there"
+                                     ],
+                       "forReviewTotal":  9,
+                       "undo":  "one undo step in Revit for this floor"
+                   },
+                   {
+                       "level":  "Fifth Floor",
+                       "pass":  false,
+                       "failedOn":  [
+                                        "walls",
+                                        "thickness",
+                                        "missing walls",
+                                        "openings",
+                                        "missing openings"
+                                    ],
+                       "score":  {
+                                     "before":  0.637,
+                                     "after":  0.653
+                                 },
+                       "walls":  {
+                                     "fitted":  0,
+                                     "failed":  0,
+                                     "withinTolPct":  {
+                                                          "before":  51.5,
+                                                          "after":  51.5
+                                                      },
+                                     "missing":  36
+                                 },
+                       "openings":  {
+                                        "reshaped":  5,
+                                        "placed":  6,
+                                        "gapsFilled":  0,
+                                        "failed":  1
+                                    },
+                       "levelDevMm":  0,
+                       "stillFailing":  [
+
+                                        ],
+                       "stillFailingTotal":  172,
+                       "problems":  [
+                                        "window 325652: Revit refused the change, so nothing was changed. \"Can\u0027t cut instance of Concept Window 1300x2362 out of Wall.\" for elements 325505, 325652. Try another way: stop the joins first (set_wall_joins), split the wall (split_wall), or move the elements named."
+                                    ],
+                       "forReview":  [
+                                         "Fifth Floor: the elevation draws a 440 wide window at -9058,20303 (sill 1096) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 1256 wide window at -8952,18823 (sill 1096) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 460 wide window at -8886,17882 (sill 1096) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 510 wide window at -8845,17307 (sill 1096) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 1811 wide window at -8763,16149 (sill 1096) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 438 wide window at -8670,14846 (sill 2501) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 448 wide window at -8626,14229 (sill 2501) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 1297 wide window at -8552,13183 (sill 1096) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 616 wide window at 15196,-18731 (sill 4) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 621 wide window at 15196,-18039 (sill 4) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 469 wide window at 15194,-13691 (sill 1038) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 477 wide window at 15193,-11160 (sill 1038) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 485 wide window at 15193,-10579 (sill 1038) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 469 wide window at 15193,-8642 (sill 1038) but the plan shows no opening there",
+                                         "Fifth Floor: the elevation draws a 485 wide window at 15192,-8057 (sill 1038) but the plan shows no opening there"
+                                     ],
+                       "forReviewTotal":  32,
+                       "undo":  "one undo step in Revit for this floor"
+                   },
+                   {
+                       "level":  "Sixth Floor",
+                       "pass":  false,
+                       "failedOn":  [
+                                        "walls",
+                                        "thickness",
+                                        "missing walls",
+                                        "missing openings"
+                                    ],
+                       "score":  {
+                                     "before":  0.522,
+                                     "after":  0.522
+                                 },
+                       "walls":  {
+                                     "fitted":  0,
+                                     "failed":  0,
+                                     "withinTolPct":  {
+                                                          "before":  18.1,
+                                                          "after":  18.1
+                                                      },
+                                     "missing":  13
+                                 },
+                       "openings":  {
+                                        "reshaped":  0,
+                                        "placed":  0,
+                                        "gapsFilled":  0,
+                                        "failed":  0
+                                    },
+                       "levelDevMm":  0,
+                       "stillFailing":  [
+
+                                        ],
+                       "stillFailingTotal":  117,
+                       "forReview":  [
+                                         "Sixth Floor: the elevation draws a 1256 wide window at -8952,18823 (sill 835) but the plan shows no opening there",
+                                         "Sixth Floor: the elevation draws a 460 wide window at -8886,17882 (sill 835) but the plan shows no opening there",
+                                         "Sixth Floor: the elevation draws a 510 wide window at -8845,17307 (sill 835) but the plan shows no opening there",
+                                         "Sixth Floor: the elevation draws a 782 wide window at 15194,-11926 (sill 3927) but the plan shows no opening there",
+                                         "Sixth Floor: the elevation draws a 690 wide window at 15187,6577 (sill 3018) but the plan shows no opening there",
+                                         "Sixth Floor: the elevation draws a 461 wide window at -1945,7535 (sill 1015) but the plan shows no opening there",
+                                         "Sixth Floor: the elevation draws a 414 wide window at -1956,-4786 (sill 1015) but the plan shows no opening there",
+                                         "Sixth Floor: the elevation draws a 464 wide window at -1960,-8545 (sill 3037) but the plan shows no opening there",
+                                         "Sixth Floor: the elevation draws a 422 wide window at -1963,-12307 (sill 965) but the plan shows no opening there",
+                                         "Sixth Floor: the elevation draws a 422 wide window at -1964,-12930 (sill 965) but the plan shows no opening there"
+                                     ],
+                       "forReviewTotal":  10,
+                       "undo":  "nothing changed"
+                   },
+                   {
+                       "level":  "Seventh Floor",
+                       "pass":  false,
+                       "failedOn":  [
+                                        "walls",
+                                        "thickness",
+                                        "missing walls",
+                                        "openings"
+                                    ],
+                       "score":  {
+                                     "before":  0.735,
+                                     "after":  0.735
+                                 },
+                       "walls":  {
+                                     "fitted":  0,
+                                     "failed":  0,
+                                     "withinTolPct":  {
+                                                          "before":  43.1,
+                                                          "after":  43.1
+                                                      },
+                                     "missing":  3
+                                 },
+                       "openings":  {
+                                        "reshaped":  0,
+                                        "placed":  0,
+                                        "gapsFilled":  0,
+                                        "failed":  0
+                                    },
+                       "levelDevMm":  10,
+                       "stillFailing":  [
+
+                                        ],
+                       "stillFailingTotal":  22,
+                       "forReviewTotal":  0,
+                       "undo":  "nothing changed"
+                   }
+               ],
+    "next":  "Work the stillFailing items by hand (each says how), then survey_fidelity for the whole building."
+}

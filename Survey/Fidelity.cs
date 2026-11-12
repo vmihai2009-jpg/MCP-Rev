@@ -386,7 +386,10 @@ namespace BarrGazetas.RevitMcp.Survey
                 }
                 // labels (windows only: a door's sill is the floor): the nearest S and H within 1.2 m
                 bool isWindow = ins.Category == null || ins.Category.IndexOf("Window", StringComparison.OrdinalIgnoreCase) >= 0;
-                var (sl, hl) = isWindow ? Nearest(ins.At, labels) : (null, null);
+                // the S/H labels are measured inside the room (window board, internal head): where an elevation draws
+                // the window, its outside sill and head decide and the labels are not held against it
+                bool onElevation = isWindow && elevById.ContainsKey(ins.Id);
+                var (sl, hl) = isWindow && !onElevation ? Nearest(ins.At, labels) : (null, null);
                 bool labelChecked = false, labelOver = false;
                 if (ins.Sill is double sill && sl is double slv)
                 { labelChecked = true; double d = sill - slv; labelOver |= Math.Abs(d) > g.OpeningMm; Take(d, $"sill label S {slv / 1000:0.00}"); }

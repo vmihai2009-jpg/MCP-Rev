@@ -193,6 +193,59 @@ namespace BarrGazetas.RevitMcp.Survey
             return -1;
         }
 
+        // ------------------------------------------------------------------ stepped flat roofs
+
+        /// <summary>
+        /// A face whose spot heights are not one plane (flat roofs at several levels inside one outline): spots grouped by
+        /// height (within tolMm), every cell of a grid over the face given its nearest spot's group, and each group's
+        /// cells merged into rectangles. Returns per group its height (mm, the group's mean) and rectangles.
+        /// </summary>
+        public static List<(double z, List<(double x0, double y0, double x1, double y1)> rects)> Terraces(IList<Pt> ring, IList<Pt> spots, double cellMm = 100, double tolMm = 80)
+        {
+            var result = new List<(double, List<(double, double, double, double)>)>();
+            if (spots.Count == 0 || ring.Count < 3) return result;
+            var sorted = spots.OrderBy(s => s.Z).ToList();
+            var groups = new List<List<Pt>> { new List<Pt> { sorted[0] } };
+            foreach (var s in sorted.Skip(1)) { if (s.Z - groups[^1][^1].Z <= tolMm) groups[^1].Add(s); else groups.Add(new List<Pt> { s }); }
+            var gOf = new Dictionary<Pt, int>();
+            for (int g = 0; g < groups.Count; g++) foreach (var s in groups[g]) gOf[s] = g;
+            GeoMath.BoundingBox(ring, out var mn, out var mx);
+            int nx = Math.Max(1, (int)Math.Ceiling((mx.X - mn.X) / cellMm)), ny = Math.Max(1, (int)Math.Ceiling((mx.Y - mn.Y) / cellMm));
+            if ((long)nx * ny > 4_000_000) { cellMm *= Math.Sqrt((double)nx * ny / 4_000_000); nx = (int)Math.Ceiling((mx.X - mn.X) / cellMm); ny = (int)Math.Ceiling((mx.Y - mn.Y) / cellMm); }
+            var cell = new int[nx, ny];
+            for (int i = 0; i < nx; i++)
+                for (int j = 0; j < ny; j++)
+                {
+                    var c = new Pt(mn.X + (i + 0.5) * cellMm, mn.Y + (j + 0.5) * cellMm);
+                    if (!GeoMath.PointInPolygon(c, ring)) { cell[i, j] = -1; continue; }
+                    Pt best = spots[0]; double bd = double.MaxValue;
+                    foreach (var s in spots) { double d = (s.X - c.X) * (s.X - c.X) + (s.Y - c.Y) * (s.Y - c.Y); if (d < bd) { bd = d; best = s; } }
+                    cell[i, j] = gOf[best];
+                }
+            for (int g = 0; g < groups.Count; g++)
+            {
+                // runs along x per row, then runs stacked where rows repeat
+                var open = new Dictionary<(int, int), int>(); // (i0, i1) -> start row
+                var rects = new List<(double, double, double, double)>();
+                void Close((int i0, int i1) k, int j0, int j1) => rects.Add((mn.X + k.i0 * cellMm, mn.Y + j0 * cellMm, mn.X + (k.i1 + 1) * cellMm, mn.Y + (j1 + 1) * cellMm));
+                for (int j = 0; j <= ny; j++)
+                {
+                    var runs = new HashSet<(int, int)>();
+                    if (j < ny)
+                        for (int i = 0; i < nx; i++)
+                        {
+                            if (cell[i, j] != g) continue;
+                            int s = i; while (i + 1 < nx && cell[i + 1, j] == g) i++;
+                            runs.Add((s, i));
+                        }
+                    foreach (var k in open.Keys.ToList()) if (!runs.Contains(k)) { Close(k, open[k], j - 1); open.Remove(k); }
+                    foreach (var r in runs) if (!open.ContainsKey(r)) open[r] = j;
+                }
+                if (rects.Count > 0) result.Add((groups[g].Average(s => s.Z), rects));
+            }
+            return result;
+        }
+
         // ------------------------------------------------------------------ stairs
 
         /// <summary>

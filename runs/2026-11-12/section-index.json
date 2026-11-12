@@ -1,0 +1,54 @@
+{
+  "when": "2026-11-12 12:47",
+  "plan": "I:\\Projects\\Work 2025\\2574 7 Swallow Place \u0026 251-259 Regent Street\\05 Info Received\\12 Surveys\\001-Survey Plans and Areas-20251021\\Plowman Craven Survey Drawings\\000002-PCL-M01-099-M2-G-01000-P02-S3.dwg",
+  "sections": [
+    {
+      "name": "Section-A",
+      "letter": "A",
+      "path": "I:\\Projects\\Work 2025\\2574 7 Swallow Place \u0026 251-259 Regent Street\\05 Info Received\\12 Surveys\\001-Survey Plans and Areas-20251021\\Plowman Craven Survey Drawings\\000002-PCL-ZZZ-ZZZ-M2-G-03000-P03-S3.dwg",
+      "sheet_x_range": [
+        2350.5,
+        26590.8
+      ],
+      "sheet_y_range": [
+        22611.2,
+        53770
+      ],
+      "cut": [
+        -6387.8,
+        -4204.2,
+        20480.2,
+        -4181.3
+      ],
+      "dir": 1,
+      "offset": 1263.3,
+      "matched": 10,
+      "of": 15,
+      "heights": "39 level marks agree the sheet is drawn 1:1 (offset -1 mm); worst off by 4.7 mm; 4 marks paired with the wrong line were left out."
+    },
+    {
+      "name": "Section-B",
+      "letter": "B",
+      "path": "I:\\Projects\\Work 2025\\2574 7 Swallow Place \u0026 251-259 Regent Street\\05 Info Received\\12 Surveys\\001-Survey Plans and Areas-20251021\\Plowman Craven Survey Drawings\\000002-PCL-ZZZ-ZZZ-M2-G-03000-P03-S3.dwg",
+      "sheet_x_range": [
+        59187.8,
+        113367.9
+      ],
+      "sheet_y_range": [
+        22420,
+        54486.2
+      ],
+      "cut": [
+        8773.3,
+        26313.2,
+        8821.6,
+        -30288.4
+      ],
+      "dir": 1,
+      "offset": 57773.2,
+      "matched": 14,
+      "of": 49,
+      "heights": "No level marks with their lines in that part of the sheet: assumed drawn 1:1 to datum."
+    }
+  ]
+}

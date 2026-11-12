@@ -91,10 +91,14 @@ namespace BarrGazetas.RevitMcp.Survey
             {
                 double x0 = along.SheetX(m.U - m.W / 2) / heights.A, x1 = along.SheetX(m.U + m.W / 2) / heights.A;
                 double wantLo = m.LevelZ + (m.Sill ?? 600), wantHi = m.LevelZ + (m.Head ?? (m.Sill ?? 600) + 1800);
+                // only openings on the insert's own storey: from its level to the next (a window must not take the one
+                // drawn above or below it on the elevation, however wrong its own sill is)
+                double storeyTop = storeys.Where(s => s.z > m.LevelZ + 500).Select(s => s.z).DefaultIfEmpty(m.LevelZ + 6000).Min();
                 ElevOpening op = null; double bestScore = double.MinValue;
                 foreach (var o in Openings(windowLines, x0, x1, revealLines))
                 {
                     double zb = modelZ(o.Bottom), zt = modelZ(o.Top);
+                    if (zb < m.LevelZ - 150 || zt > storeyTop + 400) continue;
                     double overlap = Math.Min(zt, wantHi) - Math.Max(zb, wantLo);
                     double score = overlap > 0 ? overlap : -Math.Abs((zb + zt) / 2 - (wantLo + wantHi) / 2);
                     if (score > bestScore) { bestScore = score; op = o; }

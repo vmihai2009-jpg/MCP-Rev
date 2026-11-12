@@ -1,0 +1,120 @@
+﻿{
+    "note":  "elevation_index, checked by hand 2026-11-12: all drawn as seen from outside (along_direction 1, confirmed on Elevation 3); Elevation 4 left out (the canted north-east corner spans several facade runs).",
+    "when":  "2026-11-12 10:28",
+    "elevations":  [
+                       {
+                           "name":  "Elevation 7",
+                           "facade":  "F64",
+                           "path":  "I:\\Projects\\Work 2025\\2574 7 Swallow Place \u0026 251-259 Regent Street\\05 Info Received\\12 Surveys\\001-Survey Plans and Areas-20251021\\Plowman Craven Survey Drawings\\000002-PCL-M02-ZZZ-M2-G-02000-P03-S3.dwg",
+                           "sheet_x_range":  [
+                                                 187464,
+                                                 193769
+                                             ],
+                           "sheet_y_range":  [
+                                                 19109,
+                                                 60313
+                                             ],
+                           "along_direction":  1,
+                           "matched":  19,
+                           "elevationJambs":  33,
+                           "modelJambs":  28,
+                           "ambiguous":  true,
+                           "share":  0.58
+                       },
+                       {
+                           "name":  "Elevation 6",
+                           "facade":  "F84",
+                           "path":  "I:\\Projects\\Work 2025\\2574 7 Swallow Place \u0026 251-259 Regent Street\\05 Info Received\\12 Surveys\\001-Survey Plans and Areas-20251021\\Plowman Craven Survey Drawings\\000002-PCL-M02-ZZZ-M2-G-02000-P03-S3.dwg",
+                           "sheet_x_range":  [
+                                                 157626,
+                                                 174117
+                                             ],
+                           "sheet_y_range":  [
+                                                 20010,
+                                                 61612
+                                             ],
+                           "along_direction":  1,
+                           "matched":  37,
+                           "elevationJambs":  65,
+                           "modelJambs":  70,
+                           "ambiguous":  false,
+                           "share":  0.53
+                       },
+                       {
+                           "name":  "Elevation 5",
+                           "facade":  "F93",
+                           "path":  "I:\\Projects\\Work 2025\\2574 7 Swallow Place \u0026 251-259 Regent Street\\05 Info Received\\12 Surveys\\001-Survey Plans and Areas-20251021\\Plowman Craven Survey Drawings\\000002-PCL-M02-ZZZ-M2-G-02000-P03-S3.dwg",
+                           "sheet_x_range":  [
+                                                 136050,
+                                                 149222
+                                             ],
+                           "sheet_y_range":  [
+                                                 19412,
+                                                 57772
+                                             ],
+                           "along_direction":  1,
+                           "matched":  16,
+                           "elevationJambs":  32,
+                           "modelJambs":  40,
+                           "ambiguous":  false,
+                           "share":  0.4
+                       },
+                       {
+                           "name":  "Elevation 1",
+                           "facade":  "F53",
+                           "path":  "I:\\Projects\\Work 2025\\2574 7 Swallow Place \u0026 251-259 Regent Street\\05 Info Received\\12 Surveys\\001-Survey Plans and Areas-20251021\\Plowman Craven Survey Drawings\\000002-PCL-M02-ZZZ-M2-G-02000-P03-S3.dwg",
+                           "sheet_x_range":  [
+                                                 40937,
+                                                 52716
+                                             ],
+                           "sheet_y_range":  [
+                                                 19418,
+                                                 57780
+                                             ],
+                           "along_direction":  1,
+                           "matched":  19,
+                           "elevationJambs":  26,
+                           "modelJambs":  48,
+                           "ambiguous":  false,
+                           "share":  0.4
+                       },
+                       {
+                           "name":  "Elevation 3",
+                           "facade":  "F29",
+                           "path":  "I:\\Projects\\Work 2025\\2574 7 Swallow Place \u0026 251-259 Regent Street\\05 Info Received\\12 Surveys\\001-Survey Plans and Areas-20251021\\Plowman Craven Survey Drawings\\000002-PCL-M02-ZZZ-M2-G-02000-P03-S3.dwg",
+                           "sheet_x_range":  [
+                                                 65353,
+                                                 102179
+                                             ],
+                           "sheet_y_range":  [
+                                                 19388,
+                                                 63288
+                                             ],
+                           "along_direction":  1,
+                           "matched":  49,
+                           "elevationJambs":  112,
+                           "modelJambs":  138,
+                           "ambiguous":  false,
+                           "share":  0.36
+                       },
+                       {
+                           "name":  "Elevation 8",
+                           "facade":  "F78",
+                           "path":  "I:\\Projects\\Work 2025\\2574 7 Swallow Place \u0026 251-259 Regent Street\\05 Info Received\\12 Surveys\\001-Survey Plans and Areas-20251021\\Plowman Craven Survey Drawings\\000002-PCL-M02-ZZZ-M2-G-02000-P03-S3.dwg",
+                           "sheet_x_range":  [
+                                                 203887,
+                                                 231138
+                                             ],
+                           "sheet_y_range":  [
+                                                 19668,
+                                                 62053
+                                             ],
+                           "along_direction":  1,
+                           "matched":  43,
+                           "elevationJambs":  121,
+                           "modelJambs":  136,
+                           "ambiguous":  false,
+                           "share":  0.32
+                       }
+                   ]
+}

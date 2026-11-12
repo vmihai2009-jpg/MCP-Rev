@@ -1,0 +1,3906 @@
+{
+  "model": "testmcp",
+  "when": "2026-11-12 10:28",
+  "note": "line = the outer face, left to right as seen from outside (model mm); bng = the same ends in British National Grid, metres",
+  "facades": [
+    {
+      "id": "F1",
+      "name": "north",
+      "line": [
+        12857,
+        12124,
+        9459,
+        14392
+      ],
+      "bng": [
+        [
+          529008.896,
+          181204.641
+        ],
+        [
+          529005.084,
+          181206.112
+        ]
+      ],
+      "outwardBearingDeg": 21.1,
+      "lengthMm": 4085,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326481
+      ],
+      "main": false
+    },
+    {
+      "id": "F2",
+      "name": "north",
+      "line": [
+        15616,
+        12774,
+        13505,
+        14153
+      ],
+      "bng": [
+        [
+          529011.446,
+          181205.879
+        ],
+        [
+          529009.085,
+          181206.763
+        ]
+      ],
+      "outwardBearingDeg": 20.5,
+      "lengthMm": 2521,
+      "baseMm": 5890,
+      "topMm": 17480,
+      "baseAodM": 32.36,
+      "topAodM": 43.95,
+      "levels": [
+        "First Floor",
+        "Third Floor"
+      ],
+      "windows": 0,
+      "walls": 2,
+      "wallIds": [
+        318983,
+        321556
+      ],
+      "main": false
+    },
+    {
+      "id": "F3",
+      "name": "north-east",
+      "line": [
+        12655,
+        14023,
+        11446,
+        14933
+      ],
+      "bng": [
+        [
+          529008.284,
+          181206.45
+        ],
+        [
+          529006.905,
+          181207.074
+        ]
+      ],
+      "outwardBearingDeg": 24.3,
+      "lengthMm": 1514,
+      "baseMm": 20830,
+      "topMm": 23740,
+      "baseAodM": 47.3,
+      "topAodM": 50.21,
+      "levels": [
+        "Fifth Floor"
+      ],
+      "windows": 1,
+      "walls": 1,
+      "wallIds": [
+        325456
+      ],
+      "main": false
+    },
+    {
+      "id": "F4",
+      "name": "north-east",
+      "line": [
+        13928,
+        14252,
+        11182,
+        16296
+      ],
+      "bng": [
+        [
+          529009.476,
+          181206.952
+        ],
+        [
+          529006.35,
+          181208.346
+        ]
+      ],
+      "outwardBearingDeg": 24,
+      "lengthMm": 3423,
+      "baseMm": 0,
+      "topMm": 5890,
+      "baseAodM": 26.47,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor"
+      ],
+      "windows": 3,
+      "walls": 3,
+      "wallIds": [
+        317278,
+        317286,
+        317277
+      ],
+      "main": false
+    },
+    {
+      "id": "F5",
+      "name": "north-east",
+      "line": [
+        4251,
+        12643,
+        2489,
+        14391
+      ],
+      "bng": [
+        [
+          529000.384,
+          181203.266
+        ],
+        [
+          528998.283,
+          181204.587
+        ]
+      ],
+      "outwardBearingDeg": 32.1,
+      "lengthMm": 2482,
+      "baseMm": 5890,
+      "topMm": 10310,
+      "baseAodM": 32.36,
+      "topAodM": 36.78,
+      "levels": [
+        "First Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        319067
+      ],
+      "main": false
+    },
+    {
+      "id": "F6",
+      "name": "north-east",
+      "line": [
+        7170,
+        18236,
+        5883,
+        19615
+      ],
+      "bng": [
+        [
+          529002.011,
+          181209.362
+        ],
+        [
+          529000.453,
+          181210.426
+        ]
+      ],
+      "outwardBearingDeg": 34.3,
+      "lengthMm": 1886,
+      "baseMm": 5890,
+      "topMm": 10310,
+      "baseAodM": 32.36,
+      "topAodM": 36.78,
+      "levels": [
+        "First Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        319078
+      ],
+      "main": false
+    },
+    {
+      "id": "F7",
+      "name": "north-east",
+      "line": [
+        9105,
+        17058,
+        7949,
+        18323
+      ],
+      "bng": [
+        [
+          529004.156,
+          181208.635
+        ],
+        [
+          529002.752,
+          181209.617
+        ]
+      ],
+      "outwardBearingDeg": 35,
+      "lengthMm": 1714,
+      "baseMm": 20830,
+      "topMm": 23740,
+      "baseAodM": 47.3,
+      "topAodM": 50.21,
+      "levels": [
+        "Fifth Floor"
+      ],
+      "windows": 1,
+      "walls": 1,
+      "wallIds": [
+        325454
+      ],
+      "main": false
+    },
+    {
+      "id": "F8",
+      "name": "north-east",
+      "line": [
+        10595,
+        17024,
+        8148,
+        19672
+      ],
+      "bng": [
+        [
+          529005.617,
+          181208.928
+        ],
+        [
+          529002.651,
+          181210.977
+        ]
+      ],
+      "outwardBearingDeg": 34.6,
+      "lengthMm": 3605,
+      "baseMm": 0,
+      "topMm": 5890,
+      "baseAodM": 26.47,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor"
+      ],
+      "windows": 3,
+      "walls": 3,
+      "wallIds": [
+        317279,
+        317287,
+        317280
+      ],
+      "main": false
+    },
+    {
+      "id": "F9",
+      "name": "north-east",
+      "line": [
+        9469,
+        14633,
+        5863,
+        18575
+      ],
+      "bng": [
+        [
+          529005.041,
+          181206.349
+        ],
+        [
+          529000.661,
+          181209.408
+        ]
+      ],
+      "outwardBearingDeg": 34.9,
+      "lengthMm": 5342,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326478
+      ],
+      "main": false
+    },
+    {
+      "id": "F10",
+      "name": "north-east",
+      "line": [
+        10334,
+        14721,
+        9049,
+        16098
+      ],
+      "bng": [
+        [
+          529005.867,
+          181206.624
+        ],
+        [
+          529004.311,
+          181207.686
+        ]
+      ],
+      "outwardBearingDeg": 34.3,
+      "lengthMm": 1884,
+      "baseMm": 5890,
+      "topMm": 10310,
+      "baseAodM": 32.36,
+      "topAodM": 36.78,
+      "levels": [
+        "First Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        319079
+      ],
+      "main": false
+    },
+    {
+      "id": "F11",
+      "name": "north-east",
+      "line": [
+        17761,
+        15503,
+        6496,
+        27372
+      ],
+      "bng": [
+        [
+          529012.943,
+          181209.01
+        ],
+        [
+          528999.356,
+          181218.13
+        ]
+      ],
+      "outwardBearingDeg": 33.9,
+      "lengthMm": 16364,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315563
+      ],
+      "main": false
+    },
+    {
+      "id": "F12",
+      "name": "north-east",
+      "line": [
+        4690,
+        13036,
+        2946,
+        15174
+      ],
+      "bng": [
+        [
+          529000.727,
+          181203.746
+        ],
+        [
+          528998.558,
+          181205.451
+        ]
+      ],
+      "outwardBearingDeg": 38.2,
+      "lengthMm": 2759,
+      "baseMm": 10310,
+      "topMm": 14130,
+      "baseAodM": 36.78,
+      "topAodM": 40.6,
+      "levels": [
+        "Second Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        320056
+      ],
+      "main": false
+    },
+    {
+      "id": "F13",
+      "name": "north-east",
+      "line": [
+        6217,
+        20742,
+        5408,
+        22030
+      ],
+      "bng": [
+        [
+          529000.532,
+          181211.599
+        ],
+        [
+          528999.462,
+          181212.679
+        ]
+      ],
+      "outwardBearingDeg": 45.2,
+      "lengthMm": 1521,
+      "baseMm": 20830,
+      "topMm": 23740,
+      "baseAodM": 47.3,
+      "topAodM": 50.21,
+      "levels": [
+        "Fifth Floor"
+      ],
+      "windows": 1,
+      "walls": 1,
+      "wallIds": [
+        325581
+      ],
+      "main": false
+    },
+    {
+      "id": "F14",
+      "name": "north-east",
+      "line": [
+        7295,
+        20195,
+        4563,
+        24897
+      ],
+      "bng": [
+        [
+          529001.704,
+          181211.301
+        ],
+        [
+          528998.011,
+          181215.292
+        ]
+      ],
+      "outwardBearingDeg": 47.2,
+      "lengthMm": 5437,
+      "baseMm": 0,
+      "topMm": 17480,
+      "baseAodM": 26.47,
+      "topAodM": 43.95,
+      "levels": [
+        "Ground Floor",
+        "First Floor",
+        "Second Floor",
+        "Third Floor"
+      ],
+      "windows": 4,
+      "walls": 7,
+      "wallIds": [
+        317281,
+        317285,
+        317282,
+        318984,
+        320005,
+        321544,
+        321582
+      ],
+      "main": true
+    },
+    {
+      "id": "F15",
+      "name": "north-east",
+      "line": [
+        6726,
+        19034,
+        3816,
+        23853
+      ],
+      "bng": [
+        [
+          529001.402,
+          181210.044
+        ],
+        [
+          528997.51,
+          181214.111
+        ]
+      ],
+      "outwardBearingDeg": 46.3,
+      "lengthMm": 5630,
+      "baseMm": 20830,
+      "topMm": 23740,
+      "baseAodM": 47.3,
+      "topAodM": 50.21,
+      "levels": [
+        "Fifth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        325561
+      ],
+      "main": false
+    },
+    {
+      "id": "F16",
+      "name": "north-east",
+      "line": [
+        5869,
+        18569,
+        3388,
+        22453
+      ],
+      "bng": [
+        [
+          529000.668,
+          181209.402
+        ],
+        [
+          528997.398,
+          181212.651
+        ]
+      ],
+      "outwardBearingDeg": 44.8,
+      "lengthMm": 4609,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326479
+      ],
+      "main": false
+    },
+    {
+      "id": "F17",
+      "name": "east",
+      "line": [
+        3746,
+        22610,
+        3746,
+        24394
+      ],
+      "bng": [
+        [
+          528997.714,
+          181212.882
+        ],
+        [
+          528997.324,
+          181214.623
+        ]
+      ],
+      "outwardBearingDeg": 77.4,
+      "lengthMm": 1784,
+      "baseMm": 0,
+      "topMm": 5890,
+      "baseAodM": 26.47,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        317223
+      ],
+      "main": false
+    },
+    {
+      "id": "F18",
+      "name": "east",
+      "line": [
+        928,
+        19331,
+        934,
+        24164
+      ],
+      "bng": [
+        [
+          528995.68,
+          181209.067
+        ],
+        [
+          528994.629,
+          181213.784
+        ]
+      ],
+      "outwardBearingDeg": 77.4,
+      "lengthMm": 4833,
+      "baseMm": 17480,
+      "topMm": 20830,
+      "baseAodM": 43.95,
+      "topAodM": 47.3,
+      "levels": [
+        "Fourth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        323560
+      ],
+      "main": false
+    },
+    {
+      "id": "F19",
+      "name": "east",
+      "line": [
+        4230,
+        17058,
+        4234,
+        24375
+      ],
+      "bng": [
+        [
+          528999.399,
+          181207.57
+        ],
+        [
+          528997.803,
+          181214.711
+        ]
+      ],
+      "outwardBearingDeg": 77.4,
+      "lengthMm": 7317,
+      "baseMm": 14130,
+      "topMm": 17480,
+      "baseAodM": 40.6,
+      "topAodM": 43.95,
+      "levels": [
+        "Third Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        321648
+      ],
+      "main": false
+    },
+    {
+      "id": "F20",
+      "name": "east",
+      "line": [
+        9808,
+        12636,
+        9811,
+        15394
+      ],
+      "bng": [
+        [
+          529005.808,
+          181204.475
+        ],
+        [
+          529005.209,
+          181207.166
+        ]
+      ],
+      "outwardBearingDeg": 77.4,
+      "lengthMm": 2757,
+      "baseMm": 17480,
+      "topMm": 20830,
+      "baseAodM": 43.95,
+      "topAodM": 47.3,
+      "levels": [
+        "Fourth Floor"
+      ],
+      "windows": 1,
+      "walls": 3,
+      "wallIds": [
+        323533,
+        323592,
+        323558
+      ],
+      "main": false
+    },
+    {
+      "id": "F21",
+      "name": "east",
+      "line": [
+        768,
+        10580,
+        774,
+        16977
+      ],
+      "bng": [
+        [
+          528997.437,
+          181200.492
+        ],
+        [
+          528996.044,
+          181206.735
+        ]
+      ],
+      "outwardBearingDeg": 77.4,
+      "lengthMm": 6397,
+      "baseMm": 17480,
+      "topMm": 20830,
+      "baseAodM": 43.95,
+      "topAodM": 47.3,
+      "levels": [
+        "Fourth Floor"
+      ],
+      "windows": 1,
+      "walls": 3,
+      "wallIds": [
+        323576,
+        323643,
+        323615
+      ],
+      "main": false
+    },
+    {
+      "id": "F22",
+      "name": "east",
+      "line": [
+        19035,
+        9734,
+        19016,
+        11951
+      ],
+      "bng": [
+        [
+          529015.447,
+          181203.659
+        ],
+        [
+          529014.944,
+          181205.818
+        ]
+      ],
+      "outwardBearingDeg": 76.9,
+      "lengthMm": 2217,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315642
+      ],
+      "main": false
+    },
+    {
+      "id": "F23",
+      "name": "east",
+      "line": [
+        16143,
+        5787,
+        16152,
+        14242
+      ],
+      "bng": [
+        [
+          529013.487,
+          181199.176
+        ],
+        [
+          529011.648,
+          181207.429
+        ]
+      ],
+      "outwardBearingDeg": 77.4,
+      "lengthMm": 8455,
+      "baseMm": 17480,
+      "topMm": 18500,
+      "baseAodM": 43.95,
+      "topAodM": 44.97,
+      "levels": [
+        "Fourth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        323572
+      ],
+      "main": false
+    },
+    {
+      "id": "F24",
+      "name": "east",
+      "line": [
+        14072,
+        3261,
+        14071,
+        6578
+      ],
+      "bng": [
+        [
+          529012.019,
+          181196.258
+        ],
+        [
+          529011.292,
+          181199.494
+        ]
+      ],
+      "outwardBearingDeg": 77.3,
+      "lengthMm": 3317,
+      "baseMm": 10310,
+      "topMm": 14130,
+      "baseAodM": 36.78,
+      "topAodM": 40.6,
+      "levels": [
+        "Second Floor"
+      ],
+      "windows": 0,
+      "walls": 2,
+      "wallIds": [
+        349454,
+        349455
+      ],
+      "main": false
+    },
+    {
+      "id": "F25",
+      "name": "east",
+      "line": [
+        19213,
+        -7035,
+        19123,
+        3751
+      ],
+      "bng": [
+        [
+          529019.286,
+          181187.335
+        ],
+        [
+          529016.84,
+          181197.84
+        ]
+      ],
+      "outwardBearingDeg": 76.9,
+      "lengthMm": 10786,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315566
+      ],
+      "main": false
+    },
+    {
+      "id": "F26",
+      "name": "east",
+      "line": [
+        16399,
+        -9674,
+        16382,
+        -7638
+      ],
+      "bng": [
+        [
+          529017.117,
+          181184.144
+        ],
+        [
+          529016.656,
+          181186.127
+        ]
+      ],
+      "outwardBearingDeg": 76.9,
+      "lengthMm": 2036,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315635
+      ],
+      "main": false
+    },
+    {
+      "id": "F27",
+      "name": "east",
+      "line": [
+        7786,
+        -13304,
+        7786,
+        -11525
+      ],
+      "bng": [
+        [
+          529009.506,
+          181178.719
+        ],
+        [
+          529009.117,
+          181180.456
+        ]
+      ],
+      "outwardBearingDeg": 77.4,
+      "lengthMm": 1779,
+      "baseMm": 27780,
+      "topMm": 30780,
+      "baseAodM": 54.25,
+      "topAodM": 57.25,
+      "levels": [
+        "Seventh Floor"
+      ],
+      "windows": 1,
+      "walls": 1,
+      "wallIds": [
+        327502
+      ],
+      "main": false
+    },
+    {
+      "id": "F28",
+      "name": "east",
+      "line": [
+        19207,
+        -21300,
+        19110,
+        -9652
+      ],
+      "bng": [
+        [
+          529022.398,
+          181173.413
+        ],
+        [
+          529019.757,
+          181184.759
+        ]
+      ],
+      "outwardBearingDeg": 76.9,
+      "lengthMm": 11649,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 2,
+      "wallIds": [
+        315579,
+        315574
+      ],
+      "main": false
+    },
+    {
+      "id": "F29",
+      "name": "east",
+      "line": [
+        15198,
+        -24465,
+        15185,
+        13931
+      ],
+      "bng": [
+        [
+          529019.179,
+          181169.449
+        ],
+        [
+          529010.773,
+          181206.913
+        ]
+      ],
+      "outwardBearingDeg": 77.4,
+      "lengthMm": 38396,
+      "baseMm": 0,
+      "topMm": 23740,
+      "baseAodM": 26.47,
+      "topAodM": 50.21,
+      "levels": [
+        "Ground Floor",
+        "First Floor",
+        "Second Floor",
+        "Third Floor",
+        "Fourth Floor",
+        "Fifth Floor"
+      ],
+      "windows": 57,
+      "walls": 41,
+      "wallIds": [
+        317131,
+        317260,
+        317125,
+        317165,
+        319054,
+        318946,
+        319053,
+        319066,
+        318956,
+        318966,
+        319014,
+        318951,
+        319018,
+        319013,
+        320011,
+        320018,
+        320050,
+        320009,
+        320059,
+        320002,
+        320010,
+        320012,
+        321569,
+        321527,
+        321532,
+        321524,
+        321534,
+        321531,
+        321533,
+        321601,
+        321525,
+        321602,
+        321603,
+        323600,
+        323513,
+        323493,
+        323505,
+        323509,
+        325559,
+        325508,
+        325414
+      ],
+      "main": true
+    },
+    {
+      "id": "F30",
+      "name": "east",
+      "line": [
+        17214,
+        -26057,
+        17175,
+        -21383
+      ],
+      "bng": [
+        [
+          529021.493,
+          181168.336
+        ],
+        [
+          529020.434,
+          181172.888
+        ]
+      ],
+      "outwardBearingDeg": 76.9,
+      "lengthMm": 4674,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 3,
+      "wallIds": [
+        315634,
+        315433,
+        315435
+      ],
+      "main": false
+    },
+    {
+      "id": "F31",
+      "name": "east",
+      "line": [
+        16435,
+        -28845,
+        16399,
+        -14070
+      ],
+      "bng": [
+        [
+          529021.342,
+          181165.445
+        ],
+        [
+          529018.078,
+          181179.855
+        ]
+      ],
+      "outwardBearingDeg": 77.2,
+      "lengthMm": 14776,
+      "baseMm": -3610,
+      "topMm": 18480,
+      "baseAodM": 22.86,
+      "topAodM": 44.95,
+      "levels": [
+        "Basement",
+        "Fourth Floor"
+      ],
+      "windows": 0,
+      "walls": 2,
+      "wallIds": [
+        315578,
+        323570
+      ],
+      "main": false
+    },
+    {
+      "id": "F32",
+      "name": "east",
+      "line": [
+        13321,
+        8381,
+        13330,
+        11711
+      ],
+      "bng": [
+        [
+          529010.167,
+          181201.09
+        ],
+        [
+          529009.447,
+          181204.342
+        ]
+      ],
+      "outwardBearingDeg": 77.5,
+      "lengthMm": 3330,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326486
+      ],
+      "main": false
+    },
+    {
+      "id": "F33",
+      "name": "east",
+      "line": [
+        299,
+        7973,
+        309,
+        10827
+      ],
+      "bng": [
+        [
+          528997.549,
+          181197.845
+        ],
+        [
+          528996.935,
+          181200.633
+        ]
+      ],
+      "outwardBearingDeg": 77.6,
+      "lengthMm": 2855,
+      "baseMm": 27780,
+      "topMm": 30780,
+      "baseAodM": 54.25,
+      "topAodM": 57.25,
+      "levels": [
+        "Seventh Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        327492
+      ],
+      "main": false
+    },
+    {
+      "id": "F34",
+      "name": "east",
+      "line": [
+        3803,
+        -10264,
+        3819,
+        -6948
+      ],
+      "bng": [
+        [
+          529004.954,
+          181180.816
+        ],
+        [
+          529004.245,
+          181184.054
+        ]
+      ],
+      "outwardBearingDeg": 77.6,
+      "lengthMm": 3316,
+      "baseMm": 3030,
+      "topMm": 5890,
+      "baseAodM": 29.5,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor Mezzanine"
+      ],
+      "windows": 0,
+      "walls": 2,
+      "wallIds": [
+        318388,
+        318363
+      ],
+      "main": false
+    },
+    {
+      "id": "F35",
+      "name": "east",
+      "line": [
+        4603,
+        -16986,
+        4614,
+        -14683
+      ],
+      "bng": [
+        [
+          529007.204,
+          181174.431
+        ],
+        [
+          529006.711,
+          181176.681
+        ]
+      ],
+      "outwardBearingDeg": 77.6,
+      "lengthMm": 2304,
+      "baseMm": 3030,
+      "topMm": 5890,
+      "baseAodM": 29.5,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor Mezzanine"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        318362
+      ],
+      "main": false
+    },
+    {
+      "id": "F36",
+      "name": "east",
+      "line": [
+        5776,
+        -21502,
+        5788,
+        -18903
+      ],
+      "bng": [
+        [
+          529009.336,
+          181170.28
+        ],
+        [
+          529008.78,
+          181172.82
+        ]
+      ],
+      "outwardBearingDeg": 77.6,
+      "lengthMm": 2599,
+      "baseMm": 3030,
+      "topMm": 5890,
+      "baseAodM": 29.5,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor Mezzanine"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        318365
+      ],
+      "main": false
+    },
+    {
+      "id": "F37",
+      "name": "east",
+      "line": [
+        12680,
+        -23259,
+        12754,
+        6574
+      ],
+      "bng": [
+        [
+          529016.458,
+          181170.075
+        ],
+        [
+          529010.009,
+          181199.203
+        ]
+      ],
+      "outwardBearingDeg": 77.5,
+      "lengthMm": 29833,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 7,
+      "wallIds": [
+        326485,
+        326520,
+        326527,
+        326525,
+        326461,
+        326474,
+        326476
+      ],
+      "main": false
+    },
+    {
+      "id": "F38",
+      "name": "east",
+      "line": [
+        4055,
+        -26142,
+        4094,
+        -18023
+      ],
+      "bng": [
+        [
+          529008.672,
+          181165.377
+        ],
+        [
+          529006.935,
+          181173.308
+        ]
+      ],
+      "outwardBearingDeg": 77.6,
+      "lengthMm": 8119,
+      "baseMm": 3030,
+      "topMm": 5890,
+      "baseAodM": 29.5,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor Mezzanine"
+      ],
+      "windows": 0,
+      "walls": 3,
+      "wallIds": [
+        318385,
+        318369,
+        318377
+      ],
+      "main": false
+    },
+    {
+      "id": "F39",
+      "name": "east",
+      "line": [
+        12840,
+        6561,
+        13320,
+        8368
+      ],
+      "bng": [
+        [
+          529010.095,
+          181199.209
+        ],
+        [
+          529010.168,
+          181201.077
+        ]
+      ],
+      "outwardBearingDeg": 92.2,
+      "lengthMm": 1870,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326511
+      ],
+      "main": false
+    },
+    {
+      "id": "F40",
+      "name": "east",
+      "line": [
+        14918,
+        -22397,
+        15399,
+        -20945
+      ],
+      "bng": [
+        [
+          529018.453,
+          181171.405
+        ],
+        [
+          529018.605,
+          181172.927
+        ]
+      ],
+      "outwardBearingDeg": 95.7,
+      "lengthMm": 1530,
+      "baseMm": 10310,
+      "topMm": 14130,
+      "baseAodM": 36.78,
+      "topAodM": 40.6,
+      "levels": [
+        "Second Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        320019
+      ],
+      "main": false
+    },
+    {
+      "id": "F41",
+      "name": "east",
+      "line": [
+        14245,
+        6904,
+        15313,
+        9198
+      ],
+      "bng": [
+        [
+          529011.392,
+          181199.851
+        ],
+        [
+          529011.932,
+          181202.323
+        ]
+      ],
+      "outwardBearingDeg": 102.3,
+      "lengthMm": 2530,
+      "baseMm": 14130,
+      "topMm": 17480,
+      "baseAodM": 40.6,
+      "topAodM": 43.95,
+      "levels": [
+        "Third Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        321609
+      ],
+      "main": false
+    },
+    {
+      "id": "F42",
+      "name": "east",
+      "line": [
+        4111,
+        -18340,
+        5093,
+        -15893
+      ],
+      "bng": [
+        [
+          529007.021,
+          181173.003
+        ],
+        [
+          529007.444,
+          181175.605
+        ]
+      ],
+      "outwardBearingDeg": 99.2,
+      "lengthMm": 2637,
+      "baseMm": 3030,
+      "topMm": 5890,
+      "baseAodM": 29.5,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor Mezzanine"
+      ],
+      "windows": 1,
+      "walls": 1,
+      "wallIds": [
+        318361
+      ],
+      "main": false
+    },
+    {
+      "id": "F43",
+      "name": "east",
+      "line": [
+        15273,
+        14105,
+        16802,
+        16458
+      ],
+      "bng": [
+        [
+          529010.821,
+          181207.103
+        ],
+        [
+          529011.798,
+          181209.732
+        ]
+      ],
+      "outwardBearingDeg": 110.4,
+      "lengthMm": 2805,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315613
+      ],
+      "main": false
+    },
+    {
+      "id": "F44",
+      "name": "south-east",
+      "line": [
+        12553,
+        12774,
+        13564,
+        14162
+      ],
+      "bng": [
+        [
+          529008.457,
+          181205.209
+        ],
+        [
+          529009.141,
+          181206.784
+        ]
+      ],
+      "outwardBearingDeg": 113.5,
+      "lengthMm": 1717,
+      "baseMm": 0,
+      "topMm": 5890,
+      "baseAodM": 26.47,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        317227
+      ],
+      "main": false
+    },
+    {
+      "id": "F45",
+      "name": "south-east",
+      "line": [
+        3584,
+        21075,
+        4879,
+        22266
+      ],
+      "bng": [
+        [
+          528997.891,
+          181211.348
+        ],
+        [
+          528998.894,
+          181212.794
+        ]
+      ],
+      "outwardBearingDeg": 124.8,
+      "lengthMm": 1760,
+      "baseMm": 5890,
+      "topMm": 10310,
+      "baseAodM": 32.36,
+      "topAodM": 36.78,
+      "levels": [
+        "First Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        319083
+      ],
+      "main": false
+    },
+    {
+      "id": "F46",
+      "name": "south-east",
+      "line": [
+        13457,
+        -26849,
+        15376,
+        -25085
+      ],
+      "bng": [
+        [
+          529018.001,
+          181166.742
+        ],
+        [
+          529019.487,
+          181168.883
+        ]
+      ],
+      "outwardBearingDeg": 124.8,
+      "lengthMm": 2606,
+      "baseMm": 5890,
+      "topMm": 6900,
+      "baseAodM": 32.36,
+      "topAodM": 33.37,
+      "levels": [
+        "First Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        319069
+      ],
+      "main": false
+    },
+    {
+      "id": "F47",
+      "name": "south-east",
+      "line": [
+        12988,
+        -26183,
+        14843,
+        -24377
+      ],
+      "bng": [
+        [
+          529017.397,
+          181167.289
+        ],
+        [
+          529018.812,
+          181169.457
+        ]
+      ],
+      "outwardBearingDeg": 123.1,
+      "lengthMm": 2589,
+      "baseMm": 0,
+      "topMm": 17480,
+      "baseAodM": 26.47,
+      "topAodM": 43.95,
+      "levels": [
+        "Ground Floor",
+        "Second Floor",
+        "Third Floor"
+      ],
+      "windows": 3,
+      "walls": 3,
+      "wallIds": [
+        317290,
+        320014,
+        321542
+      ],
+      "main": true
+    },
+    {
+      "id": "F48",
+      "name": "south-east",
+      "line": [
+        13227,
+        -26948,
+        15720,
+        -24474
+      ],
+      "bng": [
+        [
+          529017.798,
+          181166.595
+        ],
+        [
+          529019.69,
+          181169.554
+        ]
+      ],
+      "outwardBearingDeg": 122.6,
+      "lengthMm": 3512,
+      "baseMm": 17480,
+      "topMm": 20830,
+      "baseAodM": 43.95,
+      "topAodM": 47.3,
+      "levels": [
+        "Fourth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        323540
+      ],
+      "main": false
+    },
+    {
+      "id": "F49",
+      "name": "south",
+      "line": [
+        13122,
+        -28924,
+        16678,
+        -28895
+      ],
+      "bng": [
+        [
+          529018.127,
+          181164.643
+        ],
+        [
+          529021.59,
+          181165.45
+        ]
+      ],
+      "outwardBearingDeg": 166.9,
+      "lengthMm": 3556,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315600
+      ],
+      "main": false
+    },
+    {
+      "id": "F50",
+      "name": "south",
+      "line": [
+        5513,
+        -18174,
+        7643,
+        -18176
+      ],
+      "bng": [
+        [
+          529008.352,
+          181173.471
+        ],
+        [
+          529010.432,
+          181173.934
+        ]
+      ],
+      "outwardBearingDeg": 167.4,
+      "lengthMm": 2130,
+      "baseMm": 27780,
+      "topMm": 30780,
+      "baseAodM": 54.25,
+      "topAodM": 57.25,
+      "levels": [
+        "Seventh Floor"
+      ],
+      "windows": 1,
+      "walls": 3,
+      "wallIds": [
+        327471,
+        327509,
+        327488
+      ],
+      "main": false
+    },
+    {
+      "id": "F51",
+      "name": "south",
+      "line": [
+        2463,
+        -27447,
+        11066,
+        -27457
+      ],
+      "bng": [
+        [
+          529007.403,
+          181163.755
+        ],
+        [
+          529015.8,
+          181165.626
+        ]
+      ],
+      "outwardBearingDeg": 167.4,
+      "lengthMm": 8604,
+      "baseMm": 17480,
+      "topMm": 18520,
+      "baseAodM": 43.95,
+      "topAodM": 44.99,
+      "levels": [
+        "Fourth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        323569
+      ],
+      "main": false
+    },
+    {
+      "id": "F52",
+      "name": "south",
+      "line": [
+        1820,
+        -28347,
+        12431,
+        -28258
+      ],
+      "bng": [
+        [
+          529006.972,
+          181162.736
+        ],
+        [
+          529017.307,
+          181165.142
+        ]
+      ],
+      "outwardBearingDeg": 166.9,
+      "lengthMm": 10611,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315567
+      ],
+      "main": false
+    },
+    {
+      "id": "F53",
+      "name": "south",
+      "line": [
+        257,
+        -26565,
+        13423,
+        -26560
+      ],
+      "bng": [
+        [
+          529005.057,
+          181164.134
+        ],
+        [
+          529017.904,
+          181167.017
+        ]
+      ],
+      "outwardBearingDeg": 167.4,
+      "lengthMm": 13167,
+      "baseMm": 0,
+      "topMm": 23740,
+      "baseAodM": 26.47,
+      "topAodM": 50.21,
+      "levels": [
+        "Ground Floor",
+        "Ground Floor Mezzanine",
+        "First Floor",
+        "Second Floor",
+        "Third Floor",
+        "Fourth Floor",
+        "Fifth Floor"
+      ],
+      "windows": 22,
+      "walls": 21,
+      "wallIds": [
+        317134,
+        318352,
+        318353,
+        318351,
+        319020,
+        318944,
+        319019,
+        320025,
+        320015,
+        320153,
+        320007,
+        321537,
+        321546,
+        321529,
+        321541,
+        323504,
+        323519,
+        325521,
+        325426,
+        325434,
+        325520
+      ],
+      "main": true
+    },
+    {
+      "id": "F54",
+      "name": "south",
+      "line": [
+        -2006,
+        -21631,
+        415,
+        -21635
+      ],
+      "bng": [
+        [
+          529001.771,
+          181168.454
+        ],
+        [
+          529004.134,
+          181168.979
+        ]
+      ],
+      "outwardBearingDeg": 167.5,
+      "lengthMm": 2421,
+      "baseMm": 14130,
+      "topMm": 27780,
+      "baseAodM": 40.6,
+      "topAodM": 54.25,
+      "levels": [
+        "Third Floor",
+        "Fifth Floor",
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 3,
+      "wallIds": [
+        321682,
+        325482,
+        326499
+      ],
+      "main": true
+    },
+    {
+      "id": "F55",
+      "name": "south",
+      "line": [
+        -2574,
+        -23636,
+        -784,
+        -23621
+      ],
+      "bng": [
+        [
+          529001.655,
+          181166.373
+        ],
+        [
+          529003.398,
+          181166.778
+        ]
+      ],
+      "outwardBearingDeg": 166.9,
+      "lengthMm": 1790,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315657
+      ],
+      "main": false
+    },
+    {
+      "id": "F56",
+      "name": "south",
+      "line": [
+        -3099,
+        -11209,
+        -1476,
+        -11209
+      ],
+      "bng": [
+        [
+          528998.426,
+          181178.385
+        ],
+        [
+          529000.01,
+          181178.74
+        ]
+      ],
+      "outwardBearingDeg": 167.4,
+      "lengthMm": 1624,
+      "baseMm": 0,
+      "topMm": 5890,
+      "baseAodM": 26.47,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        317238
+      ],
+      "main": false
+    },
+    {
+      "id": "F57",
+      "name": "south",
+      "line": [
+        -6905,
+        7309,
+        -4327,
+        7309
+      ],
+      "bng": [
+        [
+          528990.664,
+          181195.623
+        ],
+        [
+          528993.18,
+          181196.186
+        ]
+      ],
+      "outwardBearingDeg": 167.4,
+      "lengthMm": 2578,
+      "baseMm": 0,
+      "topMm": 5890,
+      "baseAodM": 26.47,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor"
+      ],
+      "windows": 3,
+      "walls": 3,
+      "wallIds": [
+        317275,
+        317291,
+        317274
+      ],
+      "main": false
+    },
+    {
+      "id": "F58",
+      "name": "south",
+      "line": [
+        -11390,
+        21343,
+        -5949,
+        21389
+      ],
+      "bng": [
+        [
+          528983.22,
+          181208.337
+        ],
+        [
+          528988.52,
+          181209.571
+        ]
+      ],
+      "outwardBearingDeg": 166.9,
+      "lengthMm": 5441,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315573
+      ],
+      "main": false
+    },
+    {
+      "id": "F59",
+      "name": "south",
+      "line": [
+        8846,
+        -24241,
+        11962,
+        -24249
+      ],
+      "bng": [
+        [
+          529012.931,
+          181168.279
+        ],
+        [
+          529015.974,
+          181168.952
+        ]
+      ],
+      "outwardBearingDeg": 167.5,
+      "lengthMm": 3116,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 2,
+      "wallIds": [
+        326490,
+        326512
+      ],
+      "main": false
+    },
+    {
+      "id": "F60",
+      "name": "south",
+      "line": [
+        5196,
+        -24835,
+        8301,
+        -24842
+      ],
+      "bng": [
+        [
+          529009.499,
+          181166.902
+        ],
+        [
+          529012.53,
+          181167.573
+        ]
+      ],
+      "outwardBearingDeg": 167.5,
+      "lengthMm": 3105,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326488
+      ],
+      "main": false
+    },
+    {
+      "id": "F61",
+      "name": "south",
+      "line": [
+        1558,
+        -23948,
+        3390,
+        -23952
+      ],
+      "bng": [
+        [
+          529005.755,
+          181166.972
+        ],
+        [
+          529007.543,
+          181167.368
+        ]
+      ],
+      "outwardBearingDeg": 167.5,
+      "lengthMm": 1832,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326513
+      ],
+      "main": false
+    },
+    {
+      "id": "F62",
+      "name": "south",
+      "line": [
+        742,
+        -15381,
+        5508,
+        -15409
+      ],
+      "bng": [
+        [
+          529003.086,
+          181175.153
+        ],
+        [
+          529007.743,
+          181176.168
+        ]
+      ],
+      "outwardBearingDeg": 167.7,
+      "lengthMm": 4766,
+      "baseMm": 27780,
+      "topMm": 30780,
+      "baseAodM": 54.25,
+      "topAodM": 57.25,
+      "levels": [
+        "Seventh Floor"
+      ],
+      "windows": 1,
+      "walls": 3,
+      "wallIds": [
+        327474,
+        327475,
+        327476
+      ],
+      "main": false
+    },
+    {
+      "id": "F63",
+      "name": "south",
+      "line": [
+        -4403,
+        7942,
+        249,
+        7929
+      ],
+      "bng": [
+        [
+          528992.968,
+          181196.787
+        ],
+        [
+          528997.51,
+          181197.792
+        ]
+      ],
+      "outwardBearingDeg": 167.5,
+      "lengthMm": 4652,
+      "baseMm": 23740,
+      "topMm": 30780,
+      "baseAodM": 50.21,
+      "topAodM": 57.25,
+      "levels": [
+        "Sixth Floor",
+        "Seventh Floor"
+      ],
+      "windows": 1,
+      "walls": 2,
+      "wallIds": [
+        326449,
+        327494
+      ],
+      "main": false
+    },
+    {
+      "id": "F64",
+      "name": "south",
+      "line": [
+        -8119,
+        6280,
+        -1496,
+        6220
+      ],
+      "bng": [
+        [
+          528989.705,
+          181194.353
+        ],
+        [
+          528996.18,
+          181195.743
+        ]
+      ],
+      "outwardBearingDeg": 167.9,
+      "lengthMm": 6623,
+      "baseMm": 0,
+      "topMm": 21900,
+      "baseAodM": 26.47,
+      "topAodM": 48.37,
+      "levels": [
+        "Ground Floor",
+        "First Floor",
+        "Second Floor",
+        "Third Floor",
+        "Fourth Floor",
+        "Fifth Floor"
+      ],
+      "windows": 9,
+      "walls": 13,
+      "wallIds": [
+        317154,
+        319021,
+        319041,
+        318988,
+        320029,
+        321567,
+        321548,
+        321555,
+        321568,
+        323484,
+        323482,
+        323485,
+        325518
+      ],
+      "main": true
+    },
+    {
+      "id": "F65",
+      "name": "south",
+      "line": [
+        5817,
+        -17798,
+        7498,
+        -18198
+      ],
+      "bng": [
+        [
+          529008.567,
+          181173.904
+        ],
+        [
+          529010.294,
+          181173.881
+        ]
+      ],
+      "outwardBearingDeg": 180.8,
+      "lengthMm": 1727,
+      "baseMm": 27780,
+      "topMm": 30780,
+      "baseAodM": 54.25,
+      "topAodM": 57.25,
+      "levels": [
+        "Seventh Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        327486
+      ],
+      "main": false
+    },
+    {
+      "id": "F66",
+      "name": "south-west",
+      "line": [
+        -2442,
+        -27440,
+        -1207,
+        -28712
+      ],
+      "bng": [
+        [
+          529002.615,
+          181162.689
+        ],
+        [
+          529004.098,
+          181161.719
+        ]
+      ],
+      "outwardBearingDeg": 213.2,
+      "lengthMm": 1773,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315658
+      ],
+      "main": false
+    },
+    {
+      "id": "F67",
+      "name": "south-west",
+      "line": [
+        -2034,
+        -23690,
+        684,
+        -26522
+      ],
+      "bng": [
+        [
+          529002.194,
+          181166.439
+        ],
+        [
+          529005.465,
+          181164.269
+        ]
+      ],
+      "outwardBearingDeg": 213.6,
+      "lengthMm": 3926,
+      "baseMm": 0,
+      "topMm": 23740,
+      "baseAodM": 26.47,
+      "topAodM": 50.21,
+      "levels": [
+        "Ground Floor",
+        "Ground Floor Mezzanine",
+        "First Floor",
+        "Third Floor",
+        "Fourth Floor",
+        "Fifth Floor"
+      ],
+      "windows": 4,
+      "walls": 7,
+      "wallIds": [
+        317128,
+        318355,
+        318958,
+        318974,
+        321553,
+        323547,
+        325600
+      ],
+      "main": true
+    },
+    {
+      "id": "F68",
+      "name": "south-west",
+      "line": [
+        -97,
+        -17683,
+        812,
+        -19444
+      ],
+      "bng": [
+        [
+          529002.771,
+          181172.724
+        ],
+        [
+          529004.042,
+          181171.204
+        ]
+      ],
+      "outwardBearingDeg": 230.1,
+      "lengthMm": 1982,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326506
+      ],
+      "main": false
+    },
+    {
+      "id": "F69",
+      "name": "south-west",
+      "line": [
+        -8229,
+        9363,
+        -7020,
+        6235
+      ],
+      "bng": [
+        [
+          528988.924,
+          181197.338
+        ],
+        [
+          528990.787,
+          181194.55
+        ]
+      ],
+      "outwardBearingDeg": 236.2,
+      "lengthMm": 3354,
+      "baseMm": 17480,
+      "topMm": 20830,
+      "baseAodM": 43.95,
+      "topAodM": 47.3,
+      "levels": [
+        "Fourth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        323534
+      ],
+      "main": false
+    },
+    {
+      "id": "F70",
+      "name": "south-west",
+      "line": [
+        -1956,
+        -19185,
+        -1167,
+        -21849
+      ],
+      "bng": [
+        [
+          529001.285,
+          181170.852
+        ],
+        [
+          529002.637,
+          181168.424
+        ]
+      ],
+      "outwardBearingDeg": 240.9,
+      "lengthMm": 2779,
+      "baseMm": 17480,
+      "topMm": 20830,
+      "baseAodM": 43.95,
+      "topAodM": 47.3,
+      "levels": [
+        "Fourth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        323537
+      ],
+      "main": false
+    },
+    {
+      "id": "F71",
+      "name": "south-west",
+      "line": [
+        -7194,
+        13827,
+        -6744,
+        11563
+      ],
+      "bng": [
+        [
+          528988.958,
+          181201.92
+        ],
+        [
+          528989.892,
+          181199.809
+        ]
+      ],
+      "outwardBearingDeg": 246.1,
+      "lengthMm": 2309,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326473
+      ],
+      "main": false
+    },
+    {
+      "id": "F72",
+      "name": "west",
+      "line": [
+        -2764,
+        -21062,
+        -2607,
+        -23899
+      ],
+      "bng": [
+        [
+          529000.907,
+          181168.843
+        ],
+        [
+          529001.68,
+          181166.109
+        ]
+      ],
+      "outwardBearingDeg": 254.2,
+      "lengthMm": 2841,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315610
+      ],
+      "main": false
+    },
+    {
+      "id": "F73",
+      "name": "west",
+      "line": [
+        -3072,
+        -15441,
+        -2939,
+        -17858
+      ],
+      "bng": [
+        [
+          528999.377,
+          181174.261
+        ],
+        [
+          529000.036,
+          181171.931
+        ]
+      ],
+      "outwardBearingDeg": 254.2,
+      "lengthMm": 2421,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315627
+      ],
+      "main": false
+    },
+    {
+      "id": "F74",
+      "name": "west",
+      "line": [
+        728,
+        -11864,
+        721,
+        -15880
+      ],
+      "bng": [
+        [
+          529002.303,
+          181178.582
+        ],
+        [
+          529003.175,
+          181174.662
+        ]
+      ],
+      "outwardBearingDeg": 257.5,
+      "lengthMm": 4016,
+      "baseMm": 27780,
+      "topMm": 30780,
+      "baseAodM": 54.25,
+      "topAodM": 57.25,
+      "levels": [
+        "Seventh Floor"
+      ],
+      "windows": 1,
+      "walls": 2,
+      "wallIds": [
+        327508,
+        327483
+      ],
+      "main": false
+    },
+    {
+      "id": "F75",
+      "name": "west",
+      "line": [
+        -4022,
+        733,
+        -3370,
+        -11073
+      ],
+      "bng": [
+        [
+          528994.915,
+          181189.836
+        ],
+        [
+          528998.132,
+          181178.458
+        ]
+      ],
+      "outwardBearingDeg": 254.2,
+      "lengthMm": 11824,
+      "baseMm": -3610,
+      "topMm": -2510,
+      "baseAodM": 22.86,
+      "topAodM": 23.96,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315565
+      ],
+      "main": false
+    },
+    {
+      "id": "F76",
+      "name": "west",
+      "line": [
+        -3151,
+        1967,
+        -3151,
+        -11091
+      ],
+      "bng": [
+        [
+          528995.495,
+          181191.23
+        ],
+        [
+          528998.35,
+          181178.489
+        ]
+      ],
+      "outwardBearingDeg": 257.4,
+      "lengthMm": 13057,
+      "baseMm": 0,
+      "topMm": 960,
+      "baseAodM": 26.47,
+      "topAodM": 27.43,
+      "levels": [
+        "Ground Floor"
+      ],
+      "windows": 0,
+      "walls": 2,
+      "wallIds": [
+        317184,
+        317161
+      ],
+      "main": false
+    },
+    {
+      "id": "F77",
+      "name": "west",
+      "line": [
+        -3989,
+        3629,
+        -3989,
+        1907
+      ],
+      "bng": [
+        [
+          528994.315,
+          181192.669
+        ],
+        [
+          528994.691,
+          181190.989
+        ]
+      ],
+      "outwardBearingDeg": 257.4,
+      "lengthMm": 1721,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 1,
+      "walls": 1,
+      "wallIds": [
+        315738
+      ],
+      "main": false
+    },
+    {
+      "id": "F78",
+      "name": "west",
+      "line": [
+        -1942,
+        10834,
+        -1974,
+        -24343
+      ],
+      "bng": [
+        [
+          528994.736,
+          181200.148
+        ],
+        [
+          529002.395,
+          181165.815
+        ]
+      ],
+      "outwardBearingDeg": 257.4,
+      "lengthMm": 35177,
+      "baseMm": -3610,
+      "topMm": 30780,
+      "baseAodM": 22.86,
+      "topAodM": 57.25,
+      "levels": [
+        "Basement",
+        "Ground Floor",
+        "Ground Floor Mezzanine",
+        "First Floor",
+        "Second Floor",
+        "Third Floor",
+        "Fourth Floor",
+        "Fifth Floor",
+        "Sixth Floor",
+        "Seventh Floor"
+      ],
+      "windows": 45,
+      "walls": 39,
+      "wallIds": [
+        315388,
+        315471,
+        317292,
+        317151,
+        317276,
+        317289,
+        317284,
+        317157,
+        318373,
+        318360,
+        318371,
+        318396,
+        318990,
+        318971,
+        318955,
+        318945,
+        318970,
+        318965,
+        318969,
+        319031,
+        320003,
+        320026,
+        320155,
+        321564,
+        321591,
+        321559,
+        321563,
+        321572,
+        321543,
+        323535,
+        323476,
+        323487,
+        323483,
+        325536,
+        325417,
+        325596,
+        326529,
+        327500,
+        327493
+      ],
+      "main": true
+    },
+    {
+      "id": "F79",
+      "name": "west",
+      "line": [
+        -7682,
+        11142,
+        -7366,
+        5419
+      ],
+      "bng": [
+        [
+          528989.068,
+          181199.193
+        ],
+        [
+          528990.627,
+          181193.678
+        ]
+      ],
+      "outwardBearingDeg": 254.2,
+      "lengthMm": 5731,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 2,
+      "wallIds": [
+        315592,
+        315712
+      ],
+      "main": false
+    },
+    {
+      "id": "F80",
+      "name": "west",
+      "line": [
+        -7187,
+        11862,
+        -7172,
+        9368
+      ],
+      "bng": [
+        [
+          528989.393,
+          181200.004
+        ],
+        [
+          528989.954,
+          181197.574
+        ]
+      ],
+      "outwardBearingDeg": 257,
+      "lengthMm": 2494,
+      "baseMm": 10310,
+      "topMm": 14130,
+      "baseAodM": 36.78,
+      "topAodM": 40.6,
+      "levels": [
+        "Second Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        320085
+      ],
+      "main": false
+    },
+    {
+      "id": "F81",
+      "name": "west",
+      "line": [
+        -6257,
+        14800,
+        -6242,
+        13010
+      ],
+      "bng": [
+        [
+          528989.659,
+          181203.074
+        ],
+        [
+          528990.065,
+          181201.331
+        ]
+      ],
+      "outwardBearingDeg": 256.9,
+      "lengthMm": 1790,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315381
+      ],
+      "main": false
+    },
+    {
+      "id": "F82",
+      "name": "west",
+      "line": [
+        -6465,
+        16072,
+        -6315,
+        13696
+      ],
+      "bng": [
+        [
+          528989.179,
+          181204.27
+        ],
+        [
+          528989.844,
+          181201.984
+        ]
+      ],
+      "outwardBearingDeg": 253.8,
+      "lengthMm": 2381,
+      "baseMm": 27780,
+      "topMm": 30780,
+      "baseAodM": 54.25,
+      "topAodM": 57.25,
+      "levels": [
+        "Seventh Floor"
+      ],
+      "windows": 1,
+      "walls": 1,
+      "wallIds": [
+        327482
+      ],
+      "main": false
+    },
+    {
+      "id": "F83",
+      "name": "west",
+      "line": [
+        -7602,
+        22326,
+        -7017,
+        13847
+      ],
+      "bng": [
+        [
+          528986.701,
+          181210.125
+        ],
+        [
+          528989.126,
+          181201.979
+        ]
+      ],
+      "outwardBearingDeg": 253.4,
+      "lengthMm": 8499,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 3,
+      "walls": 3,
+      "wallIds": [
+        326454,
+        326452,
+        326464
+      ],
+      "main": false
+    },
+    {
+      "id": "F84",
+      "name": "west",
+      "line": [
+        -9373,
+        24748,
+        -8064,
+        6305
+      ],
+      "bng": [
+        [
+          528984.444,
+          181212.1
+        ],
+        [
+          528989.753,
+          181194.39
+        ]
+      ],
+      "outwardBearingDeg": 253.3,
+      "lengthMm": 18489,
+      "baseMm": -3610,
+      "topMm": 23740,
+      "baseAodM": 22.86,
+      "topAodM": 50.21,
+      "levels": [
+        "Basement",
+        "Ground Floor",
+        "First Floor",
+        "Second Floor",
+        "Third Floor",
+        "Fourth Floor",
+        "Fifth Floor"
+      ],
+      "windows": 27,
+      "walls": 23,
+      "wallIds": [
+        315497,
+        317240,
+        317283,
+        317146,
+        318963,
+        318943,
+        318962,
+        318957,
+        318961,
+        320024,
+        320157,
+        320158,
+        320046,
+        320159,
+        321558,
+        321566,
+        321554,
+        321565,
+        323489,
+        323486,
+        323488,
+        325537,
+        347292
+      ],
+      "main": true
+    },
+    {
+      "id": "F85",
+      "name": "west",
+      "line": [
+        -11635,
+        24919,
+        -11440,
+        21390
+      ],
+      "bng": [
+        [
+          528982.199,
+          181211.773
+        ],
+        [
+          528983.161,
+          181208.372
+        ]
+      ],
+      "outwardBearingDeg": 254.2,
+      "lengthMm": 3534,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315601
+      ],
+      "main": false
+    },
+    {
+      "id": "F86",
+      "name": "west",
+      "line": [
+        -10113,
+        24910,
+        -9536,
+        16297
+      ],
+      "bng": [
+        [
+          528983.686,
+          181212.097
+        ],
+        [
+          528986.132,
+          181203.819
+        ]
+      ],
+      "outwardBearingDeg": 253.5,
+      "lengthMm": 8632,
+      "baseMm": 17480,
+      "topMm": 18510,
+      "baseAodM": 43.95,
+      "topAodM": 44.98,
+      "levels": [
+        "Fourth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        323568
+      ],
+      "main": false
+    },
+    {
+      "id": "F87",
+      "name": "west",
+      "line": [
+        -8313,
+        27214,
+        -8292,
+        24766
+      ],
+      "bng": [
+        [
+          528984.94,
+          181214.739
+        ],
+        [
+          528985.495,
+          181212.354
+        ]
+      ],
+      "outwardBearingDeg": 256.9,
+      "lengthMm": 2448,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315626
+      ],
+      "main": false
+    },
+    {
+      "id": "F88",
+      "name": "west",
+      "line": [
+        540,
+        -21369,
+        536,
+        -23159
+      ],
+      "bng": [
+        [
+          529004.198,
+          181169.265
+        ],
+        [
+          529004.585,
+          181167.518
+        ]
+      ],
+      "outwardBearingDeg": 257.5,
+      "lengthMm": 1790,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 2,
+      "wallIds": [
+        326519,
+        326522
+      ],
+      "main": false
+    },
+    {
+      "id": "F89",
+      "name": "west",
+      "line": [
+        -509,
+        -11851,
+        -523,
+        -17659
+      ],
+      "bng": [
+        [
+          529001.094,
+          181178.325
+        ],
+        [
+          529002.35,
+          181172.654
+        ]
+      ],
+      "outwardBearingDeg": 257.5,
+      "lengthMm": 5808,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 2,
+      "walls": 2,
+      "wallIds": [
+        326469,
+        326442
+      ],
+      "main": false
+    },
+    {
+      "id": "F90",
+      "name": "west",
+      "line": [
+        -190,
+        8143,
+        -238,
+        -11306
+      ],
+      "bng": [
+        [
+          528997.034,
+          181197.905
+        ],
+        [
+          529001.239,
+          181178.916
+        ]
+      ],
+      "outwardBearingDeg": 257.5,
+      "lengthMm": 19449,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 5,
+      "walls": 1,
+      "wallIds": [
+        326447
+      ],
+      "main": false
+    },
+    {
+      "id": "F91",
+      "name": "north-west",
+      "line": [
+        -5888,
+        13048,
+        -7678,
+        11178
+      ],
+      "bng": [
+        [
+          528990.402,
+          181201.445
+        ],
+        [
+          528989.064,
+          181199.23
+        ]
+      ],
+      "outwardBearingDeg": 301.1,
+      "lengthMm": 2588,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315619
+      ],
+      "main": false
+    },
+    {
+      "id": "F92",
+      "name": "north-west",
+      "line": [
+        5591,
+        22882,
+        4156,
+        21998
+      ],
+      "bng": [
+        [
+          528999.454,
+          181213.551
+        ],
+        [
+          528998.247,
+          181212.375
+        ]
+      ],
+      "outwardBearingDeg": 315.7,
+      "lengthMm": 1685,
+      "baseMm": 0,
+      "topMm": 5890,
+      "baseAodM": 26.47,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        317231
+      ],
+      "main": false
+    },
+    {
+      "id": "F93",
+      "name": "north",
+      "line": [
+        5270,
+        24642,
+        -10063,
+        24639
+      ],
+      "bng": [
+        [
+          528998.756,
+          181215.198
+        ],
+        [
+          528983.794,
+          181211.844
+        ]
+      ],
+      "outwardBearingDeg": 347.4,
+      "lengthMm": 15333,
+      "baseMm": 0,
+      "topMm": 23740,
+      "baseAodM": 26.47,
+      "topAodM": 50.21,
+      "levels": [
+        "Ground Floor",
+        "First Floor",
+        "Second Floor",
+        "Third Floor",
+        "Fourth Floor",
+        "Fifth Floor"
+      ],
+      "windows": 17,
+      "walls": 14,
+      "wallIds": [
+        317171,
+        319030,
+        318949,
+        319029,
+        320000,
+        320001,
+        320006,
+        321552,
+        321547,
+        321551,
+        321536,
+        323573,
+        325517,
+        325415
+      ],
+      "main": true
+    },
+    {
+      "id": "F94",
+      "name": "north",
+      "line": [
+        5848,
+        25454,
+        -2658,
+        25464
+      ],
+      "bng": [
+        [
+          528999.143,
+          181216.117
+        ],
+        [
+          528990.841,
+          181214.267
+        ]
+      ],
+      "outwardBearingDeg": 347.4,
+      "lengthMm": 8505,
+      "baseMm": 17480,
+      "topMm": 18500,
+      "baseAodM": 43.95,
+      "topAodM": 44.97,
+      "levels": [
+        "Fourth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        323571
+      ],
+      "main": false
+    },
+    {
+      "id": "F95",
+      "name": "north",
+      "line": [
+        6814,
+        27390,
+        -8263,
+        27264
+      ],
+      "bng": [
+        [
+          528999.662,
+          181218.217
+        ],
+        [
+          528984.977,
+          181214.799
+        ]
+      ],
+      "outwardBearingDeg": 346.9,
+      "lengthMm": 15077,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315564
+      ],
+      "main": false
+    },
+    {
+      "id": "F96",
+      "name": "north",
+      "line": [
+        7618,
+        -11274,
+        872,
+        -11268
+      ],
+      "bng": [
+        [
+          529008.898,
+          181180.664
+        ],
+        [
+          529002.314,
+          181179.195
+        ]
+      ],
+      "outwardBearingDeg": 347.4,
+      "lengthMm": 6746,
+      "baseMm": 27780,
+      "topMm": 30780,
+      "baseAodM": 54.25,
+      "topAodM": 57.25,
+      "levels": [
+        "Seventh Floor"
+      ],
+      "windows": 1,
+      "walls": 3,
+      "wallIds": [
+        327484,
+        327485,
+        327480
+      ],
+      "main": false
+    },
+    {
+      "id": "F97",
+      "name": "north",
+      "line": [
+        14883,
+        13116,
+        2964,
+        13101
+      ],
+      "bng": [
+        [
+          529010.656,
+          181206.052
+        ],
+        [
+          528999.028,
+          181203.432
+        ]
+      ],
+      "outwardBearingDeg": 347.3,
+      "lengthMm": 11919,
+      "baseMm": 10310,
+      "topMm": 17480,
+      "baseAodM": 36.78,
+      "topAodM": 43.95,
+      "levels": [
+        "Second Floor",
+        "Third Floor"
+      ],
+      "windows": 0,
+      "walls": 6,
+      "wallIds": [
+        320073,
+        320081,
+        320034,
+        321653,
+        321652,
+        321654
+      ],
+      "main": false
+    },
+    {
+      "id": "F98",
+      "name": "north",
+      "line": [
+        18966,
+        12000,
+        15719,
+        11973
+      ],
+      "bng": [
+        [
+          529014.884,
+          181205.856
+        ],
+        [
+          529011.722,
+          181205.12
+        ]
+      ],
+      "outwardBearingDeg": 346.9,
+      "lengthMm": 3247,
+      "baseMm": -3610,
+      "topMm": 0,
+      "baseAodM": 22.86,
+      "topAodM": 26.47,
+      "levels": [
+        "Basement"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        315606
+      ],
+      "main": false
+    },
+    {
+      "id": "F99",
+      "name": "north",
+      "line": [
+        -2998,
+        16541,
+        -5943,
+        16551
+      ],
+      "bng": [
+        [
+          528992.459,
+          181205.486
+        ],
+        [
+          528989.583,
+          181204.852
+        ]
+      ],
+      "outwardBearingDeg": 347.6,
+      "lengthMm": 2945,
+      "baseMm": 27780,
+      "topMm": 30780,
+      "baseAodM": 54.25,
+      "topAodM": 57.25,
+      "levels": [
+        "Seventh Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        327477
+      ],
+      "main": false
+    },
+    {
+      "id": "F100",
+      "name": "north",
+      "line": [
+        854,
+        -20303,
+        -1821,
+        -20296
+      ],
+      "bng": [
+        [
+          529004.271,
+          181170.375
+        ],
+        [
+          529001.66,
+          181169.796
+        ]
+      ],
+      "outwardBearingDeg": 347.5,
+      "lengthMm": 2675,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326492
+      ],
+      "main": false
+    },
+    {
+      "id": "F101",
+      "name": "north",
+      "line": [
+        2992,
+        22842,
+        195,
+        22849
+      ],
+      "bng": [
+        [
+          528996.927,
+          181212.944
+        ],
+        [
+          528994.196,
+          181212.339
+        ]
+      ],
+      "outwardBearingDeg": 347.5,
+      "lengthMm": 2797,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        326491
+      ],
+      "main": false
+    },
+    {
+      "id": "F102",
+      "name": "north",
+      "line": [
+        3196,
+        -9111,
+        880,
+        -9100
+      ],
+      "bng": [
+        [
+          529004.11,
+          181181.808
+        ],
+        [
+          529001.848,
+          181181.312
+        ]
+      ],
+      "outwardBearingDeg": 347.6,
+      "lengthMm": 2316,
+      "baseMm": 3030,
+      "topMm": 5890,
+      "baseAodM": 29.5,
+      "topAodM": 32.36,
+      "levels": [
+        "Ground Floor Mezzanine"
+      ],
+      "windows": 0,
+      "walls": 1,
+      "wallIds": [
+        318383
+      ],
+      "main": false
+    },
+    {
+      "id": "F103",
+      "name": "north",
+      "line": [
+        3414,
+        22370,
+        -7303,
+        22397
+      ],
+      "bng": [
+        [
+          528997.441,
+          181212.576
+        ],
+        [
+          528986.978,
+          181210.259
+        ]
+      ],
+      "outwardBearingDeg": 347.5,
+      "lengthMm": 10717,
+      "baseMm": 23740,
+      "topMm": 27780,
+      "baseAodM": 50.21,
+      "topAodM": 54.25,
+      "levels": [
+        "Sixth Floor"
+      ],
+      "windows": 0,
+      "walls": 2,
+      "wallIds": [
+        326475,
+        326541
+      ],
+      "main": false
+    },
+    {
+      "id": "F104",
+      "name": "north",
+      "line": [
+        4629,
+        10031,
+        2785,
+        10040
+      ],
+      "bng": [
+        [
+          529001.324,
+          181200.801
+        ],
+        [
+          528999.523,
+          181200.406
+        ]
+      ],
+      "outwardBearingDeg": 347.6,
+      "lengthMm": 1844,
+      "baseMm": 10310,
+      "topMm": 14130,
+      "baseAodM": 36.78,
+      "topAodM": 40.6,
+      "levels": [
+        "Second Floor"
+      ],
+      "windows": 1,
+      "walls": 1,
+      "wallIds": [
+        320101
+      ],
+      "main": false
+    }
+  ]
+}
