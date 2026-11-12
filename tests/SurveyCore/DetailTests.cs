@@ -104,6 +104,11 @@ namespace SurveyCoreTests
             T.Check(T.Near(w.Width, 1000, 1e-6) && T.Near(w.Height, 2140, 1e-6), "sash: the opening is the reveal width, sill to head");
             T.Check(w.Describe() == "1 wide x 2 high", "sash: described " + w.Describe());
             T.Check(w.Panes.All(p => p.All(q => q.X >= 25 - 1e-6 && q.X <= 975 + 1e-6 && q.Y >= 25 - 1e-6 && q.Y <= 2115 + 1e-6)), "sash: panes kept inside a frame");
+            var tv = w.TypeValues(out bool simp);
+            T.Check(tv["Panes Across"] == 1 && tv["Meeting Rail"] == 1 && T.Near(tv["Meeting Rail Height"], 1040, 1) && T.Near(tv["Meeting Rail Width"], 60, 1)
+                    && tv["Panes High Bottom"] == 1 && tv["Panes High Top"] == 1 && !simp, "sash type: one across, meeting rail at 1040, 60 wide, 1/1");
+            T.Check(T.Near(tv["Frame Width"], 50, 25) && tv["Width"] == 1000 && tv["Height"] == 2140, $"sash type: frame from the margins ({tv["Frame Width"]})");
+            T.Check(WindowPattern.TypeName(tv).StartsWith("1000x2140 1 across, sash 1/1"), "sash type name: " + WindowPattern.TypeName(tv));
             var m2 = w.Mirrored();
             T.Check(m2.Key == w.Key, "sash: symmetric, so mirrored is the same look");
 
@@ -111,6 +116,17 @@ namespace SurveyCoreTests
             var framed = Box(0, 0, 1000, 2000).Concat(Box(60, 60, 470, 1940)).Concat(Box(530, 60, 940, 1940)).ToList();
             var w2 = WindowPattern.Read(framed, new ElevOpening { Left = 0, Right = 1000, Bottom = 0, Top = 2000 });
             T.Check(w2.Panes.Count == 2 && w2.Describe() == "2 wide x 1 high", "framed: the two inner loops are the panes (" + w2.Describe() + ")");
+            var tv2 = w2.TypeValues(out _);
+            T.Check(tv2["Panes Across"] == 2 && tv2["Meeting Rail"] == 0 && T.Near(tv2["Glazing Bar Width"], 60, 1), "framed type: two across, no rail, a 60 mm bar between");
+
+            // a pair of sashes with glazing bars: 4 rows, the wide gap is the meeting rail
+            var gb = new List<DwgLine>();
+            foreach (var (y0, y1) in new[] { (60.0, 560.0), (585.0, 1085.0), (1145.0, 1645.0), (1670.0, 2170.0) })
+                foreach (var (x0, x1) in new[] { (70.0, 487.0), (512.0, 930.0) }) gb.AddRange(Box(x0, y0, x1, y1));
+            var w5 = WindowPattern.Read(gb, new ElevOpening { Left = 70, Right = 930, Bottom = 0, Top = 2230, HasReveal = true, RevealLeft = 0, RevealRight = 1000 });
+            var tv5 = w5.TypeValues(out _);
+            T.Check(tv5["Panes Across"] == 2 && tv5["Meeting Rail"] == 1 && tv5["Panes High Bottom"] == 2 && tv5["Panes High Top"] == 2
+                    && T.Near(tv5["Meeting Rail Height"], 1085, 1) && T.Near(tv5["Glazing Bar Width"], 25, 1), "glazed sashes: 2 across, rail at 1085, 2/2 high, 25 mm bars");
 
             // a round-headed window: sides to 1500, a semicircle above; the opening is found up to the crown
             var arch = new List<DwgLine> { L(0, 0, 1000, 0), L(1000, 0, 1000, 1500), L(0, 1500, 0, 0) };

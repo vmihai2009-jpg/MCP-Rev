@@ -20,13 +20,60 @@ namespace BarrGazetas.RevitMcp
         {
             yield return new RevitTool
             {
+                Name = "window_family",
+                Write = true,
+                Description = "The parametric \"BG Window\" family every surveyed window is a type of. action probe: what the Metric Window " +
+                              "template holds (planes, views, parameters). build: generate the family (saved to the reports folder) and, with " +
+                              "load: true, load it into the model. flex: build it and try it at a list of type values, reporting any that " +
+                              "Revit refuses. One undo step when loading.",
+                InputSchema = Schema(
+                    ("action", S("string", "probe | build | flex"), true),
+                    ("load", S("boolean", "build: load it into the model (default false)"), false),
+                    ("cases", Arr("object", "flex: type values to try, e.g. {\"Width\":900,\"Height\":2400,\"Panes Across\":2,\"Meeting Rail\":1}"), false)),
+                Run = (app, a) =>
+                {
+                    string action = Args.Str(a, "action") ?? "probe";
+                    if (action == "probe") return WindowFamilyBuilder.Probe(app);
+                    if (action != "build" && action != "flex") throw new ArgumentException("action: probe, build or flex");
+                    var doc = Doc(app);
+                    var cases = (a["cases"] as JsonArray)?.OfType<JsonObject>()
+                        .Select(o => o.ToDictionary(kv => kv.Key, kv => kv.Value.GetValue<double>())).ToList() ?? new List<Dictionary<string, double>>();
+                    if (action == "flex" && cases.Count == 0)
+                        cases = new List<Dictionary<string, double>>
+                        {
+                            new() { ["Width"] = 1230, ["Height"] = 1736, ["Panes Across"] = 2, ["Meeting Rail"] = 1, ["Meeting Rail Height"] = 1000 },
+                            new() { ["Width"] = 845, ["Height"] = 2420, ["Panes Across"] = 1, ["Meeting Rail"] = 1, ["Meeting Rail Height"] = 1300 },
+                            new() { ["Width"] = 460, ["Height"] = 1714, ["Panes Across"] = 1, ["Meeting Rail"] = 0 },
+                            new() { ["Width"] = 1450, ["Height"] = 1683, ["Panes Across"] = 2, ["Meeting Rail"] = 0 },
+                            new() { ["Width"] = 1600, ["Height"] = 3000, ["Panes Across"] = 4, ["Panes High Bottom"] = 3, ["Panes High Top"] = 2, ["Meeting Rail"] = 1, ["Meeting Rail Height"] = 1700 },
+                            new() { ["Width"] = 5116, ["Height"] = 1685, ["Panes Across"] = 4, ["Panes High Bottom"] = 2, ["Meeting Rail"] = 0 },
+                            new() { ["Width"] = 400, ["Height"] = 500, ["Panes Across"] = 1, ["Meeting Rail"] = 0 },
+                        };
+                    string path = Path.Combine(ReportsFolder(doc), "window-families", WindowFamilyBuilder.FamilyName + ".rfa");
+                    var rep = WindowFamilyBuilder.Build(app, path, cases);
+                    List<string> revit = null; string loaded = null;
+                    if (action == "build" && Args.Bool(a, "load") == true)
+                    {
+                        var wdoc = Writable(app);
+                        revit = BuildTools.Tx.Run(wdoc, "MCP: load BG Window", () =>
+                        {
+                            if (!wdoc.LoadFamily(path, new Overwrite(), out Family fam)) fam = new FilteredElementCollector(wdoc).OfClass(typeof(Family)).Cast<Family>().FirstOrDefault(f => f.Name == WindowFamilyBuilder.FamilyName);
+                            loaded = fam == null ? "not loaded" : $"loaded, {fam.GetFamilySymbolIds().Count} type(s)";
+                        });
+                    }
+                    return new { rep.Path, rep.Steps, rep.Planes, rep.Boxes, rep.Locks, flex = rep.Flex, loaded, revit };
+                }
+            };
+
+            yield return new RevitTool
+            {
                 Name = "window_look",
                 Write = true,
                 Description = "Windows that look like the survey's elevations: for every window an elevation draws (elevation-index.json), its glass " +
-                              "panes and outline (sashes, glazing bars, arched heads) are read from the elevation's window layer, and one window " +
-                              "family per look is built (the template's opening sized to it, arched heads cut to the drawn outline; frame with the panes cut out, glass, set back by reveal_mm from " +
-                              "the wall face) and swapped onto those windows. Windows whose size differs from the elevation by more than " +
-                              "size_tolerance_mm are left (survey_autofix openings first). dry_run (default true) lists the looks. One undo step.",
+                              "panes and outline (sashes, glazing bars, arched heads) are read from the elevation's window layer and each window becomes a " +
+                              "type of the one parametric family \"BG Window\" (window_family: size, panes across, meeting rail, panes high, frame and bar widths, inset reveal_mm from " +
+                              "the wall face); only arched windows get a family of their own. Windows whose size differs from the elevation by more than " +
+                              "size_tolerance_mm are left (survey_autofix openings first). dry_run (default true) lists the types. One undo step.",
                 InputSchema = Schema(
                     ("facades", Arr("string", "Only these facades (ids from elevation-index.json)"), false),
                     ("window_ids", Arr("integer", "Only these windows"), false),
@@ -74,7 +121,20 @@ namespace BarrGazetas.RevitMcp
                         double thick = fi.Host is Wall hw ? Math.Round(hw.Width * Mm / 25) * 25 : 300;
                         plan.Add((fi, p, thick, p.Key + "|t" + thick, m));
                     }
-                    var groups = plan.GroupBy(x => x.key).ToList();
+                    // rectangular windows: types of the one parametric family; arched ones (a different design): their own family
+                    var typed = plan.Where(x => !x.p.Arched).Select(x =>
+                    {
+                        var v = x.p.TypeValues(out bool simp);
+                        v["Inset"] = reveal; v["Frame Depth"] = depth;
+                        return (x.fi, values: v, name: WindowPattern.TypeName(v), simp, x.m);
+                    }).ToList();
+                    var typeGroups = typed.GroupBy(x => x.name).ToList();
+                    var types = typeGroups.Select(g => new
+                    {
+                        type = g.Key, windows = g.Count(), simplified = g.First().simp, ids = g.Take(8).Select(x => x.fi.Id.Value).ToList(),
+                        sheet = new[] { R(g.First().m.Sheet.OpeningLeft), R(g.First().m.Sheet.OpeningRight), R(g.First().m.Sheet.Bottom), R(g.First().m.Sheet.Top) },
+                    }).OrderByDescending(x => x.windows).ToList();
+                    var groups = plan.Where(x => x.p.Arched).GroupBy(x => x.key).ToList();
                     var looks = groups.Select(g => new
                     {
                         family = FamilyNameFor(g.First().p, g.Key), look = g.First().p.Describe(), widthMm = R(g.First().p.Width), heightMm = R(g.First().p.Height),
@@ -83,6 +143,40 @@ namespace BarrGazetas.RevitMcp
                     }).OrderByDescending(x => x.windows).ToList();
 
                     var made = new List<object>(); var problems = new List<string>(); List<string> revit = null; int swapped = 0;
+                    if (!dry && typeGroups.Count > 0)
+                    {
+                        // the family: loaded already, else generated (saved in the reports folder) and loaded
+                        string famPath = Path.Combine(ReportsFolder(doc), "window-families", WindowFamilyBuilder.FamilyName + ".rfa");
+                        bool have = new FilteredElementCollector(doc).OfClass(typeof(Family)).Any(f => f.Name == WindowFamilyBuilder.FamilyName);
+                        if (!have) WindowFamilyBuilder.Build(app, famPath);
+                        var tnotes = BuildTools.Tx.Run(doc, "MCP: windows as BG Window types", () =>
+                        {
+                            Family fam = new FilteredElementCollector(doc).OfClass(typeof(Family)).Cast<Family>().FirstOrDefault(f => f.Name == WindowFamilyBuilder.FamilyName);
+                            if (fam == null && !doc.LoadFamily(famPath, new Overwrite(), out fam)) throw new InvalidOperationException("BG Window did not load from " + famPath);
+                            var syms = fam.GetFamilySymbolIds().Select(id => doc.GetElement(id)).OfType<FamilySymbol>().ToList();
+                            foreach (var g in typeGroups)
+                            {
+                                try
+                                {
+                                    var sym = syms.FirstOrDefault(s => s.Name == g.Key);
+                                    if (sym == null) { sym = (FamilySymbol)syms[0].Duplicate(g.Key); syms.Add(sym); }
+                                    foreach (var kv in g.First().values)
+                                    {
+                                        var prm = sym.LookupParameter(kv.Key);
+                                        if (prm == null || prm.IsReadOnly) continue;
+                                        if (prm.StorageType == StorageType.Integer) prm.Set((int)Math.Round(kv.Value)); else prm.Set(kv.Value / Mm);
+                                    }
+                                    if (!sym.IsActive) sym.Activate();
+                                    foreach (var x in g)
+                                        try { x.fi.Symbol = sym; swapped++; }
+                                        catch (Exception ex) { problems.Add($"{x.fi.Id.Value}: {McpServer.Unwrap(ex).Message}"); }
+                                    made.Add(new { type = g.Key, windows = g.Count() });
+                                }
+                                catch (Exception ex) { problems.Add($"{g.Key}: {McpServer.Unwrap(ex).Message}"); }
+                            }
+                        });
+                        revit = tnotes;
+                    }
                     if (!dry && groups.Count > 0)
                     {
                         string folder = Path.Combine(ReportsFolder(doc), "window-families");
@@ -95,7 +189,7 @@ namespace BarrGazetas.RevitMcp
                             try { files[g.Key] = BuildWindowFamily(app, g.First().p, g.First().thick, reveal, depth, Path.Combine(folder, name + ".rfa")); }
                             catch (Exception ex) { problems.Add($"{name}: {McpServer.Unwrap(ex).Message}"); }
                         }
-                        revit = BuildTools.Tx.Run(doc, "MCP: windows from elevations", () =>
+                        var anotes = BuildTools.Tx.Run(doc, "MCP: arched windows from elevations", () =>
                         {
                             foreach (var g in groups)
                             {
@@ -112,11 +206,12 @@ namespace BarrGazetas.RevitMcp
                                 made.Add(new { family = name, windows = g.Count() });
                             }
                         });
+                        revit = (revit ?? new List<string>()).Concat(anotes ?? new List<string>()).ToList();
                     }
                     return new
                     {
-                        windowsOnElevations = matches.Count, toSwap = plan.Count, looks = looks.Count, sizeDiffers = skipped.Count,
-                        list = looks.Take(40).ToList(), skipped = skipped.Take(20).ToList(),
+                        windowsOnElevations = matches.Count, toSwap = plan.Count, types = types.Count, arched = looks.Count, sizeDiffers = skipped.Count,
+                        family = WindowFamilyBuilder.FamilyName, typeList = types.Take(40).ToList(), archedList = looks.ToList(), skipped = skipped.Take(20).ToList(),
                         swapped, made = made.Take(40).ToList(), problems = problems.Take(20).ToList(), revit, elevations = notes,
                         next = dry ? "dry_run: false to build the families and swap them (with testmcp active)." : "Look at the elevations in Revit; survey_fidelity still scores sizes.",
                     };

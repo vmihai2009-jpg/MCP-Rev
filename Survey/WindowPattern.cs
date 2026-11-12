@@ -46,6 +46,78 @@ namespace BarrGazetas.RevitMcp.Survey
             return (Arched ? "arched " : "") + $"{cols} wide x {rows} high";
         }
 
+        /// <summary>
+        /// The parametric family's type values for this window (mm; counts; Meeting Rail 0/1): panes across = the pane
+        /// columns; rows of panes split at the widest gap between them (the meeting rail, 2 rows or more), panes high
+        /// counted below and above it; frame from the margins, bottom rail from the panes' bottom, glazing bar from the
+        /// gaps between panes. Counts are capped at the family's 4 across / 3 high per sash (Simplified says so).
+        /// </summary>
+        public Dictionary<string, double> TypeValues(out bool simplified)
+        {
+            simplified = false;
+            var v = new Dictionary<string, double> { ["Width"] = Math.Round(Width), ["Height"] = Math.Round(Height) };
+            if (!FromDrawing || Panes.Count == 0)
+            {
+                v["Panes Across"] = 1; v["Meeting Rail"] = 0; v["Panes High Bottom"] = 1; v["Panes High Top"] = 1;
+                return v;
+            }
+            var boxes = Panes.Select(p => (x0: p.Min(q => q.X), x1: p.Max(q => q.X), y0: p.Min(q => q.Y), y1: p.Max(q => q.Y))).ToList();
+            // columns and rows by the panes' centres
+            var cols = Groups(boxes.Select(b => ((b.x0 + b.x1) / 2, b.x0, b.x1)), 60);
+            var rows = Groups(boxes.Select(b => ((b.y0 + b.y1) / 2, b.y0, b.y1)), 60);
+            int across = cols.Count;
+            double minX = boxes.Min(b => b.x0), maxX = boxes.Max(b => b.x1), minY = boxes.Min(b => b.y0), maxY = boxes.Max(b => b.y1);
+            double frame = Math.Max(20, Math.Round(((minX) + (Width - maxX) + (Height - maxY)) / 3));
+            v["Frame Width"] = frame;
+            v["Bottom Rail"] = Math.Max(20, Math.Round(minY));
+            var colGaps = Enumerable.Range(0, cols.Count - 1).Select(i => cols[i + 1].lo - cols[i].hi).Where(g => g > 0).ToList();
+            var rowGaps = Enumerable.Range(0, rows.Count - 1).Select(i => (i, gap: rows[i + 1].lo - rows[i].hi)).Where(g => g.gap > 0).ToList();
+            if (rows.Count >= 2 && rowGaps.Count > 0)
+            {
+                // the meeting rail: the widest gap; among gaps within 15 mm of it, the one nearest mid-height
+                double widest = rowGaps.Max(g => g.gap);
+                var rail = rowGaps.Where(g => g.gap >= widest - 15).OrderBy(g => Math.Abs((rows[g.i].hi + rows[g.i + 1].lo) / 2 - Height / 2)).First();
+                v["Meeting Rail"] = 1;
+                v["Meeting Rail Height"] = Math.Round(rows[rail.i].hi);
+                v["Meeting Rail Width"] = Math.Max(15, Math.Round(rail.gap));
+                v["Panes High Bottom"] = rail.i + 1;
+                v["Panes High Top"] = rows.Count - rail.i - 1;
+                var bars = rowGaps.Where(g => g.i != rail.i).Select(g => g.gap).Concat(colGaps).ToList();
+                if (bars.Count > 0) v["Glazing Bar Width"] = Math.Max(10, Math.Round(Median(bars)));
+            }
+            else
+            {
+                v["Meeting Rail"] = 0; v["Panes High Bottom"] = Math.Max(1, rows.Count); v["Panes High Top"] = 1;
+                if (colGaps.Count > 0) v["Glazing Bar Width"] = Math.Max(10, Math.Round(Median(colGaps)));
+            }
+            v["Panes Across"] = across;
+            if (across > 4) { v["Panes Across"] = 4; simplified = true; }
+            foreach (var k in new[] { "Panes High Bottom", "Panes High Top" }) if (v[k] > 3) { v[k] = 3; simplified = true; }
+            return v;
+        }
+
+        /// <summary>A short type name for the values: "1230x1736 2 across, sash 1/1".</summary>
+        public static string TypeName(Dictionary<string, double> v)
+        {
+            string n = $"{v["Width"]:0}x{v["Height"]:0} {v["Panes Across"]:0} across";
+            n += v["Meeting Rail"] > 0 ? $", sash {v["Panes High Bottom"]:0}/{v["Panes High Top"]:0}" : (v["Panes High Bottom"] > 1 ? $", {v["Panes High Bottom"]:0} high" : "");
+            // frame sizes too, so two windows of one size and pattern but different frames don't share a type
+            n += $" f{v.GetValueOrDefault("Frame Width", 60):0}";
+            if (v.TryGetValue("Meeting Rail Height", out var rh) && v["Meeting Rail"] > 0) n += $" r{rh:0}";
+            return n;
+        }
+
+        private static List<(double c, double lo, double hi)> Groups(IEnumerable<(double c, double lo, double hi)> items, double tol)
+        {
+            var g = new List<(double c, double lo, double hi)>();
+            foreach (var it in items.OrderBy(i => i.c))
+                if (g.Count > 0 && it.c - g[g.Count - 1].c <= tol) { var l = g[g.Count - 1]; g[g.Count - 1] = (l.c, Math.Min(l.lo, it.lo), Math.Max(l.hi, it.hi)); }
+                else g.Add(it);
+            return g;
+        }
+
+        private static double Median(List<double> v) { var s = v.OrderBy(x => x).ToList(); return s[s.Count / 2]; }
+
         /// <summary>The same window seen from the other side (a mirrored instance).</summary>
         public WindowPattern Mirrored()
         {
