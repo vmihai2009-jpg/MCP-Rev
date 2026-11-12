@@ -53,7 +53,8 @@ Rules
    the ceiling's height offset, or a ceiling. level: the level's Elevation, then re-score. Blocked windows and
    solid wall stay solid. save_model per floor.
 6. FLOORS, CEILINGS, STAIRS, ROOFS
-   survey_floor_levels (slabs against the spot heights), section_index then survey_ceilings (ceilings against the
+   survey_floor_levels (slabs against the spot heights), survey_floor_steps (stepped floors: preview, then apply),
+   section_index then survey_ceilings (ceilings against the
    sections), survey_stairs, plan_columns, roof_from_survey (roofs from the roof plan and sections; create_roof
    with a slope per edge for mansards), window_detail (window depth in the wall). Slab edges from the plan outline
    (create_floor with replace_id); stair and lift voids (create_opening). Rooms the build left unnamed or missed:

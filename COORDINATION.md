@@ -91,6 +91,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 | `survey_section` | **The 1:1 3D score**: the model cut on each survey section vs the section sheet: slab tops/thickness, wall and parapet tops, roof ridge/eaves/pitch, stair risers, unmatched section lines. `image: true` returns a picture. | After the plans pass or are close; for every height question. |
 | `survey_floor_levels` | Each slab against the plan's spot heights: median/worst, even or stepped, spots with no slab. | Floors (see stepped slabs, 1.5). |
 | `survey_ceilings` | Ceilings against the sections every 500 mm; places with no ceiling. | Ceilings. |
+| `survey_floor_steps` | Stepped floors: each slab's spots grouped into heights, step areas by room or nearest spot round the walls; plan picture; `apply` splits the slab (or shape points with `mode: shape`). | Floors at several heights; the 7th-floor slab 1.9 m off. |
 | `survey_stairs` | Flights on the stair layer (count, going, width) vs the model's runs; missing flights. | Stairs. |
 | `plan_columns` | Free-standing piers/columns on the plans the model lacks. | Shopfronts, piers, stacks. |
 | `window_detail` | Window frame inset from the outer wall face vs the window's Inset parameter. | Window depth in reveal. |
@@ -224,13 +225,13 @@ Each **issue** has `kind`, `level`, `id` (element), `devMm`, `against` (what it 
 5. **Learn from the human model first, then copy what is reusable.** `reference_open` the human-made Swallow Place model, then `reference_inventory category: "Generic Models"` and `"Windows"` (what the person made, in-place vs loadable), `family_detail` on their window and detail families (how they are parameterised: Width, Height, Inset, sash divisions), `element_geometry` with a vertical cut plane through a cornice to read its exact profile, `reference_compare` to see what we lack and where. Then `reference_copy types_only: true` for families worth reusing, and place them at survey positions with `place_family` (unhosted detail) or `place_inserts` (windows). Their positions and sizes still come from our DWGs, not from the reference.
 6. Check: `survey_section` (bands should match the sections' outlines past the wall face) and `view_image` again.
 
-**f. Stepped slabs.** `survey_floor_levels` reports, per floor, the spots below the slab (stepped areas, pits, lower roofs inside the footprint). `apply: true` only moves floors that are even. For a stepped floor: read the step outlines from the plan (`cad_lines` near the low spots), cut the main slab with `create_floor replace_id`, and add each lower area as its own `create_floor` with `offset_mm` from the spot heights; then `survey_section` to confirm `slab_top`. On 7 Swallow Place the 7th-floor slab is 1.9 m above its spots: check that level before anything else on that floor.
+**f. Stepped slabs.** `survey_floor_steps` (from 1.14.0): run it without `apply` first and look at the picture per floor (black rings = the slab's spots, red/blue outlines = steps above/below it, grey = spots left out: stairs/landings, sills in walls). Check the table: `moveSlabMm` (the slab to its commonest height; on 7 Swallow Place the 7th-floor slab is about 1.9 m off, the Ground Floor slab about 0.6 m), each step's `vsSlabMm`, `spots` and `note` (a step from one spot may be a pit or a typo: `min_spots: 2` drops those). Then `apply: true` (all), or `steps: ["<floor>:<id>"]` for some. Rooms placed first (`place_rooms`) give the cleanest step outlines. Then `survey_floor_levels` and `survey_section` to confirm. Note the sign in `survey_floor_levels`: its `medianMm`/`elsewhereMm` are slab minus spot, so -900 means the spot is 900 mm *above* the slab.
 
 **g. Missing walls (252 on the first run).** First check whether they cluster on one layer or floor (`survey_layers only_unassigned`): fixing the layer and rebuilding the floor beats hand-adding. Otherwise `survey_wall` with the face lines from the issue.
 
 **h. Many `wall_face` issues at about 50 mm.** On the first run 459 of 794 wall-face misses were 50-59 mm. The likely cause is one systematic error: where the plan draws only one face of a wall, Survey to Revit centres a 100 mm wall on that line, so neither face lands on the drawing. Don't fix these one by one; note the count in your run results (a fix in the plugin is planned, see `PLAN.md`). `survey_autofix` still fits the ones where both faces are drawn.
 
-**i. Stairs.** `survey_stairs` reports every flight and the ones missing (two on the 7th floor). There is no stair-building tool yet: report the numbers (count, going, riser, width) for a person.
+**i. Stairs.** `survey_stairs` reports every flight and the ones missing. (The two "missing" on the 7th floor in the first run were a matching bug, fixed in 1.14.0: a stair ending at a floor now counts for that floor's plan.) There is no stair-building tool yet: report the numbers (count, going, riser, width) for a person.
 
 ## 1.6 What the tools can't do yet
 
@@ -238,7 +239,6 @@ Say so rather than working round it badly:
 
 - **Window families from the DWG**: `window_look` (1.12.2) makes a "BG Window" type from the elevation's panes for every window an elevation draws. Not yet: windows on facades with no elevation (they keep Survey to Revit's plain family), sash depth (both sashes in one plane), sills/architraves (facade detail).
 - **Stairs**: checked, not built.
-- **Stepped slabs**: by hand as in 1.5 f; no one-call tool yet.
 - **Real in-place families**: not possible through Revit's API; DirectShapes (`model_sweep`, `model_extrusion`, `facade_details`) are used instead.
 - **A fallback when a window type can't be made**: done in 1.12.0 (see 1.5 b); the generated "BG Survey Window" family is in progress.
 
@@ -318,6 +318,15 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-12 (evening): stepped floors tool, survey_stairs top-floor fix (pull request, 1.14.0)
+- What: new tool `survey_floor_steps` for your finding that one flat slab per floor misses the survey's steps (and the 7th-floor slab 1.9 m off). Per floor slab it groups the plan's spot heights, takes the commonest as the slab and every other height as a step, finds each step's area (rooms if the floor has rooms, else nearest spot walking round the walls, so steps end at walls and doorways), leaves out spots on stairs/landings and in walls/openings (sills), and returns a plan picture and a table. `apply: true` splits the slab: a floor per step at its height, cut out of the slab by editing the slab's outline (the slab keeps its id; if Revit refuses the outline edit, openings are cut instead and the answer says so). `mode: shape` uses shape points instead. One undo step. Usage in Part 1, 1.5 f.
+- Also: `survey_stairs` skipped any stair whose top is exactly at the floor's level, so on the top floor (whose plan shows the flight arriving from the 6th) both flights read as missing. The two flights are very probably in the model (the 6th floor matched them, same boxes). Fixed: a stair ending at a level counts for that level.
+- Please run in Revit on testmcp: `survey_floor_steps` (no apply) on all floors, then `apply: true` on one floor (the 7th or the Ground Floor), then `survey_floor_levels` and `survey_stairs`. Report the pictures, the table, and any Revit message, especially from the slab outline edit (SketchEditScope) and from `mode: shape`. Not yet run inside Revit; compiled against the Revit 2025 API and the geometry is unit-tested.
+- Worth knowing: in `survey_floor_levels` the numbers are slab minus spot, so the 7th floor's 1890 means the slab is 1.89 m above its spots, and the many -300 to -1100 values elsewhere mean those spots are *above* the slab, not below it (the first-run note says below). The new tool shows each step's height against the slab with the right sign.
+- Files: `Survey/SlabSteps.cs` (new, Revit-free), `SurveyFloorStepTools.cs` (new), `SurveyDetailTools.cs` (survey_stairs match only), `Hub.cs` (tool list), `SurveyGuide.cs`, `README.md`, `PLAN.md`, `BGMCP.csproj`, `tests/SurveyCore/SlabStepTests.cs` (new), `tests/SurveyCore/Program.cs`, this file.
+- Version: 1.14.0 (1.12.0 is the build-error fallbacks, 1.13.0 is claimed for the window families).
+- Needs from the other side: the Revit run above. Ceilings are left to you.
 
 ### 2026-11-12 (later): fixes for the build errors in your 1.9.16 run (1.12.0), please re-run
 - What: the errors you listed now fall back instead of failing, and one element Revit refuses is reported in a line while the rest go on. Each fix runs the change again in a fresh transaction after reading what Revit said:

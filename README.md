@@ -150,6 +150,15 @@ Revit uses; the Revit CAD link cannot give text.
 
 Ceilings are `survey_ceilings` (1.9.1); rooms and ceilings in the base build come from Survey to Revit's `survey_build`.
 
+### Stepped floors from the spot heights (1.14.0)
+
+| Tool | What it does |
+|---|---|
+| `survey_floor_steps`* | Floors at several heights. Per slab, the plan's spot heights grouped into heights; the commonest is the slab, every other height a step. A step's area is its room (when the model has rooms) or the area nearest its spots walking round the walls, so it ends at a wall or in a doorway. Spots on or beside a stair (landings) and inside walls or openings (sills) are left out. Returns a plan picture per floor and a table, and changes nothing until `apply: true`: `mode: split` (default) makes each step its own floor of the slab's type at the step's height and cuts it out of the slab (the slab keeps its id); `mode: shape` adds shape points to the one slab instead. `fix_main` also sets the slab to its commonest height, however far (survey_floor_levels stops at 300 mm). One undo step |
+
+`survey_stairs` now counts a stair that ends at a floor as that floor's (the top floor's plan shows the flight
+arriving from below); before, every flight on the top floor read as missing.
+
 ### 3D: sections, curved walls, looking at the model (1.11.0)
 
 | Tool | What it does |

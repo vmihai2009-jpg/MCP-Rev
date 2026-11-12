@@ -301,7 +301,11 @@ namespace BarrGazetas.RevitMcp
                             var hits = new List<object>();
                             foreach (var st in stairs)
                             {
-                                if (Math.Abs(st.BaseElevation * Mm - level.Elevation * Mm) > 1500 && !(st.BaseElevation * Mm < level.Elevation * Mm && st.TopElevation * Mm > level.Elevation * Mm)) continue;
+                                // 1.14.0: a plan shows the flight arriving at its floor too (the top floor's plan shows the flight up from the
+                                // floor below), so a stair that ends at this level counts; before, its top had to be above the level
+                                // and the top floor's flights all read as missing
+                                double baseMm = st.BaseElevation * Mm, topMm = st.TopElevation * Mm, lvMm = level.Elevation * Mm;
+                                if (baseMm > lvMm + 1500 || topMm < lvMm - 50 || (baseMm < lvMm - 1500 && topMm < lvMm - 50)) continue;
                                 foreach (var rid in st.GetStairsRuns())
                                 {
                                     if (!(doc.GetElement(rid) is StairsRun run) || !(run.get_BoundingBox(null) is BoundingBoxXYZ bb)) continue;
