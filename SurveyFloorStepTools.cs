@@ -70,9 +70,19 @@ namespace BarrGazetas.RevitMcp
                         var walls = WallFaces(doc, level, out var axes);
                         var rooms = regions == "nearest" ? new List<(string, List<List<Pt>>)>() : RoomLoops(doc, level);
                         if (regions == "rooms" && rooms.Count == 0) throw new ArgumentException($"{level.Name} has no placed rooms: regions auto or nearest, or place_rooms first.");
+                        // each spot belongs to one slab: of the slabs under it, the one whose top is nearest its height
+                        // (1.14.1: overlapping slabs, e.g. a raised floor over the main one, all took the same spots)
+                        var topsOf = floors.ToDictionary(f => f.Id.Value, f => Faces(f, top: true));
+                        long? OwnerOf(Pt p, double spotZ)
+                        {
+                            long? best = null; double bestD = double.MaxValue;
+                            foreach (var f in floors)
+                                if (topsOf[f.Id.Value].Count > 0 && ZOn(topsOf[f.Id.Value], p) is double z && Math.Abs(z - spotZ) < bestD) { bestD = Math.Abs(z - spotZ); best = f.Id.Value; }
+                            return best;
+                        }
                         foreach (var f in floors)
                         {
-                            var tops = Faces(f, top: true);
+                            var tops = topsOf[f.Id.Value];
                             if (tops.Count == 0) continue;
                             double offset = (f.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM)?.AsDouble() ?? 0) * Mm;
                             var mine = new List<SlabSpot>();
@@ -80,6 +90,7 @@ namespace BarrGazetas.RevitMcp
                             {
                                 double rel = aod - datum - levelMm;
                                 if (Math.Abs(rel) > 1500 || ZOn(tops, p) == null) continue; // another level's spot, or not over this slab
+                                if (OwnerOf(p, aod - datum) != f.Id.Value) continue;          // nearer another slab's top
                                 var s = new SlabSpot { At = p, Mm = rel };
                                 if (flights.Any(g => p.X >= g.Min.X - stairMargin && p.X <= g.Max.X + stairMargin && p.Y >= g.Min.Y - stairMargin && p.Y <= g.Max.Y + stairMargin))
                                     s.Skipped = "on or beside a stair";
@@ -89,10 +100,23 @@ namespace BarrGazetas.RevitMcp
                             }
                             if (mine.Count == 0) continue;
                             var slab = TopLoops(tops);
-                            var plan = rooms.Count > 0 ? SlabSteps.ByRooms(rooms, mine, o, offset) : SlabSteps.ByGrid(slab, mine, walls, o, offset);
+                            // rooms only where they hold most of the spots (auto): a model with few rooms reads by nearest spot
+                            var usable = mine.Where(s => s.Skipped == null).ToList();
+                            double inRooms = rooms.Count == 0 || usable.Count == 0 ? 0 : usable.Count(s => rooms.Any(r => r.Item2.Count > 0 && SlabSteps.Inside(s.At, r.Item2))) / (double)usable.Count;
+                            bool byRooms = rooms.Count > 0 && (regions == "rooms" || inRooms >= 0.75);
+                            var plan = byRooms ? SlabSteps.ByRooms(rooms, mine, o, offset) : SlabSteps.ByGrid(slab, mine, walls, o, offset);
+                            if (rooms.Count > 0 && !byRooms) plan.Notes.Add($"Rooms hold only {inRooms:P0} of the spots: read by nearest spot round the walls instead.");
                             var chosen = plan.Steps.Where(s => only.Count == 0 || only.Contains($"{f.Id.Value}:{s.Id}")).ToList();
                             double move = plan.MainSpots > 0 ? plan.MainMm - offset : 0;
                             if (Math.Abs(move) <= 10 || !fixMain) move = 0;
+                            // moving the slab needs at least 3 spots at the commonest height, 5 for more than 300 mm (the other heights become steps)
+                            // (1.14.1: slabs were proposed 2-4 m down on one or two spots)
+                            int used = usable.Count;
+                            if (move != 0 && (plan.MainSpots < 3 || (Math.Abs(move) > 300 && plan.MainSpots < 5)))
+                            {
+                                plan.Notes.Add($"Not moved: {plan.MainSpots} of {used} spots at {plan.MainMm:0} is too few to move the slab {move:+0;-0} mm.");
+                                move = 0;
+                            }
                             if (chosen.Count > 0 || move != 0) work.Add((f, level, plan, chosen, move));
                             byte[] png = null; string file = null;
                             try
@@ -181,7 +205,23 @@ namespace BarrGazetas.RevitMcp
                     try
                     {
                         var loops = s.Loops.Select(l => Loop(l, z0)).ToList();
-                        var stepSolid = GeometryCreationUtilities.CreateExtrusionGeometry(loops, XYZ.BasisZ, 1);
+                        Solid stepSolid;
+                        try { stepSolid = GeometryCreationUtilities.CreateExtrusionGeometry(loops, XYZ.BasisZ, 1); }
+                        catch (Autodesk.Revit.Exceptions.ArgumentException)
+                        {
+                            // 1.14.1: a grid-traced outline can touch itself at a corner, or a hole touch it; then each outer
+                            // loop on its own, joined (the holes that broke it are left out)
+                            stepSolid = null;
+                            foreach (var l in s.Loops.Where(l => GeoMath.SignedArea(l) > 0))
+                                try
+                                {
+                                    var one = GeometryCreationUtilities.CreateExtrusionGeometry(new List<CurveLoop> { Loop(l, z0) }, XYZ.BasisZ, 1);
+                                    stepSolid = stepSolid == null ? one : BooleanOperationsUtils.ExecuteBooleanOperation(stepSolid, one, BooleanOperationsType.Union);
+                                }
+                                catch { }
+                            if (stepSolid == null) throw;
+                            revit.Add($"Fallback: step {s.Id}'s outline touched itself; built from its outer loops only");
+                        }
                         var clip = BooleanOperationsUtils.ExecuteBooleanOperation(hostSolid, stepSolid, BooleanOperationsType.Intersect);
                         var bottom = clip == null || clip.Volume < 1e-4 ? new List<CurveLoop>() : BottomLoops(clip);
                         if (bottom.Count == 0) { failed.Add(new { step = s.Id, why = "not on the slab" }); continue; }
@@ -266,7 +306,7 @@ namespace BarrGazetas.RevitMcp
                                 double d = off;
                                 if (double.IsNaN(d)) d = steps.FirstOrDefault(o => o != s && SlabSteps.Inside(q, o.Loops)) is SlabRegion other ? other.Mm - plan.MainMm : 0;
                                 if (!(ZOn(tops, q) is double z)) { missed++; continue; }
-                                var v = ed.DrawPoint(new XYZ(q.X / Mm, q.Y / Mm, z / Mm));
+                                var v = ed.AddPoint(new XYZ(q.X / Mm, q.Y / Mm, z / Mm));
                                 if (v == null) { missed++; continue; }
                                 set.Add((v, d)); points++;
                             }

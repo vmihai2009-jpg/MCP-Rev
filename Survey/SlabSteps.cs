@@ -106,12 +106,16 @@ namespace BarrGazetas.RevitMcp.Survey
                 return -1;
             }
             var roomOf = new Dictionary<SlabSpot, int>();
+            var outside = new List<SlabSpot>();
             foreach (var s in spots.Where(s => s.Skipped == null))
             {
                 int r = RoomOf(s.At);
-                if (r < 0) s.Skipped = "outside every room"; else roomOf[s] = r;
+                if (r < 0) outside.Add(s); else roomOf[s] = r;
             }
+            // every spot on the slab counts for its height, in a room or not (1.14.1: a model with few rooms had most of
+            // its spots dropped, and the slab's height taken from a handful); only the steps are rooms
             plan.Bands = Bands(spots, o.BandTolMm, o.MinStepMm, preferMm);
+            foreach (var s in outside) s.Skipped = "outside every room (counted for the slab's height, not a step)";
             var main = MainOf(plan.Bands);
             if (main == null) { plan.Notes.Add("No spot heights on this slab."); return plan; }
             plan.MainMm = main.Mm; plan.MainSpots = plan.Bands.Where(b => b.Main).Sum(b => b.Spots.Count);
