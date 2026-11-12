@@ -94,7 +94,8 @@ namespace BarrGazetas.RevitMcp
                                 openings = new { reshaped = log.Reshaped, placed = log.Placed, gapsFilled = log.GapsFilled, failed = log.OpeningsFailed },
                                 levelDevMm = after.score.LevelCheck.DevMm,
                                 stillFailing = SurveyConfig.ToJson(after.issues.Take(maxIssues).ToList()), stillFailingTotal = after.issues.Count,
-                                problems = log.Problems.Count > 0 ? log.Problems.Take(15).ToList() : null,
+                                problems = log.Problems.Count > 0 ? log.Problems.Take(15).ToList() : null, problemsTotal = log.Problems.Count,
+                                fallbacks = log.Fallbacks.Count > 0 ? log.Fallbacks.Take(15).ToList() : null, fallbacksTotal = log.Fallbacks.Count,
                                 forReview = log.Unconfirmed.Count > 0 ? log.Unconfirmed.Take(15).ToList() : null, forReviewTotal = log.Unconfirmed.Count,
                                 undo = dry ? "dry run: nothing kept" : log.Changed > 0 ? "one undo step in Revit for this floor" : "nothing changed",
                             });
@@ -242,6 +243,8 @@ namespace BarrGazetas.RevitMcp
         {
             public int WallsFitted, WallsFailed, Reshaped, Placed, GapsFilled, OpeningsFailed;
             public List<string> Problems = new List<string>();
+            public List<string> Fallbacks = new List<string>();
+            public void Took(IEnumerable<string> revitNotes, string what) => Fallbacks.AddRange(revitNotes.Where(n => n.StartsWith("Fallback:")).Select(n => what + ": " + n.Substring(9).Trim()));
             public List<string> Unconfirmed = new List<string>();
             public int Changed => WallsFitted + Reshaped + Placed + GapsFilled;
         }
@@ -255,18 +258,20 @@ namespace BarrGazetas.RevitMcp
                 if (wall == null) continue;
                 try
                 {
-                    BuildTools.Tx.Run(doc, "MCP: fit wall " + p.Id, () =>
+                    void typeChange()
                     {
                         if (Math.Abs(p.NewThicknessMm - p.ThicknessMm) > 1)
                         {
                             var type = BuildTools.WallTypeOf(doc, p.NewThicknessMm);
                             if (type.Id != wall.WallType.Id) wall.ChangeTypeId(type.Id);
                         }
-                        var lc = (LocationCurve)wall.Location;
-                        double z = lc.Curve.GetEndPoint(0).Z;
-                        var line = Line.CreateBound(new XYZ(p.NewLine[0] / Mm, p.NewLine[1] / Mm, z), new XYZ(p.NewLine[2] / Mm, p.NewLine[3] / Mm, z));
-                        if (Math.Max(Math.Abs(p.ShiftStartMm), Math.Abs(p.ShiftEndMm)) > 1) BuildTools.SetLineKeepingOpenings(doc, wall, line);
-                    });
+                    }
+                    var lc = (LocationCurve)wall.Location;
+                    double z = lc.Curve.GetEndPoint(0).Z;
+                    var line = Line.CreateBound(new XYZ(p.NewLine[0] / Mm, p.NewLine[1] / Mm, z), new XYZ(p.NewLine[2] / Mm, p.NewLine[3] / Mm, z));
+                    if (Math.Max(Math.Abs(p.ShiftStartMm), Math.Abs(p.ShiftEndMm)) > 1)
+                        log.Took(BuildTools.SetWallLineSafely(doc, wall, line, "MCP: fit wall " + p.Id, typeChange), $"wall {p.Id}");
+                    else BuildTools.Tx.Run(doc, "MCP: fit wall " + p.Id, typeChange);
                     if (wall.IsValidObject) log.WallsFitted++; else { log.WallsFailed++; log.Problems.Add($"wall {p.Id}: Revit removed it"); }
                 }
                 catch (Exception ex) { log.WallsFailed++; log.Problems.Add($"wall {p.Id}: {McpServer.Unwrap(ex).Message}"); }
@@ -362,7 +367,7 @@ namespace BarrGazetas.RevitMcp
                 if (newSill == null && newHeight == null && newWidth == null && slide == null) continue;
                 try
                 {
-                    BuildTools.Tx.Run(doc, "MCP: window " + ins.Id + " to the survey", () => BuildTools.ReshapeInsert(doc, fi, newWidth, newHeight, newSill, slide));
+                    log.Took(BuildTools.RunInsertChange(doc, "MCP: window " + ins.Id + " to the survey", ctx => BuildTools.ReshapeInsert(doc, fi, newWidth, newHeight, newSill, slide, ctx), canKeepSize: true), $"window {ins.Id}");
                     log.Reshaped++;
                 }
                 catch (Exception ex) { log.OpeningsFailed++; log.Problems.Add($"window {ins.Id}: {McpServer.Unwrap(ex).Message}"); }
@@ -394,7 +399,8 @@ namespace BarrGazetas.RevitMcp
                 };
                 try
                 {
-                    BuildTools.Tx.Run(doc, "MCP: place window from the plan", () => BuildTools.PlaceInsertHere(doc, item));
+                    BuildTools.PlaceInsertSafely(doc, item, "MCP: place window from the plan", out var n);
+                    log.Took(n, $"plan window at {po.At.X:0},{po.At.Y:0}");
                     log.Placed++;
                     input.Inserts.Add(new FidInsert { At = po.At, W = po.W, Category = "Windows", HostWallId = host.Id, Sill = sill, Head = head }); // the elevation pass must not place it again
                 }
@@ -436,7 +442,7 @@ namespace BarrGazetas.RevitMcp
                     ["wall_id"] = host.Id,
                     ["comments"] = "MCP|autofix|elevation + plan reveals" + (ls != null ? " + labels" : ""),
                 };
-                try { BuildTools.Tx.Run(doc, "MCP: place window from the elevation", () => BuildTools.PlaceInsertHere(doc, item)); log.Placed++; }
+                try { BuildTools.PlaceInsertSafely(doc, item, "MCP: place window from the elevation", out var n); log.Took(n, $"window at {m.X:0},{m.Y:0}"); log.Placed++; }
                 catch (Exception ex) { log.OpeningsFailed++; log.Problems.Add($"window at {m.X:0},{m.Y:0}: {McpServer.Unwrap(ex).Message}"); }
             }
         }
@@ -477,7 +483,8 @@ namespace BarrGazetas.RevitMcp
                 };
                 try
                 {
-                    BuildTools.Tx.Run(doc, "MCP: fill window column gap", () => BuildTools.PlaceInsertHere(doc, item));
+                    BuildTools.PlaceInsertSafely(doc, item, "MCP: fill window column gap", out var n);
+                    log.Took(n, $"column gap at {x:0},{y:0}");
                     log.GapsFilled++;
                     if (it["id"] is JsonNode id) ticked.Add(id.GetValue<long>());
                 }

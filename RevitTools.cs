@@ -514,7 +514,7 @@ namespace BarrGazetas.RevitMcp
                     var p = new XYZ(line[0] / MmPerFoot, line[1] / MmPerFoot, z);
                     var q = new XYZ(line[2] / MmPerFoot, line[3] / MmPerFoot, z);
                     if (p.DistanceTo(q) < 100 / MmPerFoot) throw new ArgumentException("A wall line must be at least 100 mm long.");
-                    var notes = BuildTools.Tx.Run(doc, "MCP: set wall line", () => BuildTools.SetLineKeepingOpenings(doc, wall, Line.CreateBound(p, q)));
+                    var notes = BuildTools.SetWallLineSafely(doc, wall, Line.CreateBound(p, q), "MCP: set wall line");
                     var now = ((LocationCurve)wall.Location).Curve;
                     return new { wall_id = wall.Id.Value, line = new[] { Point(now.GetEndPoint(0)), Point(now.GetEndPoint(1)) }, revit = notes, undo = "One undo step in Revit." };
                 }

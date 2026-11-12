@@ -139,7 +139,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 |---|---|
 | `reference_open` / `reference_close` | Open another .rvt read-only in the background; every read tool then takes `document: <name>`. |
 | `reference_inventory` | What the model is made of: families (loadable or in-place) and how many, DirectShapes, groups. `category` to see one in full. |
-| `family_detail` | How a family is built: parameters and formulas, types and values, solids/voids and sizes, nested families. |
+| `family_detail` | How a family is built: parameters and formulas, types and values, solids/voids and sizes, nested families. A family Revit can't open ("Loaded Family Editing failed.") gives its types' values and one instance's solids instead (`opened: false`). |
 | `element_geometry` | An element's solids; with a cut plane, its profile (a cornice's section, a column's plan). |
 | `type_structure`, `element_boxes` | Layers of wall/floor/roof types; boxes of elements by level, in survey coordinates if asked. |
 | `reference_compare` | What it has that ours lacks, with positions in our frame. |
@@ -208,11 +208,11 @@ Each **issue** has `kind`, `level`, `id` (element), `devMm`, `against` (what it 
 
 **a. Window sill and head: the elevation decides, not the plan label.** On 7 Swallow Place the plan S/H labels are measured inside (window board, internal head); the elevations draw the outside, which is what the model's window is. Since 1.9.16, `survey_fidelity` and `survey_autofix` use the elevation wherever an indexed elevation draws the window (paired only within the window's own storey) and fall back to labels elsewhere. So: run `facade_list` + `elevation_index` before scoring; never set a sill by hand from a plan label where an elevation exists; autofix leaves changes over 600 mm "for review": check those with `dwg_elevation` (`path`, `sheet_x_range` from `elevation-index.json`, `facade: F..`) before acting.
 
-**b. "Can't make type ... Concept Window 4930x3900" (window type fails).** The base family won't take that size. A very wide one is usually several windows S2R merged: `split_opening` (report, then `apply: true`), then autofix again. A narrow-tall one (765x2750, 785x2750) is beyond the family's limits: place or reshape it with another family through `place_inserts` / `set_insert` `family` / `type_name` (e.g. a sash family copied from the reference model with `reference_copy types_only: true`). List any that still fail. (A fallback inside the tool is on the projects side's list.)
+**b. "Can't make type ... Concept Window 4930x3900" (window type fails).** The base family won't take that size. A very wide one is usually several windows S2R merged: `split_opening` (report, then `apply: true`), then autofix again. A narrow-tall one (765x2750, 785x2750) is beyond the family's limits: place or reshape it with another family through `place_inserts` / `set_insert` `family` / `type_name` (e.g. a sash family copied from the reference model with `reference_copy types_only: true`). List any that still fail. Since 1.12.0 the tools fall back on their own when the type can't be made: another family sized per instance ("BG Survey Window" first), else the nearest existing type within 300 mm, else (reshaping) the size is left and only sill/position applied; the answer says which under `fallbacks` / `Fallback:` lines. Check those windows: a fallback family is not the surveyed design.
 
-**c. "Can't cut instance of ... out of Wall".** The opening falls past the wall's end, across a join, or in a wall too short for it. `wall_info` on the host: check the opening sits inside the wall's length and height; if the wall is the wrong piece, `split_wall` or move the insert along with `set_insert`; then retry once. Otherwise list it.
+**c. "Can't cut instance of ... out of Wall".** The opening falls past the wall's end, across a join, or in a wall too short for it. `wall_info` on the host: check the opening sits inside the wall's length and height; if the wall is the wrong piece, `split_wall` or move the insert along with `set_insert`; then retry once. Otherwise list it. Since 1.12.0: when placing, the tool itself slides the window along the wall to fit inside it or says why it can't (too short, head above the top, overlap); when a wall moves, its doors/windows are kept where they were along it.
 
-**d. "Ceiling sketch is invalid" / "Element is reversed" during wall fixes.** A ceiling sketched on a wall breaks when the wall moves; a wall whose new line runs backwards is refused. Autofix skips these (nothing is forced). Fix walls first, then ceilings (`survey_ceilings create_missing` remakes ceilings at survey height), and list the reversed walls with ids. Don't retry the same move.
+**d. "Ceiling sketch is invalid" / "Element is reversed" during wall fixes.** A ceiling sketched on a wall breaks when the wall moves; a wall whose new line runs backwards is refused. Since 1.12.0 the wall move retries on its own: a ceiling locked to the wall is remade with the same outline but unlocked (old and new ids reported), and on "reversed" the joins at the wall's ends and its neighbours' meeting ends are stopped (`set_wall_joins allow=true` rejoins). Walls still refused after that are reported as "Wall N left where it was: ...": list them with ids and don't retry the same move. Then check remade ceilings with `survey_ceilings`.
 
 **e. Facade detail (the neoclassical front).** Work one facade at a time, and on the main facade first one bay, then repeat.
 1. `facade_list`, `elevation_index`, `section_index` (once).
@@ -238,7 +238,7 @@ Say so rather than working round it badly:
 - **Stairs**: checked, not built.
 - **Stepped slabs**: by hand as in 1.5 f; no one-call tool yet.
 - **Real in-place families**: not possible through Revit's API; DirectShapes (`model_sweep`, `model_extrusion`, `facade_details`) are used instead.
-- **A fallback when a window type can't be made**: on the projects side's list.
+- **A fallback when a window type can't be made**: done in 1.12.0 (see 1.5 b); the generated "BG Survey Window" family is in progress.
 
 When you hit something not covered here, write it in Part 2 (your section) with the exact message: that is how the next version of this guide gets written.
 
@@ -316,6 +316,21 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-12 (later): fixes for the build errors in your 1.9.16 run (1.12.0), please re-run
+- What: the errors you listed now fall back instead of failing, and one element Revit refuses is reported in a line while the rest go on. Each fix runs the change again in a fresh transaction after reading what Revit said:
+  - `Can't make type "Windows_Sgl_Plain : Concept Window 4930x3900"` (your request 1): another window family whose size is set per instance is used (a family named "BG Survey Window", which another thread is generating from the DWG, is preferred; otherwise the most-used such family), else the nearest existing type within 300 mm, else (reshaping only) the size is left alone and the sill and position still applied. If nothing fits, the line says so and that window is unchanged.
+  - `"Element is reversed" ... "Can't make Wall."` when fitting a wall: the joins at the wall's ends and at the neighbouring walls' ends that meet it are stopped, then the move is tried again. The answer says which joins were stopped (`set_wall_joins allow=true` rejoins them). The wall's direction (outside face) is also kept when a new line is given end-to-start.
+  - `"Can't cut instance of Concept Door 850x2100 out of Wall."` when a wall moves: its doors and windows are put back where they were along the wall (kept inside its length) and the move tried again.
+  - `"Can't cut instance of 890x2350 out of Wall."` when placing a window: slid along the wall to fit inside it, or a clear line why not (wall too short, head above the wall top, would overlap window N).
+  - `"Can't make Extrusion." ... "Ceiling sketch is invalid."` when a wall moves: the ceiling(s) named (or sketched along that wall) are remade with exactly the same outline but no longer locked to the wall, then the wall is moved. The answer gives the old and new ceiling ids.
+  - `family_detail`: `Loaded Family Editing failed.` now returns what the project holds instead of an error: each type's parameter values, the instance count and one instance's solids, with a note saying the family itself couldn't be opened.
+  - `place_inserts` now places each item in its own transaction (still one undo step), so one refused window no longer undoes the whole list.
+- Where to see it: `survey_autofix` per floor has new `fallbacks` (what was done instead) and `problemsTotal`; other tools add `Fallback: ...` lines to `revit`.
+- Files: `BuildFallbacks.cs` (new), `BuildTools.cs` (Tx throws `RevitRefusedException` with the failure texts and element ids; `SizedSymbol`/`ReshapeInsert`/`PlaceInsert` take an optional `InsertCtx`; `place_inserts`, `set_insert`), `SurveyAutofixTools.cs`, `SurveyTools.cs` (`dwg_wall_fit_apply`), `RevitTools.cs` (`set_wall_line`), `ReferenceTools.cs` (`family_detail`), `README.md`, `BGMCP.csproj`.
+- Version: 1.12.0 (your direct commits stay 1.11.x; another of our threads is taking 1.13.0 for window families generated from the DWG).
+- Where: MCP-Rev pull request from branch `claude/project-thread-qj4i8b` (it will be merged into `main` once CI is green).
+- Needs from the other side: please re-run on testmcp `survey_autofix walls=true openings=false`, then `survey_autofix walls=false`, and `family_detail` on Ss_25_30_95-Window_Double_02, and report the `fallbacks` and `problems` lines exactly. The fallbacks were compiled against the Revit 2025 API but have never run in Revit, so any exception text from them is what we need most. Note the window fallback only helps if the model has a window family sized per instance or a type within 300 mm; if every line still says "no other family in the model takes its size per instance", say so.
 
 ### 2026-11-12 (later): Part 1, the operating guide, added at the top of this file
 - What: a guide for driving the tools: the catalogue of every hub and Survey to Revit tool by purpose, the workflow in order, how to read the score and each issue kind, and what to do about the hard parts from your first run (elevation vs label heights, window types that fail, wall/ceiling errors, stepped slabs, facade detail, learning from the human-made reference model). Written from the code on `main` 1.11.0 and Survey to Revit's default branch.
