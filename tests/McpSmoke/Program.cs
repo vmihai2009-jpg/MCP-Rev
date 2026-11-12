@@ -26,6 +26,7 @@ namespace McpSmoke
             new[] { "smoke_write", "Would change the model.", "", "write" },
             new[] { "smoke_revit", "Runs on the Revit thread.", "not json", "" },
             new[] { "smoke_big", "A very long answer.", "", "background" },
+            new[] { "smoke_image", "An answer with a picture.", "", "background" },
             new[] { "bad name!", "Must be left out.", "", "" },
         };
 
@@ -40,6 +41,12 @@ namespace McpSmoke
                 case "smoke_write": return "{\"written\":true}";
                 case "smoke_revit": return new JsonObject { ["app"] = app?.ToString() }.ToJsonString();
                 case "smoke_big": return new string('x', 200000);
+                case "smoke_image":
+                {
+                    var c = new ToolContent { Text = "{\"drawn\":1}" };
+                    c.Images.Add(("image/png", BarrGazetas.RevitMcp.Survey.LineImage.Encode(new byte[] { 255, 0, 0, 0, 255, 0 }, 2, 1)));
+                    return c.Encode();
+                }
                 default: throw new ArgumentException("no such tool");
             }
         }
@@ -139,6 +146,12 @@ namespace McpSmoke
             var big = await Tool("smoke_big");
             Check("a huge answer is cut with a note", !big.isError && big.text.Length < 61000 && big.text.Contains("cut: the full answer is 200000"), big.text.Length.ToString());
 
+            var img = await Rpc("tools/call", new JsonObject { ["name"] = "smoke_image", ["arguments"] = new JsonObject() });
+            var imgContent = img["result"]?["content"] as JsonArray;
+            Check("an answer with a picture comes back as text and image content",
+                imgContent?.Count == 2 && imgContent[0]?["text"]?.ToString() == "{\"drawn\":1}" && imgContent[1]?["type"]?.ToString() == "image"
+                && imgContent[1]?["mimeType"]?.ToString() == "image/png" && Convert.FromBase64String(imgContent[1]?["data"]?.ToString() ?? "").Take(4).SequenceEqual(new byte[] { 137, 80, 78, 71 }), img.ToJsonString().Substring(0, Math.Min(300, img.ToJsonString().Length)));
+
             // ---- read-only ----
             var write = await Tool("smoke_write");
             Check("a write tool runs when changes are allowed", !write.isError && write.text.Contains("written"), write.text);
@@ -176,7 +189,7 @@ namespace McpSmoke
             await Task.Delay(300);
             lock (records)
             {
-                Check("every tool call is recorded (job_status and unknown tools are not calls)", records.Count == 11, records.Count.ToString());
+                Check("every tool call is recorded (job_status and unknown tools are not calls)", records.Count == 12, records.Count.ToString());
                 Check("a change refused in read-only mode is recorded", records.Any(r => r.Tool == "smoke_write" && !r.Ok && r.Error.Contains("read-only")));
                 Check("a failure is recorded with its message", records.Any(r => r.Tool == "smoke_boom" && !r.Ok && r.Error == "the wall fell over"));
                 Check("a job is recorded when it finishes, with its time", records.Any(r => r.Tool == "smoke_slow" && r.Job == jobId && r.Ok && r.Ms >= 3500));

@@ -361,6 +361,7 @@ namespace BarrGazetas.RevitMcp
                     var c = ((LocationCurve)w.Location).Curve;
                     return new FitWall { Id = w.Id.Value, A = CadLink.ToMm(c.GetEndPoint(0)), B = CadLink.ToMm(c.GetEndPoint(1)), ThicknessMm = w.Width * Mm, Type = w.WallType.Name };
                 }).ToList();
+            input.ArcWalls = ArcWallsOn(doc, level);
             var wallIds = new HashSet<long>(input.Walls.Select(w => w.Id));
             foreach (var cat in new[] { BuiltInCategory.OST_Windows, BuiltInCategory.OST_Doors })
                 foreach (var fi in new FilteredElementCollector(doc).OfCategory(cat).WhereElementIsNotElementType().OfType<FamilyInstance>())
@@ -378,6 +379,7 @@ namespace BarrGazetas.RevitMcp
             {
                 input.Sources.Add($"plan: Survey to Revit's reading of {Path.GetFileName(reading.Plan ?? "?")} ({source.Reading.FrameNote}" + (source.Reading.LayerFile != null ? ", layers.txt " + source.Reading.LayerFile : "") + ")");
                 input.WallFaces = reading.WallFaces;
+                input.WallArcs = reading.WallFaceArcs;
                 input.OpeningLines = reading.WindowLines.Concat(reading.DoorLines).ToList();
                 input.Heights = reading.Heights;
                 input.PlanOpenings = reading.Openings;

@@ -74,6 +74,7 @@ namespace BarrGazetas.RevitMcp
                         {
                             g.Start();
                             if (doWalls) FixWalls(doc, level, Plan(level), FidelityInputFor(doc, level, Plan(level), datumMm, source), log);
+                            if (doWalls) FixArcWalls(doc, FidelityInputFor(doc, level, Plan(level), datumMm, source), log);
                             if (doOpenings)
                             {
                                 var input = FidelityInputFor(doc, level, Plan(level), datumMm, source); // walls may have moved
@@ -270,6 +271,58 @@ namespace BarrGazetas.RevitMcp
                 }
                 catch (Exception ex) { log.WallsFailed++; log.Problems.Add($"wall {p.Id}: {McpServer.Unwrap(ex).Message}"); }
             }
+        }
+
+        /// <summary>
+        /// Curved walls re-curved onto the DWG: the centre and radius the DWG faces give (CurvedFit), over the same
+        /// angles; the thickness too when both faces were fitted. Only walls out of tolerance, and only modest moves.
+        /// </summary>
+        private static void FixArcWalls(Document doc, FidelityInput input, FloorFixLog log)
+        {
+            var gate = McpSettings.Load().FidelityGate ?? new FidelityGate();
+            foreach (var w in input.ArcWalls)
+            {
+                var r = CurvedFit.Measure(w, CurvedFit.FacesWithArcs(input), gate.WallTolMm);
+                if (!r.Verified || r.WorstFaceMm <= gate.WallTolMm || !(r.NewRadius is double nr) || r.NewCx == null) continue;
+                double shift = Math.Sqrt(Math.Pow(r.NewCx.Value - w.Cx, 2) + Math.Pow(r.NewCy.Value - w.Cy, 2));
+                if (Math.Abs(nr - w.Radius) > 300 || shift > 500) { log.Problems.Add($"curved wall {w.Id}: the DWG arc is {Math.Abs(nr - w.Radius):0} mm off in radius, {shift:0} mm in centre; left for a person"); continue; }
+                var wall = doc.GetElement(new ElementId(w.Id)) as Wall;
+                if (wall == null) continue;
+                try
+                {
+                    BuildTools.Tx.Run(doc, "MCP: fit curved wall " + w.Id, () =>
+                    {
+                        if (r.NewThicknessMm is double nt && Math.Abs(nt - w.ThicknessMm) > gate.ThicknessMm)
+                        {
+                            var type = BuildTools.WallTypeOf(doc, Math.Round(nt));
+                            if (type.Id != wall.WallType.Id) wall.ChangeTypeId(type.Id);
+                        }
+                        var lc = (LocationCurve)wall.Location;
+                        double z = lc.Curve.GetEndPoint(0).Z;
+                        double a0 = Math.Min(w.Start, w.Start + w.Sweep), a1 = Math.Max(w.Start, w.Start + w.Sweep);
+                        lc.Curve = Arc.Create(new XYZ(r.NewCx.Value / Mm, r.NewCy.Value / Mm, z), nr / Mm, a0, a1, XYZ.BasisX, XYZ.BasisY);
+                    });
+                    log.WallsFitted++;
+                }
+                catch (Exception ex) { log.WallsFailed++; log.Problems.Add($"curved wall {w.Id}: {McpServer.Unwrap(ex).Message}"); }
+            }
+        }
+
+        /// <summary>A floor's curved Basic walls, for the score.</summary>
+        internal static List<ArcWall> ArcWallsOn(Document doc, Level level)
+        {
+            var list = new List<ArcWall>();
+            foreach (var w in new FilteredElementCollector(doc).OfClass(typeof(Wall)).Cast<Wall>())
+            {
+                if (w.LevelId != level.Id || w.WallType.Kind != WallKind.Basic || !(w.Location is LocationCurve lc) || !(lc.Curve is Arc arc) || !arc.IsBound) continue;
+                var c = arc.Center; var p0 = arc.GetEndPoint(0); var p1 = arc.GetEndPoint(1); var pm = arc.Evaluate(0.5, true);
+                double a0 = Math.Atan2(p0.Y - c.Y, p0.X - c.X), a1 = Math.Atan2(p1.Y - c.Y, p1.X - c.X), am = Math.Atan2(pm.Y - c.Y, pm.X - c.X);
+                double Norm(double v) { v %= 2 * Math.PI; return v < 0 ? v + 2 * Math.PI : v; }
+                double ccw = Norm(a1 - a0);
+                double sweep = Norm(am - a0) < ccw ? ccw : -(2 * Math.PI - ccw);
+                list.Add(new ArcWall { Id = w.Id.Value, Cx = c.X * Mm, Cy = c.Y * Mm, Radius = arc.Radius * Mm, Start = a0, Sweep = sweep, ThicknessMm = w.Width * Mm, Type = w.WallType.Name });
+            }
+            return list;
         }
 
         private static void FixOpenings(Document doc, Level level, FidelityInput input, FloorFixLog log, Dictionary<long, ElevMatch> elevById = null)

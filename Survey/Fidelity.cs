@@ -24,6 +24,15 @@ namespace BarrGazetas.RevitMcp.Survey
         public double LevelMm { get; set; } = 10;
         public int MissingWalls { get; set; } = 0;
         public int MissingOpenings { get; set; } = 0;
+        // 1.11.0: sections (survey_section) and curved walls
+        /// <summary>Section profile: share of the model's cut edges within SectionTolMm of a section line (%).</summary>
+        public double SectionWithinPct { get; set; } = 90;
+        public double SectionTolMm { get; set; } = 20;
+        /// <summary>Heights read on a section: slab tops, soffits, wall and parapet tops, ridges and eaves.</summary>
+        public double HeightMm { get; set; } = 25;
+        public double SlabThicknessMm { get; set; } = 20;
+        public double PitchDeg { get; set; } = 1.5;
+        public double RiserMm { get; set; } = 5;
         /// <summary>Ceiling height against the plan's ceiling notes (u/s, CH...), where Survey to Revit's reading gives them.</summary>
         public double CeilingMm { get; set; } = 20;
         public int MissingCeilings { get; set; } = 0;
@@ -68,6 +77,10 @@ namespace BarrGazetas.RevitMcp.Survey
         public double LevelZ, DatumMm;
         public List<FitWall> Walls = new List<FitWall>();
         public List<FidInsert> Inserts = new List<FidInsert>();
+        /// <summary>Curved walls (1.11.0): scored with CurvedFit.</summary>
+        public List<ArcWall> ArcWalls = new List<ArcWall>();
+        /// <summary>Wall face arcs as Survey to Revit's reading gives them (centre x, y, radius, start and end angle in degrees, anticlockwise), model mm.</summary>
+        public List<double[]> WallArcs = new List<double[]>();
         /// <summary>The plan DWG's wall face lines, and its window and door lines.</summary>
         public List<Seg> WallFaces = new List<Seg>(), OpeningLines = new List<Seg>();
         /// <summary>The plan's text near openings ("S 0.94", "H 3.27", in m above the floor) in model mm (read by the hub).</summary>
@@ -111,6 +124,8 @@ namespace BarrGazetas.RevitMcp.Survey
         public int ThicknessChecked { get; set; }
         public int ThicknessOver { get; set; }
         public int Missing { get; set; }
+        /// <summary>Curved walls looked at (also counted in Checked / Unverified).</summary>
+        public int CurvedChecked { get; set; }
     }
 
     public class OpeningScore
@@ -309,6 +324,7 @@ namespace BarrGazetas.RevitMcp.Survey
                         Severity = worstFace / g.WallTolMm,
                     });
             }
+            CurvedFit.Score(f, g, s.Walls, issues, ref total, ref inTol, ref in25, ref max);
             s.Walls.FaceLengthM = Math.Round(total / 1000, 1);
             s.Walls.WithinTolPct = total > 0 ? Math.Round(100 * inTol / total, 1) : 0;
             s.Walls.Within25Pct = total > 0 ? Math.Round(100 * in25 / total, 1) : 0;

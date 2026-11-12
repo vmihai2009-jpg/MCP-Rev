@@ -150,6 +150,19 @@ Revit uses; the Revit CAD link cannot give text.
 
 Ceilings are `survey_ceilings` (1.9.1); rooms and ceilings in the base build come from Survey to Revit's `survey_build`.
 
+### 3D: sections, curved walls, looking at the model (1.11.0)
+
+| Tool | What it does |
+|---|---|
+| `survey_section` | The 1:1 score in 3D. The model is cut on each survey section's plane (every wall, floor, roof, ceiling, stair and generic model, from its real geometry) and measured against the section sheet: the whole cut profile, and per element slab top and thickness, wall and parapet tops, roof ridge, eaves and pitch (a roof modelled flat that the section draws pitched is flagged with the pitch to build), stair riser count and height. Long section lines nothing in the model follows are listed. Sections come from `section_index`, else Survey to Revit's "Survey Section X" views and the sheet titled "Section X", else the call. `image: true` returns a picture of each section with the model's cut drawn over it in red |
+| `survey_section_autofix`* | The certain height fixes: wall and parapet tops, slab tops, roofs moved when ridge and eaves agree. Elements two sections disagree on are left. One undo step, dry run available |
+| `view_image` | A view exported as a PNG and returned to Claude as an image, so it can look at the model, not only read numbers |
+| `check_view`* | Aims a view for that: a facade seen square on from outside, a survey section, or a 3D box round elements |
+
+Curved walls are now in `survey_fidelity` (each face sampled along the arc against the DWG, the arc refitted from
+the DWG points) and `survey_autofix` re-curves them onto the DWG. The gate has new values in `fidelityGate`:
+`sectionWithinPct` 90, `sectionTolMm` 20, `heightMm` 25, `slabThicknessMm` 20, `pitchDeg` 1.5, `riserMm` 5.
+
 Tools from other add-ins appear with their own prefix, for example `survey_build` and `survey_review` from Survey to Revit.
 
 ### One reading of the survey: Survey to Revit's

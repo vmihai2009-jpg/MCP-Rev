@@ -94,7 +94,7 @@ namespace BarrGazetas.RevitMcp
                             if (t != null)
                             {
                                 object r = t.Run(app, args);
-                                text = r as string ?? JsonSerializer.Serialize(r, json);
+                                text = r is ToolContent tc ? tc.Text : r as string ?? JsonSerializer.Serialize(r, json); // pictures are left out of a batch
                             }
                             else text = other(app, tool, args) ?? throw new ArgumentException($"There is no tool \"{tool}\".");
                             JsonNode node;

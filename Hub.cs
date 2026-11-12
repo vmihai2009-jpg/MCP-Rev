@@ -43,7 +43,7 @@ namespace BarrGazetas.RevitMcp
             var revitTools = RevitTools.All().Concat(RevitTools.Repair()).Concat(BuildTools.All()).Concat(SurveyTools.All()).Concat(SurveyTools.Facade())
                 .Concat(SurveyTools.Phase1()).Concat(SurveyTools.Phase2()).Concat(SurveyTools.Phase2Index()).Concat(SurveyTools.Phase3())
                 .Concat(ReferenceTools.All()).Concat(HostTools.All()).Concat(SurveyTools.Phase4())
-                .Concat(SurveyTools.Terrain()).Concat(RoomTools.All()).ToList();
+                .Concat(SurveyTools.Terrain()).Concat(RoomTools.All()).Concat(SurveyTools.Sections3D()).Concat(SurveyTools.Views()).ToList();
             // batch runs the others (and other add-ins' tools, called directly: it is already on Revit's thread) as one undo step
             revitTools.Add(BatchTool.Make(revitTools, (app, tool, args) => Providers.CallHere(app, tool, args), Compact));
             _own = revitTools.Select(t => new ToolInfo
@@ -55,6 +55,7 @@ namespace BarrGazetas.RevitMcp
                     string docName = t.Write || OwnDocArg(t.Name) ? null : Args.Str(args, "document");
                     object result;
                     using (Popups.Scope(app)) using (Reference.Use(docName)) result = t.Run(app, args);
+                    if (result is ToolContent content) return content.Encode(); // text with pictures (view_image, survey_section)
                     return result as string ?? JsonSerializer.Serialize(result, Compact);
                 }),
             }).ToList();

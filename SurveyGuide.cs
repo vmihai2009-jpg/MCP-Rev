@@ -65,7 +65,20 @@ Rules
    model_extrusion, place_family for pilasters, surrounds, quoins).
 8. FINAL SCORE
    survey_fidelity on every floor must pass. Report per floor: the numbers before and after, what is left for
-   a person (with element ids), and every value you could not read from the drawings.";
+   a person (with element ids), and every value you could not read from the drawings." + "\n" + Sections3D;
+
+        /// <summary>1.11.0: the 3D step, kept as its own block so the workflow above can change round it.</summary>
+        public const string Sections3D = @"SECTIONS, HEIGHTS AND CURVES (3D), before the final score
+   section_index (cut lines and where each section sits), then survey_section: every element the section
+   plane cuts against the section sheet: slab tops and thickness, wall and parapet tops, roof ridge, eaves
+   and pitch, stair risers. survey_section_autofix for the height fixes that are certain (dry_run first),
+   then the rest by hand: roof_form / roof_pitch with create_roof (slopes_deg from the issue) or
+   roof_from_survey; slab_thickness with create_floor replace_id; section_unmatched lines are a slab, roof
+   slope or parapet the model lacks, or detail beyond the cut: look before building. Curved walls are in
+   survey_fidelity (wall_face_curved) and survey_autofix re-curves them.
+   Look as well as measure: survey_section with image true draws the section with the model cut in red;
+   check_view (a facade, a section or some elements) then view_image shows the model itself. Every
+   section must pass with the floors.";
 
         public const string ConfigGuide = @"BUILD FROM A LINKED DWG BY LAYER RULES
 1. survey_coordinates: check base points; keep the model near the internal origin.
