@@ -425,7 +425,7 @@ namespace BarrGazetas.RevitMcp
         }
 
         /// <summary>
-        /// Windows an elevation draws that the model lacks (1.15.0). Sill and head are the elevation's (outside, frame to frame;
+        /// Windows an elevation draws that the model lacks (1.16.0). Sill and head are the elevation's (outside, frame to frame;
         /// the plan's S/H labels are measured inside and are not used for these). Where the plan's reveals agree (both within
         /// 150 mm) the plan gives width and centre; where the plan shows no opening (a window above the plan's cut, or merged
         /// on the plan) it is placed from the elevation alone when elevationOnly and a wall of this floor on the facade stands

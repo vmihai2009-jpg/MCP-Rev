@@ -1,4 +1,4 @@
-// 1.15.0: a window an elevation draws that the model lacks carries its drawn panes (for a BG Window type).
+// 1.16.0: a window an elevation draws that the model lacks carries its drawn panes (for a BG Window type).
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -78,7 +78,7 @@ namespace BarrGazetas.RevitMcp.Survey
         public double X, Y;
         public string Level;
         public double? Sill, Head;
-        /// <summary>1.15.0: its panes as drawn (for a BG Window type) and the opening on the sheet.</summary>
+        /// <summary>1.16.0: its panes as drawn (for a BG Window type) and the opening on the sheet.</summary>
         public WindowPattern Pattern;
         public ElevOpening Sheet;
     }

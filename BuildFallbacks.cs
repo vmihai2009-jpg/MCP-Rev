@@ -119,7 +119,7 @@ namespace BarrGazetas.RevitMcp
             var all = new FilteredElementCollector(doc).OfCategoryId(baseSym.Category.Id).WhereElementIsElementType().OfType<FamilySymbol>().ToList();
             if (ctx.Mode == TypeFallback.PerInstanceFamily)
             {
-                // 1.15.0: the parametric "BG Window" (window_family), when loaded, takes any size as a type of its own
+                // 1.16.0: the parametric "BG Window" (window_family), when loaded, takes any size as a type of its own
                 if (baseSym.Category.Id.Value == (long)BuiltInCategory.OST_Windows && baseSym.FamilyName != WindowFamilyBuilder.FamilyName
                     && BgWindowSized(doc, wMm, hMm) is FamilySymbol bg)
                 {
