@@ -224,7 +224,14 @@ namespace BarrGazetas.RevitMcp
                                ?? throw new InvalidOperationException("That in-place family has no instance to look at.");
                         return new { family = fam?.Name, inPlace = fam?.IsInPlace, category = el.Category?.Name, element = el.Id.Value, solids = SolidsReport(doc, el, 25) };
                     }
-                    var fdoc = doc.EditFamily(fam);
+                    Document fdoc;
+                    try { fdoc = doc.EditFamily(fam); }
+                    catch (Exception ex)
+                    {
+                        // 1.12.0: a family Revit can't open for editing (e.g. "Loaded Family Editing failed." when it has errors
+                        // of its own): what the project knows about it instead, rather than failing the call.
+                        return FamilyFromProject(doc, fam, el, Args.Int(a, "types", 12), McpServer.Unwrap(ex).Message);
+                    }
                     try
                     {
                         var fm = fdoc.FamilyManager;
@@ -590,6 +597,35 @@ namespace BarrGazetas.RevitMcp
                 if (o is Solid s && s.Volume > 1e-9) yield return s;
                 else if (o is GeometryInstance gi) foreach (var x in Solids(gi.GetInstanceGeometry())) yield return x;
             }
+        }
+
+        /// <summary>family_detail when the family can't be opened: its types' parameter values as the project holds them, and one instance's solids.</summary>
+        private static object FamilyFromProject(Document doc, Family fam, Element el, int nTypes, string why)
+        {
+            var symbols = fam.GetFamilySymbolIds().Select(i => doc.GetElement(i)).OfType<FamilySymbol>().ToList();
+            var types = symbols.Take(nTypes).Select(t => new
+            {
+                t.Name,
+                values = t.Parameters.Cast<Parameter>()
+                    .Where(p => p.HasValue && (p.StorageType == StorageType.Double || p.StorageType == StorageType.Integer))
+                    .GroupBy(p => p.Definition.Name).Select(g => g.First())
+                    .OrderBy(p => p.Definition.Name)
+                    .ToDictionary(p => p.Definition.Name, p => { try { return p.AsValueString(); } catch { return null; } }),
+            }).ToList();
+            var symIds = new HashSet<ElementId>(symbols.Select(x => x.Id));
+            var instances = new FilteredElementCollector(doc).OfClass(typeof(FamilyInstance)).Cast<FamilyInstance>().Where(fi => symIds.Contains(fi.Symbol.Id)).ToList();
+            el ??= instances.FirstOrDefault();
+            object solids = null;
+            try { solids = el != null ? SolidsReport(doc, el, 25) : null; } catch { /* geometry is optional here */ }
+            return new
+            {
+                family = fam.Name, category = fam.FamilyCategory?.Name,
+                opened = false,
+                note = $"Revit could not open this family for editing (\"{why}\"), often because the family has errors of its own. " +
+                       "Shown instead: what the project holds (each type's parameter values) and one instance's solids. Formulas, forms and nested families need the family opened in Revit's Family Editor.",
+                typesTotal = symbols.Count, types, instances = instances.Count,
+                instanceElement = el?.Id.Value, solids,
+            };
         }
 
         private static object SolidsReport(Document doc, Element el, int max)

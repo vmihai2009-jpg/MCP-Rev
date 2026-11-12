@@ -18,7 +18,7 @@ namespace BarrGazetas.RevitMcp
     /// unjoined, warnings are dismissed and reported; anything that would need elements deleted rolls back instead
     /// and says which elements).
     /// </summary>
-    internal static class BuildTools
+    internal static partial class BuildTools
     {
         private const double MmPerFoot = 304.8;
         private const string DefaultComment = "MCP";
@@ -215,18 +215,23 @@ namespace BarrGazetas.RevitMcp
                     if (items.Count == 0) throw new ArgumentException("items is needed: one { category, x, y, width_mm, height_mm, sill_mm ... } per window or door.");
                     var made = new List<object>();
                     var failed = new List<object>();
-                    var notes = Tx.Run(doc, $"MCP: place {items.Count} window{(items.Count == 1 ? "" : "s")}/door{(items.Count == 1 ? "" : "s")}", () =>
+                    var notes = new List<string>();
+                    // 1.12.0: each item in its own transaction (one undo step for all through the group), so one that Revit
+                    // refuses at commit (e.g. "Can't make type") is reported and the others are still placed.
+                    using (var g = new TransactionGroup(doc, $"MCP: place {items.Count} window{(items.Count == 1 ? "" : "s")}/door{(items.Count == 1 ? "" : "s")}"))
                     {
+                        g.Start();
                         int i = 0;
                         foreach (var it in items)
                         {
                             i++;
-                            try { made.Add(PlaceInsert(doc, it)); }
-                            catch (Exception ex) { failed.Add(new { item = i, problem = ex.Message }); }
+                            try { made.Add(PlaceInsertSafely(doc, it, "MCP: place window/door", out var n)); notes.AddRange(n); }
+                            catch (Exception ex) { failed.Add(new { item = i, problem = McpServer.Unwrap(ex).Message }); }
                         }
-                        if (made.Count == 0) throw new InvalidOperationException("Nothing could be placed: " + string.Join("; ", failed.Select(f => f.ToString())));
-                    });
-                    return new { placed = made.Count, made, failed, revit = notes, undo = "One undo step in Revit." };
+                        if (made.Count == 0) { g.RollBack(); throw new InvalidOperationException("Nothing could be placed: " + string.Join("; ", failed.Select(f => f.ToString()))); }
+                        g.Assimilate();
+                    }
+                    return new { placed = made.Count, made, failed, revit = notes.Distinct().Take(30).ToList(), undo = "One undo step in Revit." };
                 }
             };
 
@@ -245,15 +250,17 @@ namespace BarrGazetas.RevitMcp
                 {
                     var doc = Writable(app);
                     var fi = doc.GetElement(new ElementId(Long(a, "element_id") ?? 0)) as FamilyInstance ?? throw new ArgumentException("element_id is not a window or door.");
-                    var notes = Tx.Run(doc, "MCP: change window/door", () =>
+                    var notes = RunInsertChange(doc, "MCP: change window/door", ctx =>
                     {
                         double? w = Dbl(a, "width_mm"), h = Dbl(a, "height_mm");
                         if (w != null || h != null)
                         {
                             var (cw, ch) = InsertSize(doc, fi);
-                            var sym = SizedSymbol(doc, fi.Symbol, w ?? cw ?? 0, h ?? ch ?? 0);
+                            var sym = SizedSymbol(doc, fi.Symbol, w ?? cw ?? 0, h ?? ch ?? 0, ctx);
                             if (sym.Id != fi.Symbol.Id) fi.Symbol = sym;
-                            SetInstanceSize(fi, w, h);
+                            if (ctx.Mode != TypeFallback.KeepSize)
+                                SetInstanceSize(fi, w ?? (ctx.Mode == TypeFallback.PerInstanceFamily ? cw : null), h ?? (ctx.Mode == TypeFallback.PerInstanceFamily ? ch : null));
+                            CheckFallbackSize(doc, fi, w ?? cw ?? 0, h ?? ch ?? 0, ctx);
                         }
                         if (Dbl(a, "sill_mm") is double sill) SetSill(fi, sill);
                         if (Dbl(a, "x") is double x && Dbl(a, "y") is double y && fi.Host is Wall host && fi.Location is LocationPoint lp)
@@ -264,7 +271,7 @@ namespace BarrGazetas.RevitMcp
                         }
                         if (Bool(a, "flip_facing") == true && fi.CanFlipFacing) fi.flipFacing();
                         if (Bool(a, "flip_hand") == true && fi.CanFlipHand) fi.flipHand();
-                    });
+                    }, canKeepSize: true);
                     var (nw, nh) = InsertSize(doc, fi);
                     return new { element_id = fi.Id.Value, type = fi.Symbol.Name, widthMm = nw, heightMm = nh, at = (fi.Location as LocationPoint) is LocationPoint p ? Pt(p.Point) : null, revit = notes, undo = "One undo step in Revit." };
                 }
@@ -702,9 +709,10 @@ namespace BarrGazetas.RevitMcp
                     }
                     var status = tx.Commit();
                     if (status != TransactionStatus.Committed)
-                        throw new InvalidOperationException("Revit refused the change, so nothing was changed. " +
+                        throw new RevitRefusedException("Revit refused the change, so nothing was changed. " +
                             (pre.Blocking.Count > 0 ? string.Join(" ", pre.Blocking) : "Status: " + status) +
-                            " Try another way: stop the joins first (set_wall_joins), split the wall (split_wall), or move the elements named.");
+                            " Try another way: stop the joins first (set_wall_joins), split the wall (split_wall), or move the elements named.",
+                            pre.BlockingTexts, pre.FailingIds);
                 }
                 return pre.Notes.Distinct().Take(20).ToList();
             }
@@ -713,6 +721,8 @@ namespace BarrGazetas.RevitMcp
             {
                 public readonly List<string> Notes = new List<string>();
                 public readonly List<string> Blocking = new List<string>();
+                public readonly List<string> BlockingTexts = new List<string>();
+                public readonly List<long> FailingIds = new List<long>();
 
                 public FailureProcessingResult PreprocessFailures(FailuresAccessor fa)
                 {
@@ -737,6 +747,8 @@ namespace BarrGazetas.RevitMcp
                             continue;
                         }
                         Blocking.Add($"\"{text}\"" + (ids.Length > 0 ? $" for elements {ids}." : "."));
+                        BlockingTexts.Add(text);
+                        FailingIds.AddRange(m.GetFailingElementIds().Select(i => i.Value));
                     }
                     if (Blocking.Count > 0) return FailureProcessingResult.ProceedWithRollBack;
                     return resolved ? FailureProcessingResult.ProceedWithCommit : FailureProcessingResult.Continue;
@@ -747,10 +759,10 @@ namespace BarrGazetas.RevitMcp
         // ================================================================ windows and doors
 
         /// <summary>place_inserts for one item, inside a transaction the caller runs (survey_autofix).</summary>
-        internal static object PlaceInsertHere(Document doc, JsonObject it) => PlaceInsert(doc, it);
+        internal static object PlaceInsertHere(Document doc, JsonObject it, InsertCtx ctx = null) => PlaceInsert(doc, it, ctx);
 
         /// <summary>set_insert's reshape and slide, inside a transaction the caller runs (survey_autofix).</summary>
-        internal static void ReshapeInsert(Document doc, FamilyInstance fi, double? widthMm, double? heightMm, double? sillMm, XYZ slideTo = null)
+        internal static void ReshapeInsert(Document doc, FamilyInstance fi, double? widthMm, double? heightMm, double? sillMm, XYZ slideTo = null, InsertCtx ctx = null)
         {
             if (widthMm != null || heightMm != null)
             {
@@ -762,9 +774,11 @@ namespace BarrGazetas.RevitMcp
                 if (cw == null || cw <= 0) cw = SymbolSize(fi.Symbol).w;
                 double newW = widthMm ?? cw ?? 0, newH = heightMm ?? ch ?? 0;
                 if (newW <= 0 || newH <= 0) throw new InvalidOperationException($"the window's current {(newW <= 0 ? "width" : "height")} cannot be read: give both width and height");
-                var sym = SizedSymbol(doc, fi.Symbol, newW, newH);
+                var sym = SizedSymbol(doc, fi.Symbol, newW, newH, ctx);
                 if (sym.Id != fi.Symbol.Id) fi.Symbol = sym;
-                SetInstanceSize(fi, widthMm, heightMm);
+                if (ctx?.Mode != TypeFallback.KeepSize)
+                    SetInstanceSize(fi, widthMm ?? (ctx?.Mode == TypeFallback.PerInstanceFamily ? newW : (double?)null), heightMm ?? (ctx?.Mode == TypeFallback.PerInstanceFamily ? newH : (double?)null));
+                CheckFallbackSize(doc, fi, newW, newH, ctx);
             }
             if (sillMm is double sill) SetSill(fi, sill);
             if (slideTo != null && fi.Host is Wall host && fi.Location is LocationPoint lp)
@@ -777,7 +791,7 @@ namespace BarrGazetas.RevitMcp
 
         internal static (double? w, double? h) InsertSizeOf(Document doc, FamilyInstance fi) => InsertSize(doc, fi);
 
-        private static object PlaceInsert(Document doc, JsonObject it)
+        private static object PlaceInsert(Document doc, JsonObject it, InsertCtx ctx = null)
         {
             string catName = (Str(it, "category") ?? "Windows").ToLowerInvariant();
             var bic = catName.StartsWith("door") ? BuiltInCategory.OST_Doors : catName.StartsWith("window") ? BuiltInCategory.OST_Windows : throw new ArgumentException("category is Windows or Doors.");
@@ -800,7 +814,7 @@ namespace BarrGazetas.RevitMcp
             if (Str(it, "type_name") == null && (w != null || h != null))
             {
                 var (bw, bh) = SymbolSize(sym);
-                sym = SizedSymbol(doc, sym, w ?? bw ?? 900, h ?? bh ?? 2100);
+                sym = SizedSymbol(doc, sym, w ?? bw ?? 900, h ?? bh ?? 2100, ctx);
             }
             if (!sym.IsActive) { sym.Activate(); doc.Regenerate(); }
 
@@ -809,6 +823,7 @@ namespace BarrGazetas.RevitMcp
             SetSill(fi, sill);
             SetInstanceSize(fi, w, h);
             doc.Regenerate(); // so the size read back below is the real one
+            if (w != null && h != null) CheckFallbackSize(doc, fi, w.Value, h.Value, ctx);
             if (Bool(it, "flip_facing") == true && fi.CanFlipFacing) fi.flipFacing();
             if (Bool(it, "flip_hand") == true && fi.CanFlipHand) fi.flipHand();
             if (Str(it, "mark") is string mark) fi.get_Parameter(BuiltInParameter.ALL_MODEL_MARK)?.Set(mark);
@@ -857,7 +872,7 @@ namespace BarrGazetas.RevitMcp
         }
 
         /// <summary>A type of this family with this width and height: an existing one, or a copy of the base type named in the family's own pattern.</summary>
-        private static FamilySymbol SizedSymbol(Document doc, FamilySymbol baseSym, double wMm, double hMm)
+        private static FamilySymbol SizedSymbol(Document doc, FamilySymbol baseSym, double wMm, double hMm, InsertCtx ctx = null)
         {
             wMm = Math.Round(wMm); hMm = Math.Round(hMm);
             var family = baseSym.Family;
@@ -867,13 +882,16 @@ namespace BarrGazetas.RevitMcp
                 var (sw, sh) = SymbolSize(s);
                 if (sw != null && sh != null && Math.Abs(sw.Value - wMm) < 1 && Math.Abs(sh.Value - hMm) < 1) return s;
             }
-            if (SizeParam(baseSym, WidthParams, "Width") == null && SizeParam(baseSym, HeightParams, "Height") == null) return baseSym; // sized per instance
+            bool perInstance = SizeParam(baseSym, WidthParams, "Width") == null && SizeParam(baseSym, HeightParams, "Height") == null;
+            if (perInstance) return baseSym; // sized per instance
+            if (ctx != null && ctx.Mode != TypeFallback.Make) return FallbackSymbol(doc, baseSym, wMm, hMm, ctx);
             var m = Regex.Match(baseSym.Name, @"^(.*?)\s*\d+\s*x\s*\d+\s*$");
             string name = (m.Success ? m.Groups[1].Value.Trim() + " " : "") + $"{wMm:0}x{hMm:0}";
             var names = new HashSet<string>(family.GetFamilySymbolIds().Select(i => doc.GetElement(i).Name));
             string unique = name; int n = 2;
             while (names.Contains(unique)) unique = $"{name} ({n++})";
             var copy = (FamilySymbol)baseSym.Duplicate(unique);
+            if (ctx != null) ctx.MadeType = $"{baseSym.FamilyName}: {unique}";
             SizeParam(copy, WidthParams, "Width")?.Set(wMm / MmPerFoot);
             SizeParam(copy, HeightParams, "Height")?.Set(hMm / MmPerFoot);
             return copy;

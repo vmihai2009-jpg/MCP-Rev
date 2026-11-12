@@ -163,6 +163,23 @@ Curved walls are now in `survey_fidelity` (each face sampled along the arc again
 the DWG points) and `survey_autofix` re-curves them onto the DWG. The gate has new values in `fidelityGate`:
 `sectionWithinPct` 90, `sectionTolMm` 20, `heightMm` 25, `slabThicknessMm` 20, `pitchDeg` 1.5, `riserMm` 5.
 
+### When Revit refuses one element (1.12.0)
+
+A change Revit refuses no longer stops the others: each window, door and wall is its own transaction (still one undo
+step per call or per floor), and a refused one is tried again another way before it is reported. The answers list what
+was done under `fallbacks` (survey_autofix) or as `Fallback:` lines in `revit`.
+
+| Revit says | What happens now |
+|---|---|
+| `Can't make type "... 4930x3900"` | Another window family sized per instance is used (the generated "BG Survey Window" first), else the nearest existing type within 300 mm, else (reshaping) the size is left and the sill and position still applied. If none fits, a line says so and nothing changes for that window |
+| `Element is reversed`, `Can't make Wall` (moving a wall) | Joins are stopped at the wall's ends and at the neighbours' ends that meet it, then the move is tried again (`set_wall_joins` rejoins them) |
+| `Can't cut instance of ... out of Wall` (moving a wall) | Its doors and windows are kept where they were along the wall, inside its length |
+| `Can't cut instance of ... out of Wall` (placing) | Slid along the wall to fit inside it; or a line saying why not (wall too short, head above the wall, overlaps window N) |
+| `Ceiling sketch is invalid` (moving a wall) | The ceiling sketched on that wall is remade with the same outline, no longer locked to the wall, and the wall moved |
+| `family_detail`: `Loaded Family Editing failed.` | The family's types and parameter values as the project holds them, and one instance's solids |
+
+`place_inserts` places each item on its own, so one refused window no longer undoes the whole list.
+
 Tools from other add-ins appear with their own prefix, for example `survey_build` and `survey_review` from Survey to Revit.
 
 ### One reading of the survey: Survey to Revit's

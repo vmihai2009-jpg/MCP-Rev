@@ -334,18 +334,20 @@ namespace BarrGazetas.RevitMcp
                             string typeChange = null;
                             try
                             {
-                                notes.AddRange(BuildTools.Tx.Run(doc, "MCP: fit wall " + p.Id, () =>
+                                void changeType()
                                 {
                                     if (Math.Abs(p.NewThicknessMm - p.ThicknessMm) > 1)
                                     {
                                         var type = BuildTools.WallTypeOf(doc, p.NewThicknessMm);
                                         if (type.Id != wall.WallType.Id) { wall.ChangeTypeId(type.Id); typeChange = $"{p.ThicknessMm:0} -> {p.NewThicknessMm:0} mm ({type.Name})"; }
                                     }
-                                    var lc = (LocationCurve)wall.Location;
-                                    double z = lc.Curve.GetEndPoint(0).Z;
-                                    var line = Line.CreateBound(new XYZ(p.NewLine[0] / Mm, p.NewLine[1] / Mm, z), new XYZ(p.NewLine[2] / Mm, p.NewLine[3] / Mm, z));
-                                    if (Math.Max(Math.Abs(p.ShiftStartMm), Math.Abs(p.ShiftEndMm)) > 1) BuildTools.SetLineKeepingOpenings(doc, wall, line);
-                                }));
+                                }
+                                var lc = (LocationCurve)wall.Location;
+                                double z = lc.Curve.GetEndPoint(0).Z;
+                                var line = Line.CreateBound(new XYZ(p.NewLine[0] / Mm, p.NewLine[1] / Mm, z), new XYZ(p.NewLine[2] / Mm, p.NewLine[3] / Mm, z));
+                                if (Math.Max(Math.Abs(p.ShiftStartMm), Math.Abs(p.ShiftEndMm)) > 1)
+                                    notes.AddRange(BuildTools.SetWallLineSafely(doc, wall, line, "MCP: fit wall " + p.Id, changeType));
+                                else notes.AddRange(BuildTools.Tx.Run(doc, "MCP: fit wall " + p.Id, changeType));
                                 if (!wall.IsValidObject) failed.Add(new { id = p.Id, problem = "Revit removed the wall" });
                                 else done.Add(new { id = p.Id, type = typeChange, shiftMm = new[] { p.ShiftStartMm, p.ShiftEndMm } });
                             }
