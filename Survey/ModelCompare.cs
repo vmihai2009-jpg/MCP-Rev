@@ -83,6 +83,45 @@ namespace BarrGazetas.RevitMcp.Survey
             return (move, rms, paired);
         }
 
+        /// <summary>
+        /// The best plan move with no starting guess (a model without survey coordinates): each quarter turn, the medians
+        /// laid together, then refined as Align; the one pairing the most points (then the lowest rms) wins.
+        /// </summary>
+        public static (PlanMove move, double rms, int paired) AlignAny(IList<Pt> from, IList<Pt> to)
+        {
+            (PlanMove move, double rms, int paired) best = (PlanMove.Identity, double.MaxValue, 0);
+            if (from.Count == 0 || to.Count == 0) return best;
+            // each quarter turn (and a few degrees either side): every pairing of a sample of `from` with every `to` point
+            // votes for a shift (250 mm bins); the most voted shifts start the fine fit
+            var rnd = new Random(7);
+            var sample = from.Count <= 80 ? from.ToList() : from.OrderBy(_ => rnd.Next()).Take(80).ToList();
+            var targets = to.Count <= 1500 ? to.ToList() : to.OrderBy(_ => rnd.Next()).Take(1500).ToList();
+            var starts = new List<(PlanMove m, int votes)>();
+            for (int q = 0; q < 4; q++)
+                foreach (double tilt in new[] { 0.0, -3, 3, -6, 6 })
+                {
+                    var rot = new PlanMove { Angle = q * Math.PI / 2 + tilt * Math.PI / 180 };
+                    var votes = new Dictionary<GridKey, int>();
+                    foreach (var p in sample)
+                    {
+                        var r = rot.Apply(p);
+                        foreach (var t in targets)
+                        {
+                            var k = new GridKey((long)Math.Round((t.X - r.X) / 250), (long)Math.Round((t.Y - r.Y) / 250));
+                            votes[k] = votes.TryGetValue(k, out int c) ? c + 1 : 1;
+                        }
+                    }
+                    foreach (var kv in votes.OrderByDescending(v => v.Value).Take(3))
+                        starts.Add((new PlanMove { Angle = rot.Angle, Dx = kv.Key.A * 250.0, Dy = kv.Key.B * 250.0 }, kv.Value));
+                }
+            foreach (var (m, _) in starts.OrderByDescending(s => s.votes).Take(12))
+            {
+                var r = Align(from, to, m, 1500, 80);
+                if (r.paired > best.paired * 1.05 || (r.paired >= best.paired * 0.95 && r.rms < best.rms)) best = r;
+            }
+            return best;
+        }
+
         /// <summary>Least-squares rigid 2D move taking each a onto its b.</summary>
         public static PlanMove Solve(IList<(Pt a, Pt b)> pairs)
         {

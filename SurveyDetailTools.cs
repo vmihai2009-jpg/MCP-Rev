@@ -1,4 +1,4 @@
-// 1.9.0: the detail tools, after studying how the colleague's Swallow Place model was built by hand (cornices as
+﻿// 1.9.0: the detail tools, after studying how the colleague's Swallow Place model was built by hand (cornices as
 // sweeps along the facades, pilasters/surrounds as placed pieces, parametric sash windows with an inset, dormers,
 // chimneys, flat and pitched roof faces, stairs, ceilings). Each measures against the survey first and changes the
 // model only when asked (apply / build). The measuring is in Survey/SurveyDetail.cs (Revit-free, tested).
@@ -719,7 +719,7 @@ namespace BarrGazetas.RevitMcp
         private static Func<Pt, Pt> SurveyMap(Document doc, DwgContent file, out string note)
         {
             var pp = doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero);
-            var total = doc.ActiveProjectLocation.GetTotalTransform().Inverse;
+            var total = doc.ActiveProjectLocation.GetTotalTransform(); // shared -> internal
             var ways = new List<(string name, Func<Pt, Pt> f)>
             {
                 ("shared coordinates", p => { var q = total.OfPoint(new XYZ(p.X / Mm, p.Y / Mm, 0)); return new Pt(q.X * Mm, q.Y * Mm); }),
