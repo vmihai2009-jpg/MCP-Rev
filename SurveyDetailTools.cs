@@ -56,11 +56,22 @@ namespace BarrGazetas.RevitMcp
                         }
                         var rows = per.Select(kv =>
                         {
+                            // the slab is where most spots agree (within 60 mm of each other); the rest stand on steps,
+                            // landings, raised floors or pits, which the slab alone cannot model
                             var d = kv.Value.OrderBy(v => v).ToList();
-                            double med = d[d.Count / 2], spread = d[^1] - d[0];
-                            bool even = spread <= 30;
-                            if (Math.Abs(med) > tol && even) fixes.Add((floors.First(f => f.Id.Value == kv.Key), med));
-                            return new { floor = kv.Key, spots = d.Count, medianMm = R(med), worstMm = R(d.OrderByDescending(Math.Abs).First()), spreadMm = R(spread), even, ok = Math.Abs(med) <= tol && even };
+                            int bi = 0, bn = 0;
+                            for (int i = 0, j = 0; i < d.Count; i++) { while (d[i] - d[j] > 60) j++; if (i - j + 1 > bn) { bn = i - j + 1; bi = j; } }
+                            var main = d.Skip(bi).Take(bn).ToList();
+                            double med = main[main.Count / 2], spread = main[^1] - main[0];
+                            bool even = bn >= Math.Max(2, d.Count * 0.5);
+                            // more than 300 mm off is not a slab set a little wrong but the wrong slab: reported, never moved
+                            if (Math.Abs(med) > tol && Math.Abs(med) <= 300 && even) fixes.Add((floors.First(f => f.Id.Value == kv.Key), med));
+                            return new
+                            {
+                                floor = kv.Key, spots = d.Count, onSlab = bn, medianMm = R(med), spreadMm = R(spread),
+                                elsewhere = d.Count - bn, elsewhereMm = d.Where((_, i) => i < bi || i >= bi + bn).Select(R).Take(12).ToList(),
+                                even, ok = Math.Abs(med) <= tol && even,
+                            };
                         }).OrderByDescending(r => Math.Abs(r.medianMm)).ToList();
                         report.Add(new
                         {
@@ -202,7 +213,7 @@ namespace BarrGazetas.RevitMcp
                                 }
                                 else
                                 {
-                                    var room = doc.GetRoomAtPoint(new XYZ(p.X / Mm, p.Y / Mm, (levels[i].Elevation * Mm + 1000) / Mm));
+                                    var room = RoomAt(doc, new XYZ(p.X / Mm, p.Y / Mm, (levels[i].Elevation * Mm + 1000) / Mm));
                                     missing.Add((levels[i], p, want, room == null ? null : $"{room.Number} {room.Name}", room?.Id.Value ?? 0));
                                 }
                             }
@@ -218,6 +229,7 @@ namespace BarrGazetas.RevitMcp
                     {
                         level = g.First().lv, roomId = g.Key.roomId, room = g.First().room, samples = g.Count(),
                         heightMm = g.Select(m => m.z).OrderBy(v => v).ElementAt(g.Count() / 2),
+                        from = new[] { R(g.First().p.X), R(g.First().p.Y) }, to = new[] { R(g.Last().p.X), R(g.Last().p.Y) },
                     }).OrderByDescending(g => g.samples).ToList();
 
                     bool apply = Args.Bool(a, "apply") == true, create = Args.Bool(a, "create_missing") == true;
@@ -256,7 +268,7 @@ namespace BarrGazetas.RevitMcp
                     {
                         checkedCeilings = rows.Count, passing = rows.Count(r => Math.Abs(r.med) <= tol),
                         ceilings = rows.Take(20).Select(r => new { ceiling = r.id, samples = r.n, medianMm = R(r.med), worstMm = R(r.worst), spreadMm = R(r.spread) }).ToList(),
-                        missing = groups.Take(20).Select(g => new { level = g.level.Name, g.room, g.samples, surveyHeightAboveLevelMm = R(g.heightMm - g.level.Elevation * Mm) }).ToList(),
+                        missing = groups.Take(20).Select(g => new { level = g.level.Name, g.room, g.samples, surveyHeightAboveLevelMm = R(g.heightMm - g.level.Elevation * Mm), g.from, g.to }).ToList(),
                         missingPlaces = missing.Count,
                         moved = apply ? moves.Count : 0, created = made, revit, sections = notes,
                     };
@@ -428,12 +440,24 @@ namespace BarrGazetas.RevitMcp
                         .Select(t => { var p = map(t.At); return new Pt(p.X, p.Y, ElevationFit.LevelValueMm(t.Value).Value); }).ToList();
                     var faces = SurveyDetail.Faces(segs, 10, minArea / 3);
                     var bySpot = spots.GroupBy(s => SurveyDetail.FaceAt(faces, s)).Where(g => g.Key >= 0).ToDictionary(g => g.Key, g => g.ToList());
-                    var rows = new List<(int i, List<Pt> ring, PlaneZ plane, string kind)>();
+                    // each face: a plane through its spots; flat roofs at several levels inside one outline (the plane fits
+                    // badly) as terraces; a face with no spot takes the nearest spot within 2 m (an upstand, a light)
+                    var rows = new List<(int i, List<Pt> ring, PlaneZ plane, string kind, string how, List<(double z, List<(double x0, double y0, double x1, double y1)> rects)> terraces)>();
                     for (int i = 0; i < faces.Count; i++)
                     {
                         var c = new Pt(faces[i].Average(p => p.X), faces[i].Average(p => p.Y));
                         string kind = chimneys.Any(r => GeoMath.PointInPolygon(c, r)) ? "chimney" : lights.Any(r => GeoMath.PointInPolygon(c, r)) ? "rooflight" : "roof";
-                        rows.Add((i, faces[i], bySpot.TryGetValue(i, out var ss) ? SurveyDetail.FitPlane(ss) : null, kind));
+                        bySpot.TryGetValue(i, out var ss);
+                        var plane = ss != null ? SurveyDetail.FitPlane(ss) : null;
+                        string how = plane == null ? null : plane.Flat ? "flat" : "sloped";
+                        List<(double, List<(double, double, double, double)>)> ter = null;
+                        if (plane != null && plane.RmsMm > 40 && kind != "chimney") { ter = SurveyDetail.Terraces(faces[i], ss); how = $"terraces ({ter.Count} levels)"; }
+                        if (plane == null && kind != "chimney")
+                        {
+                            var near = spots.Select(s => (s, d: faces[i].Min(v => v.Dist2D(s)))).Where(x => x.d <= 2000).OrderBy(x => x.d).Select(x => (Pt?)x.s).FirstOrDefault();
+                            if (near is Pt n) { plane = new PlaneZ { C = n.Z, Spots = 0 }; how = "from a spot nearby"; }
+                        }
+                        rows.Add((i, faces[i], plane, kind, how, ter));
                     }
                     var made = new List<long>(); var problems = new List<string>(); List<string> revit = null;
                     if (Args.Bool(a, "build") == true)
@@ -443,17 +467,22 @@ namespace BarrGazetas.RevitMcp
                             {
                                 try
                                 {
-                                    GeometryObject g;
+                                    var g = new List<GeometryObject>();
                                     if (r.kind == "chimney")
                                     {
                                         // from the roof around it up to its top spot
                                         var c = new Pt(r.ring.Average(p => p.X), r.ring.Average(p => p.Y));
                                         var around = spots.Where(s => s.Dist2D(c) < 3000 && !GeoMath.PointInPolygon(s, r.ring)).Select(s => s.Z).DefaultIfEmpty(r.plane.C - 1500).Min();
                                         double top = spots.Where(s => GeoMath.PointInPolygon(s, r.ring)).Max(s => s.Z);
-                                        g = Prism(r.ring, around - datum, top - around);
+                                        g.Add(Prism(r.ring, around - datum, top - around));
                                     }
-                                    else g = Slab(r.ring, r.plane, datum, thick);
-                                    if (g != null) made.Add(Shape(doc, BuiltInCategory.OST_Roofs, g, $"Roof {r.kind} R{r.i}", $"MCP|roof_from_survey|{r.kind} R{r.i}: {r.plane.Spots} spots, rms {r.plane.RmsMm:0} mm, slope {r.plane.SlopeDeg:0.0} deg"));
+                                    else if (r.terraces != null)
+                                        foreach (var (z, rects) in r.terraces)
+                                            foreach (var q in rects)
+                                                g.Add(Prism(new List<Pt> { new Pt(q.x0, q.y0), new Pt(q.x1, q.y0), new Pt(q.x1, q.y1), new Pt(q.x0, q.y1) }, z - datum - thick, thick));
+                                    else g.Add(Slab(r.ring, r.plane, datum, thick));
+                                    g.RemoveAll(x => x == null);
+                                    if (g.Count > 0) made.Add(Shape(doc, BuiltInCategory.OST_Roofs, g, $"Roof {r.kind} R{r.i}", $"MCP|roof_from_survey|{r.kind} R{r.i}: {r.how}, {r.plane.Spots} spots, rms {r.plane.RmsMm:0} mm"));
                                 }
                                 catch (Exception ex) { problems.Add($"R{r.i}: {McpServer.Unwrap(ex).Message}"); }
                             }
@@ -464,10 +493,11 @@ namespace BarrGazetas.RevitMcp
                         path, placed = mapNote, faces = rows.Count, withHeights = rows.Count(r => r.plane != null), spots = spots.Count,
                         flat = rows.Count(r => r.plane != null && r.plane.Flat), sloped = rows.Count(r => r.plane != null && !r.plane.Flat),
                         chimneys = rows.Count(r => r.kind == "chimney"), rooflights = rows.Count(r => r.kind == "rooflight"),
-                        poorFit = rows.Where(r => r.plane != null && r.plane.RmsMm > 40).Select(r => $"R{r.i} rms {r.plane.RmsMm:0} mm").Take(15).ToList(),
+                        terraced = rows.Count(r => r.terraces != null), inferred = rows.Count(r => r.how == "from a spot nearby"),
+                        noHeight = rows.Count(r => r.plane == null), noHeightAreaM2 = Math.Round(rows.Where(r => r.plane == null).Sum(r => Math.Abs(GeoMath.SignedArea(r.ring))) / 1e6, 1),
                         list = rows.OrderByDescending(r => Math.Abs(GeoMath.SignedArea(r.ring))).Take(list).Select(r => new
                         {
-                            face = "R" + r.i, r.kind, areaM2 = Math.Round(Math.Abs(GeoMath.SignedArea(r.ring)) / 1e6, 2),
+                            face = "R" + r.i, r.kind, r.how, levels = r.terraces?.Select(t => Math.Round(t.z / 1000, 2)).ToList(), areaM2 = Math.Round(Math.Abs(GeoMath.SignedArea(r.ring)) / 1e6, 2),
                             spots = r.plane?.Spots ?? 0, slopeDeg = r.plane == null ? (double?)null : Math.Round(r.plane.SlopeDeg, 1),
                             aodM = r.plane == null ? (double?)null : Math.Round(r.plane.At(r.ring.Average(p => p.X), r.ring.Average(p => p.Y)) / 1000, 3),
                             rmsMm = r.plane == null ? (double?)null : R(r.plane.RmsMm),
@@ -698,6 +728,14 @@ namespace BarrGazetas.RevitMcp
 
         // ================================================================ helpers
 
+        /// <summary>The room at a point in any phase, latest first (a survey model's rooms are often all Existing).</summary>
+        private static Room RoomAt(Document doc, XYZ p)
+        {
+            for (int i = doc.Phases.Size - 1; i >= 0; i--)
+                if (doc.GetRoomAtPoint(p, doc.Phases.get_Item(i) as Phase) is Room r) return r;
+            return null;
+        }
+
         private static double Datum(Document doc) => doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero).Elevation * Mm;
         private static double R(double v) => Math.Round(v, 1);
 
@@ -878,11 +916,14 @@ namespace BarrGazetas.RevitMcp
             return loop;
         }
 
-        private static long Shape(Document doc, BuiltInCategory cat, GeometryObject g, string name, string comments)
+        private static long Shape(Document doc, BuiltInCategory cat, GeometryObject g, string name, string comments) =>
+            Shape(doc, cat, new List<GeometryObject> { g }, name, comments);
+
+        private static long Shape(Document doc, BuiltInCategory cat, IList<GeometryObject> g, string name, string comments)
         {
             var ds = DirectShape.CreateElement(doc, new ElementId(cat));
             ds.ApplicationId = "BGMCP"; ds.ApplicationDataId = name;
-            ds.SetShape(new List<GeometryObject> { g });
+            ds.SetShape(g);
             ds.Name = name;
             ds.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.Set(comments);
             return ds.Id.Value;
