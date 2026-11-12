@@ -130,6 +130,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 
 | Tool | What it's for |
 |---|---|
+| `facade_detail_map` | **What a facade's elevation draws, named** (1.16.0): bands, rustication, architraves, sills, hoods, pediments, keystones, consoles, pilasters, quoins, balustrades, modillions, leftovers; repeats grouped into types; how to build each and where its depth comes from. `reference: <name>` says how the human model built each item and how far it projects; `reference: active` shows what our model has built there. `image: true` draws it. Changes nothing. |
 | `facade_details` | Horizontal bands of a facade, 1:1: profile from a section DWG, runs from the elevation, swept along the outer face. `dry_run` (default) lists bands; `only` builds chosen ones. (On 7 Swallow Place F29 it read 1.3-1.5 m "bands": check before building.) |
 | `facade_profile` | Cornices, bands, balustrade base and the mansard from the survey section crossing a facade, swept only where the facade's elevation draws them (see docs/SURVEY-TO-1TO1.md 5b). Needs an elevation. |
 | `phase_fix` | Puts building elements made in another phase into the survey's (Existing). Write tools do it themselves since 1.14.3. |
@@ -138,7 +139,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 | `model_extrusion` | A flat outline pushed out (pier, pilaster, quoin, panel, window surround, chimney stack). |
 | `place_family` | Instances of an unhosted family (pilaster, console, surround, chimney pot) at points, facing a direction, with parameters. |
 
-`model_sweep`, `model_extrusion` and `facade_details` make DirectShapes (Generic Models). That is our "model in place": Revit's API cannot create in-place families, so DirectShape is the equivalent. Comments say where each came from.
+`model_sweep`, `model_extrusion` and `facade_details` make DirectShapes (Generic Models): **don't use them on a model to hand over** (rule 6 in docs/SURVEY-TO-1TO1.md: everything editable). Revit's API can't make in-place families; the editable equivalent is a generated loadable family (what `facade_relief`, `facade_columns` and `window_family` make) or a Profile family on a wall sweep (`facade_profile`).
 
 **Learn from a reference model (e.g. the human-made 7 Swallow Place model)**
 
@@ -222,13 +223,12 @@ Each **issue** has `kind`, `level`, `id` (element), `devMm`, `against` (what it 
 
 **d. "Ceiling sketch is invalid" / "Element is reversed" during wall fixes.** A ceiling sketched on a wall breaks when the wall moves; a wall whose new line runs backwards is refused. Since 1.12.0 the wall move retries on its own: a ceiling locked to the wall is remade with the same outline but unlocked (old and new ids reported), and on "reversed" the joins at the wall's ends and its neighbours' meeting ends are stopped (`set_wall_joins allow=true` rejoins). Walls still refused after that are reported as "Wall N left where it was: ...": list them with ids and don't retry the same move. Then check remade ceilings with `survey_ceilings`.
 
-**e. Facade detail (the neoclassical front).** Work one facade at a time, and on the main facade first one bay, then repeat.
+**e. Facade detail (the neoclassical front).** Work one facade at a time. The method in full, with what each detail looks like in the DWG, is `docs/FACADE-DETAIL.md`; the order of work and lessons are `docs/SURVEY-TO-1TO1.md` step 5. Everything you build must be editable (families, profiles on wall sweeps, roofs), never DirectShapes.
 1. `facade_list`, `elevation_index`, `section_index` (once).
-2. Look: `check_view facade: F..` then `view_image`, side by side with the elevation (`dwg_elevation` tells you which sheet range).
-3. **Horizontal bands** (cornices, string courses, sill bands, copings, plinth): `facade_details facade: F..` dry run; read each band's height, projection and runs; build with `only: [...]` and `dry_run: false`.
-4. **Vertical and framed elements** (pilasters, quoins, window surrounds, architraves, consoles, rusticated piers): `dwg_elevation` with `path` and `sheet_x_range` from `elevation-index.json`, `facade: F..`, `include_lines: true` and `z_range_mm: [...]` for that bay. Outlines → `model_extrusion` in the wall face plane, direction out of the wall, depth from the plan (`cad_lines`) or a section (`dwg_read` on the section sheet). Profiles that run along a path (hood moulds, architraves) → `model_sweep`, profile from the section.
-5. **Learn from the human model first, then copy what is reusable.** `reference_open` the human-made Swallow Place model, then `reference_inventory category: "Generic Models"` and `"Windows"` (what the person made, in-place vs loadable), `family_detail` on their window and detail families (how they are parameterised: Width, Height, Inset, sash divisions), `element_geometry` with a vertical cut plane through a cornice to read its exact profile, `reference_compare` to see what we lack and where. Then `reference_copy types_only: true` for families worth reusing, and place them at survey positions with `place_family` (unhosted detail) or `place_inserts` (windows). Their positions and sizes still come from our DWGs, not from the reference.
-6. Check: `survey_section` (bands should match the sections' outlines past the wall face) and `view_image` again.
+2. **Know what is there before building: `facade_detail_map facade: F.. image: true`** (1.16.0, changes nothing). It names every piece the elevation draws: cornice / entablature / string course / plinth bands (line heights, runs), rustication (joint heights, pitch), and per window the architrave (flat or moulded, width, steps), sill, hood, consoles, pediment (triangular or curved, span, rise), keystone; pilasters, quoins, balustrades (balusters, pitch), modillions under the cornice, and every shape left over ("unclassified"). Repeats are grouped into **types** (T1...): one family per type, placed at every item. Each item says how to build it and where its depth comes from. Read the picture: green boxes = bands, orange = items, red = unclassified. A big unclassified share or an odd layer list means the elevation uses layers the map ignores: say so in your report.
+3. **Learn from the human model:** `reference_open` it, then `facade_detail_map facade: F.. reference: <its name>`. For each item it lists the reference's elements there (family/type, in-place or not) and their **projection** (the depth the elevation can't give), and `notInMap` = what the person modelled that the map missed. Use their technique and their depths where the survey gives none; positions and sizes come from the survey. `reference_copy types_only: true` for a family that fits a type (consoles, balusters, pilaster families), then `place_family`.
+4. **Build, editable:** `facade_profile` (bands, balustrade base, mansard: profile families + wall sweeps from the section), `facade_columns` (columns, pilasters from the plan), `window_family` + `window_look` (windows), `facade_relief` (the remaining stonework, a surround family per window design). Dry run each first.
+5. **Check:** `facade_detail_map facade: F.. reference: active` lists, item by item, what our own model now has there: an item with nothing is still to build. Then `view_image` beside the elevation and `survey_section` (bands should match the sections' outline past the wall face).
 
 **f. Stepped slabs.** `survey_floor_steps` (from 1.14.0): run it without `apply` first and look at the picture per floor (black rings = the slab's spots, red/blue outlines = steps above/below it, grey = spots left out: stairs/landings, sills in walls). Check the table: `moveSlabMm` (the slab to its commonest height; on 7 Swallow Place the 7th-floor slab is about 1.9 m off, the Ground Floor slab about 0.6 m), each step's `vsSlabMm`, `spots` and `note` (a step from one spot may be a pit or a typo: `min_spots: 2` drops those). Then `apply: true` (all), or `steps: ["<floor>:<id>"]` for some. Rooms placed first (`place_rooms`) give the cleanest step outlines. Then `survey_floor_levels` and `survey_section` to confirm. Note the sign in `survey_floor_levels`: its `medianMm`/`elsewhereMm` are slab minus spot, so -900 means the spot is 900 mm *above* the slab.
 
@@ -244,7 +244,7 @@ Say so rather than working round it badly:
 
 - **Window families from the DWG**: `window_look` (1.12.2) makes a "BG Window" type from the elevation's panes for every window an elevation draws. Not yet: windows on facades with no elevation (they keep Survey to Revit's plain family), sash depth (both sashes in one plane), sills/architraves (facade detail).
 - **Stairs**: checked, not built.
-- **Real in-place families**: not possible through Revit's API; DirectShapes (`model_sweep`, `model_extrusion`, `facade_details`) are used instead.
+- **Real in-place families**: not possible through Revit's API; generated loadable families and Profile families on wall sweeps are used instead (editable in the family editor). DirectShapes only for checking.
 - **A fallback when a window type can't be made**: done in 1.12.0 (see 1.5 b); the generated "BG Survey Window" family is in progress.
 
 When you hit something not covered here, write it in Part 2 (your section) with the exact message: that is how the next version of this guide gets written.
@@ -323,6 +323,13 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-12 (night): facade_detail_map, what an elevation draws, named (pull request, 1.16.0)
+- What: a read-only tool that tells you what a facade holds before you build it. `facade_detail_map facade: F.. image: true` reads the facade's elevation (from elevation-index.json, the same fit as the windows) and names each piece: cornice / entablature / string course / plinth bands, rustication, and per window the architrave (flat or moulded, its steps), sill, hood, consoles, pediment, keystone; pilasters, quoins, balustrades, modillions; and leftovers as "unclassified". Alike items are grouped into types (T1...) so each is built once as a family and placed at every item. With `reference: <reference_open name>` it says how the human model built each item and how far it projects (the depth the elevation can't give), and what the person modelled that the map missed; `reference: active` checks our own model the same way. It builds nothing; it sits before your facade_profile / facade_columns / facade_relief / window_look steps and after them as a check.
+- Also: Part 1 section 1.5 e rewritten around your editable tools (no more model_sweep / model_extrusion / facade_details advice, which made DirectShapes); `SurveyGuide.cs` step 7 the same; new `docs/FACADE-DETAIL.md` (what each detail looks like in the DWG, the method per detail, the next tools: a surround family per map type, facade_score, rustication reveals, place_by_type).
+- Files: `Survey/FacadeMap.cs` (new, Revit-free), `SurveyFacadeMapTools.cs` (new), `Hub.cs` (one Concat), `tests/SurveyCore/FacadeMapTests.cs` (new) + `Program.cs`, `SurveyGuide.cs`, `docs/FACADE-DETAIL.md` (new), `docs/SURVEY-TO-1TO1.md` (step 5.0), `PLAN.md`, `BGMCP.csproj`, this file.
+- Version: 1.16.0 (1.15.0 is the speed tools).
+- Not yet run in Revit: tested on a drawn facade only. Please run on F29 and the other indexed facades: `facade_detail_map facade: F29 image: true`, then with `reference:` the human model, then `reference: active`. Report per facade: the kinds and counts, the explained share, the unclassified share, the layer list it printed, and anything named wrongly (with its u/z box). That tells us which thresholds to change.
 
 ### 2026-11-12 (night): speed tools survey_run and dwg_image (1.15.0)
 
