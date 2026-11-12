@@ -1,6 +1,238 @@
-# COORDINATION.md: notes between the two AI agents working on this code
+# COORDINATION.md: how to use the tools, and notes between the two AI agents working on this code
 
-**If you are an AI coding agent and you have just opened this repository, read this whole file before you change anything.** It takes two minutes and it will save you from undoing someone else's work.
+**If you are an AI agent and you have just opened this repository, read this whole file before you do anything.**
+
+This file has two parts:
+
+- **Part 1, the operating guide: how to use the MCP tools to take a survey to a 1:1 Revit model.** It is the source of truth for which tool does what and in what order. It describes MCP-Rev (the hub, `BGMCP`) **1.11.0** and Survey to Revit as on its default branch on 2026-11-12. Whoever changes a tool's behaviour updates this part in the same commit. If a tool answers differently from what is written here, trust the tool's own description (`tools/list`) and say so in your section of Part 2.
+- **Part 2, coordination**: what each agent is working on, Revit run results, and requests between the two sides.
+
+---
+
+# Part 1: Operating guide
+
+## 1.1 The ground rules
+
+- **Measure, never guess.** Every position, thickness and height comes from a DWG line, a label, a section or an elevation. Where the drawings don't say, leave it and list it for a person.
+- **Units.** Positions and sizes are model millimetres (Revit internal X/Y, project origin). Heights on survey sheets and spot levels are metres above survey datum (AOD). For 7 Swallow Place, datum 26,470 mm AOD sits at model 0.
+- **Two add-ins, one connection.** The hub (`BGMCP`) has the scoring, fixing, reading-DWG-direct and modelling tools. Survey to Revit has the `survey_*` tools that read the survey and build the base model. Both are reached through the same MCP connection; `mcp_status` shows which are loaded.
+- **Dry run first.** Every tool that changes the model either has `dry_run` (try, report, roll back), `confirm` (preview without it), or `apply`/`build` (report without it). Run the preview, read it, then run for real.
+- **One undo step per call.** To make several changes that belong together (move a wall, fix its windows, remake the slab edge), put them in one `batch`: all are undone together if one fails.
+- **Long calls come back as a job.** `survey_autofix`, `survey_analyze`, `survey_build`, `reference_open` and other big calls may answer with a job id. Wait with `job_status`; never start the same call again while its job runs.
+- **Reports folder.** Scores and indexes are written to `BGMCP reports\<model title>\` next to the .rvt (else `%LocalAppData%\BarrGazetas\MCP\reports\`). `facades.json`, `elevation-index.json` and `section-index.json` there are what the later tools read, so do the "key" step (1.4, step 3) before scoring.
+- Work on a copy of the project. `save_model` after each floor. Ask before deleting, rebuilding or `confirm: true` on a build.
+
+## 1.2 Tool catalogue
+
+Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's. Each tool's full arguments are in its MCP description.
+
+**Start and housekeeping**
+
+| Tool | What it's for |
+|---|---|
+| `mcp_status` | Start here: which add-ins are loaded, read-only mode, running jobs. |
+| `survey_status` (S2R) | Survey to Revit's version, open project, what the last build made per floor, open review items. |
+| `job_status` | Result of a call handed back as a job. |
+| `get_model_info`, `list_levels`, `list_views`, `list_links`, `list_cad` | The model's levels, views, links and linked DWGs (with their layers and host view). |
+| `get_warnings`, `revit_model_check` (prompt) | Revit's warnings grouped; a quick health check. |
+| `save_model` | Ctrl+S. Never Save As. |
+| `mcp_reload` | Load a newer hub build without restarting Revit (reference models must be re-opened after). |
+| `batch` | Up to 50 tool calls as one undo step; `$0.floor_id` passes a result on. |
+
+**Read the survey (Survey to Revit is the one reader)**
+
+| Tool | What it's for |
+|---|---|
+| `survey_analyze` (S2R) | Reads all survey DWGs in a folder: floors and heights, walls by confidence, windows, doors, rooms, skipped drawings. Run before building. |
+| `survey_layers` (S2R) | Every CAD layer and its role. A busy layer with role Other is the usual reason a survey reads badly. |
+| `survey_layer_rules` (S2R) | Read or (with `confirm`) write the `layers.txt` next to the DWGs. Ask the user before writing. |
+| `survey_layer_roles` (S2R) | The role of named layers; used by tools that read drawings themselves. |
+| `survey_reading` (S2R) | Writes S2R's whole reading to `survey-reading.json`. `survey_fidelity`/`survey_autofix` call it for you; call it yourself only after changing `layers.txt` (with `fresh: true`). |
+| `survey_report` (S2R) | The text of the newest analysis/build/score/error report. |
+
+**Read a DWG directly (for things the reading doesn't cover, or to check one place)**
+
+| Tool | What it's for | Use it instead of a look-alike when... |
+|---|---|---|
+| `dwg_read` | TEXT/MTEXT/attributes (spot levels, `S 0.94` / `H 3.27` labels, room names) and/or lines, near a point, by layer or words. Works on unlinked sheets (elevations, sections) in sheet mm. | You need **text**. Revit can't read DWG text, so this is the only way. |
+| `cad_lines` | Lines/arcs of a DWG **linked in the model**, near a point or in a box, in model mm. | You're checking a wall or opening against its plan right there. |
+| `dwg_extract` | Raw geometry of a linked DWG, filtered, paged. | You need everything on a layer in an area. |
+| `facade_list` | Every external facade run with a stable id (F1, F29...), outer face line, bearing, floors, window count. Writes `facades.json`. | Always before any elevation or facade tool. |
+| `elevation_index` | Matches each elevation drawing on the elevation sheets to a facade id. Writes `elevation-index.json`. | Always before scoring openings: it's what makes elevations count. |
+| `dwg_elevation` | One elevation put onto its facade: each window's width/sill/head as drawn vs the model, windows the model lacks, and (`include_lines`) the elevation's lines as 3D points on the facade plane. | You need the elevation's lines to model detail, or to check one facade by hand. |
+| `section_index` | Where each survey section (A, B...) cuts the building, from the cut line on the plans. Writes `section-index.json`. | Always before `survey_section`, `survey_ceilings`, `facade_details`. |
+
+**Build the base model**
+
+| Tool | What it's for |
+|---|---|
+| `survey_build` (S2R) | Builds from the survey: coordinates, levels, linked plans, walls, windows, doors, floors, ceilings, rooms, stairs, roofs, section views. Preview without `confirm`. `levels` rebuilds only those floors (replacing what the build made there). |
+| `survey_overlay` (S2R) | Sets up coordinates, levels, linked plans and section views, builds nothing. |
+| `survey_wall` (S2R) | Adds a wall the reading missed, from two face lines or a centre line + thickness. Kept when the floor is rebuilt. Prefer it to `create_walls` for survey walls. |
+| `survey_generated` (S2R) | What the build made, by floor and kind; ids by filter (e.g. `contains: "Low"`). |
+| `survey_coordinates`, `set_survey_coordinates` | Check / set the survey point and base point. |
+| `dwg_analyze`, `dwg_build_model`, `survey_qa_check`, `dwg_survey_build` (prompt) | A generic layer-rule builder for a DWG that is **not** a survey S2R can read. Don't use it on the survey. |
+
+**Score against the survey (all change nothing)**
+
+| Tool | Measures | Use when |
+|---|---|---|
+| `survey_fidelity` | **The 1:1 plan score**, per floor: wall faces, thickness, missing walls, openings (plan jambs, S/H labels, elevations), missing windows/doors, room names, ceiling notes, the level. Pass/fail against the gate. | Baseline, after every fix round, and the final score. |
+| `survey_section` | **The 1:1 3D score**: the model cut on each survey section vs the section sheet: slab tops/thickness, wall and parapet tops, roof ridge/eaves/pitch, stair risers, unmatched section lines. `image: true` returns a picture. | After the plans pass or are close; for every height question. |
+| `survey_floor_levels` | Each slab against the plan's spot heights: median/worst, even or stepped, spots with no slab. | Floors (see stepped slabs, 1.5). |
+| `survey_ceilings` | Ceilings against the sections every 500 mm; places with no ceiling. | Ceilings. |
+| `survey_stairs` | Flights on the stair layer (count, going, width) vs the model's runs; missing flights. | Stairs. |
+| `plan_columns` | Free-standing piers/columns on the plans the model lacks. | Shopfronts, piers, stacks. |
+| `window_detail` | Window frame inset from the outer wall face vs the window's Inset parameter. | Window depth in reveal. |
+| `survey_review` (S2R) | S2R's own doubts after the build (rooms with no way in, door symbols with no door, gaps in a window column). | The to-do list next to `survey_fidelity`'s issues. |
+| `survey_score` (S2R) / `survey_fidelity against_reference` | Right/off/missed/invented against a **linked** hand-made model. | Only to compare with a human model; it is not the 1:1 score. |
+| `reference_compare` | Category by category against a reference .rvt opened with `reference_open`, aligned automatically. | Learning what the human model has that ours lacks. |
+
+**Fix automatically (each has a dry run)**
+
+| Tool | What it fixes |
+|---|---|
+| `survey_autofix` | Per floor, in one go: walls onto the plan faces (moderate-confidence only), windows to their sill/head (elevation first, labels where no elevation), widths/positions from plan reveals, missing windows placed (from plan or elevation), window-column gaps filled. Re-scores and returns only what still fails. `walls` / `openings` switch halves off. |
+| `survey_section_autofix` | Wall/parapet tops, slab tops, roofs moved up/down, where the sections are certain. |
+| `dwg_wall_fit` + `dwg_wall_fit_apply` | The wall half of autofix, one floor, with the list to choose from (`review` ones by id). |
+| `split_opening` | A window S2R merged across several sashes and piers, split at the piers (`apply: true`). |
+| `survey_floor_levels apply`, `survey_ceilings apply / create_missing`, `window_detail apply`, `plan_columns build`, `roof_from_survey build` | Apply what those checks found. |
+
+**Model by hand (all one undo step; give numbers read from the DWG)**
+
+| Tool | What it's for |
+|---|---|
+| `wall_info` | Everything about one wall before repairing it: line, thickness, base/top, hosted openings, joins. |
+| `set_wall_line`, `split_wall`, `set_wall_joins`, `set_wall_extents`, `create_walls`, `change_type`, `move_elements` | Move/split/re-type walls; stop joins before moving a facade wall; parapets and walls that run two floors. |
+| `place_inserts`, `set_insert` | Place or reshape windows/doors: centre point, width, height, sill, `family` or `type_name`. |
+| `create_opening` | Holes in floors, shafts, rectangular holes in walls. |
+| `create_floor` (`replace_id`, `offset_mm`), `create_level` | Slabs from outline loops; replacing a slab; extra levels for split floors and parapets. |
+| `create_roof` (`slopes_deg` per edge), `roof_from_survey` | Footprint roofs (mansards) / roof faces from the roof plan's spot heights. |
+| `place_rooms` | Rooms at the plan's room labels (find them with `dwg_read`). |
+| `dwg_terrain`, `create_toposolid`, `toposolid_subdivide` | Ground from the site plan; paving/lawn areas. |
+| `query_elements`, `get_elements`, `get_element_parameters`, `set_parameters`, `delete_elements` (asks first), `list_types` | General reading and editing. |
+
+**Facade detail (cornices, string courses, surrounds, pilasters, quoins)**
+
+| Tool | What it's for |
+|---|---|
+| `facade_details` | Horizontal bands of a facade, 1:1: profile from a section DWG, runs from the elevation, swept along the outer face. `dry_run` (default) lists bands; `only` builds chosen ones. |
+| `model_sweep` | Any profile swept along a 3D path (cornice, coping, plinth, hood mould, rustication band). |
+| `model_extrusion` | A flat outline pushed out (pier, pilaster, quoin, panel, window surround, chimney stack). |
+| `place_family` | Instances of an unhosted family (pilaster, console, surround, chimney pot) at points, facing a direction, with parameters. |
+
+`model_sweep`, `model_extrusion` and `facade_details` make DirectShapes (Generic Models). That is our "model in place": Revit's API cannot create in-place families, so DirectShape is the equivalent. Comments say where each came from.
+
+**Learn from a reference model (e.g. the human-made 7 Swallow Place model)**
+
+| Tool | What it's for |
+|---|---|
+| `reference_open` / `reference_close` | Open another .rvt read-only in the background; every read tool then takes `document: <name>`. |
+| `reference_inventory` | What the model is made of: families (loadable or in-place) and how many, DirectShapes, groups. `category` to see one in full. |
+| `family_detail` | How a family is built: parameters and formulas, types and values, solids/voids and sizes, nested families. |
+| `element_geometry` | An element's solids; with a cut plane, its profile (a cornice's section, a column's plan). |
+| `type_structure`, `element_boxes` | Layers of wall/floor/roof types; boxes of elements by level, in survey coordinates if asked. |
+| `reference_compare` | What it has that ours lacks, with positions in our frame. |
+| `reference_copy` | Copy elements or just families/types (`types_only`) into our model, aligned. Dry run by default. |
+
+**Look at the model**
+
+| Tool | What it's for |
+|---|---|
+| `check_view` | Aim a view at a facade id, a survey section, or some elements. |
+| `view_image` | That view (or any view) as a picture you can see. Compare with the elevation/section by eye. |
+| `survey_section image: true` | The section sheet with the model's cut drawn over it in red, issues ringed. |
+| `survey_review_context` (S2R) | Everything around a review item, and takes Revit there. |
+| `select_elements`, `isolate_elements`, `open_view`, `get_selection` | Show the user things in Revit. |
+
+**Prompts (ready-made instructions):** `survey_to_one_to_one` (the hub's full workflow, the same as 1.3 below), `survey_to_model` (S2R alone; points to the hub's when it's loaded), `dwg_survey_build` (generic layer-rule builder), `revit_model_check`.
+
+## 1.3 The workflow, DWG to scored 1:1 model
+
+Floor by floor, lowest first. Report counts before and after each step.
+
+1. **Status.** `mcp_status`, `survey_status`. Both add-ins must show; if Survey to Revit's tools are missing, the score falls back to the hub's own reading (it will say "cad_link").
+2. **Read.** `survey_analyze` with the DWG folder. Check: every floor has a height; walls per floor look plausible; few low-confidence walls. If a floor reads badly: `survey_layers only_unassigned: true`, propose a `layers.txt`, ask, `survey_layer_rules confirm: true`, analyse again (`fresh: true`).
+3. **Build.** `survey_build` (preview), then `confirm: true` after the user agrees. Then `survey_coordinates`: the survey point must carry the survey's coordinates. On an existing build (testmcp) skip this; rebuild a floor only with `levels` and only if most of it is wrong.
+4. **Key the drawings.** `facade_list` → `elevation_index` (the elevation sheets' paths; check each match: jambs matched ≥ 6, the facade's name looks right) → `section_index`. Without these, elevations and sections are not used and window heights fall back to the internal labels.
+5. **Score 0.** `survey_fidelity` on every floor. Confirm the answer says it read the plans through Survey to Revit. Keep the per-floor numbers.
+6. **Autofix, per failing floor.** In this order, each as a dry run first, then for real:
+   1. `survey_autofix levels: [floor], walls: false` (windows only),
+   2. `survey_autofix levels: [floor], openings: false` (walls only),
+   then `survey_fidelity` on that floor. Doing openings first means wall moves carry already-correct windows with them. Read `stillFailing` and `forReview`.
+7. **Work the queue**, worst first: the issues from `survey_fidelity` (each has a ready `fix` line) and `survey_review`. Table in 1.4. **Many issues of one kind on one floor means a reading problem, not 30 hand fixes**: fix `layers.txt` and rebuild that floor.
+8. **Heights and 3D.** `survey_floor_levels` (slabs vs spots) → `survey_section image: true` → `survey_section_autofix dry_run: true`, then for real → `survey_ceilings` → `survey_stairs` → `roof_from_survey` → `plan_columns` → `window_detail`. Rooms the build missed: `dwg_read` for the label, `place_rooms`.
+9. **Facade detail**, facade by facade (1.5 e).
+10. **Final.** `survey_fidelity` every floor and `survey_section` every section. Report per floor: before and after, what is left for a person (element ids), every value the drawings didn't give. Record the run in Part 2 using the template.
+
+## 1.4 Reading the score
+
+`survey_fidelity` returns, per floor:
+
+- `pass` and `failedOn` (e.g. `walls`, `thickness`, `missing walls`, `openings`, `level`). **The gate decides, not `score`.** `score` (0 to 1) is only for tracking progress.
+- The gate (defaults; `settings.json` `fidelityGate`): wall faces **95% within 10 mm** and none over 25 mm; thickness within 10 mm; openings within 30 mm; levels within 10 mm; no missing walls.
+- `walls`: `withinTolPct` (needs 95), `within25Pct`, `maxMm`, `thicknessOver`, `missing`, `unverified` (walls with no DWG face near them to check against).
+- `openings`: `planOver` (width/position vs plan jambs), `labelOver` (vs S/H labels, used only where no elevation draws the window), `elevationOver` (vs the elevation), `missing` / `missingOnPlan`, `notChecked`.
+- `levelCheck.devMm`: the level against the plan's spot heights.
+- `sources`: which drawings were used. No elevation listed means `elevation_index` hasn't been run or didn't match.
+
+Each **issue** has `kind`, `level`, `id` (element), `devMm`, `against` (what it was measured against), `at` (model mm), `fix` (a ready-to-run instruction), `severity`. The full list is in the JSON/HTML report; the answer has the worst 20 (`max_issues` for more).
+
+| Issue kind | What to do |
+|---|---|
+| `wall_face`, `wall_thickness` | `cad_lines` at `at` + `wall_info`, then `set_wall_line` / `change_type`; `set_wall_joins` false first on facade walls. A wall thicker at piers: wall at the window plane, piers with `model_extrusion`. Different thickness along its length: `split_wall`. |
+| `wall_face_curved` | `survey_autofix` re-curves these; if not, list it. |
+| `wall_missing` | Check with `cad_lines`, then `survey_wall` with the two face lines. |
+| `opening` | `dwg_read` near it; elevation first (see 1.5 a); `set_insert`. |
+| `opening_missing` | `place_inserts` (window: elevation's sill/head; door: pick family and swing). |
+| `room_missing`, `room_name` | `place_rooms` at the label (room separation lines if the walls don't close it). |
+| `ceiling`, `ceiling_missing` | `survey_ceilings apply` / `create_missing`. |
+| `level` | The level's elevation, then re-score. |
+| From `survey_section`: `slab_top`, `wall_top`, `parapet_top`, `roof_ridge`, `roof_eaves` | `survey_section_autofix`; what it leaves, `set_wall_extents` / `create_floor replace_id offset_mm`. |
+| `slab_thickness` | `create_floor replace_id thickness_mm`. |
+| `roof_form`, `roof_pitch` | `create_roof` with `slopes_deg` from the issue, or `roof_from_survey`. |
+| `stair_riser` | Note for a person (no stair-building tool yet). |
+| `section_unmatched` | A slab, roof slope or parapet the model lacks, or detail beyond the cut: look with `image: true` before building anything. |
+
+## 1.5 The hard parts, and what to do
+
+**a. Window sill and head: the elevation decides, not the plan label.** On 7 Swallow Place the plan S/H labels are measured inside (window board, internal head); the elevations draw the outside, which is what the model's window is. Since 1.9.16, `survey_fidelity` and `survey_autofix` use the elevation wherever an indexed elevation draws the window (paired only within the window's own storey) and fall back to labels elsewhere. So: run `facade_list` + `elevation_index` before scoring; never set a sill by hand from a plan label where an elevation exists; autofix leaves changes over 600 mm "for review": check those with `dwg_elevation` (`path`, `sheet_x_range` from `elevation-index.json`, `facade: F..`) before acting.
+
+**b. "Can't make type ... Concept Window 4930x3900" (window type fails).** The base family won't take that size. A very wide one is usually several windows S2R merged: `split_opening` (report, then `apply: true`), then autofix again. A narrow-tall one (765x2750, 785x2750) is beyond the family's limits: place or reshape it with another family through `place_inserts` / `set_insert` `family` / `type_name` (e.g. a sash family copied from the reference model with `reference_copy types_only: true`). List any that still fail. (A fallback inside the tool is on the projects side's list.)
+
+**c. "Can't cut instance of ... out of Wall".** The opening falls past the wall's end, across a join, or in a wall too short for it. `wall_info` on the host: check the opening sits inside the wall's length and height; if the wall is the wrong piece, `split_wall` or move the insert along with `set_insert`; then retry once. Otherwise list it.
+
+**d. "Ceiling sketch is invalid" / "Element is reversed" during wall fixes.** A ceiling sketched on a wall breaks when the wall moves; a wall whose new line runs backwards is refused. Autofix skips these (nothing is forced). Fix walls first, then ceilings (`survey_ceilings create_missing` remakes ceilings at survey height), and list the reversed walls with ids. Don't retry the same move.
+
+**e. Facade detail (the neoclassical front).** Work one facade at a time, and on the main facade first one bay, then repeat.
+1. `facade_list`, `elevation_index`, `section_index` (once).
+2. Look: `check_view facade: F..` then `view_image`, side by side with the elevation (`dwg_elevation` tells you which sheet range).
+3. **Horizontal bands** (cornices, string courses, sill bands, copings, plinth): `facade_details facade: F..` dry run; read each band's height, projection and runs; build with `only: [...]` and `dry_run: false`.
+4. **Vertical and framed elements** (pilasters, quoins, window surrounds, architraves, consoles, rusticated piers): `dwg_elevation` with `path` and `sheet_x_range` from `elevation-index.json`, `facade: F..`, `include_lines: true` and `z_range_mm: [...]` for that bay. Outlines → `model_extrusion` in the wall face plane, direction out of the wall, depth from the plan (`cad_lines`) or a section (`dwg_read` on the section sheet). Profiles that run along a path (hood moulds, architraves) → `model_sweep`, profile from the section.
+5. **Learn from the human model first, then copy what is reusable.** `reference_open` the human-made Swallow Place model, then `reference_inventory category: "Generic Models"` and `"Windows"` (what the person made, in-place vs loadable), `family_detail` on their window and detail families (how they are parameterised: Width, Height, Inset, sash divisions), `element_geometry` with a vertical cut plane through a cornice to read its exact profile, `reference_compare` to see what we lack and where. Then `reference_copy types_only: true` for families worth reusing, and place them at survey positions with `place_family` (unhosted detail) or `place_inserts` (windows). Their positions and sizes still come from our DWGs, not from the reference.
+6. Check: `survey_section` (bands should match the sections' outlines past the wall face) and `view_image` again.
+
+**f. Stepped slabs.** `survey_floor_levels` reports, per floor, the spots below the slab (stepped areas, pits, lower roofs inside the footprint). `apply: true` only moves floors that are even. For a stepped floor: read the step outlines from the plan (`cad_lines` near the low spots), cut the main slab with `create_floor replace_id`, and add each lower area as its own `create_floor` with `offset_mm` from the spot heights; then `survey_section` to confirm `slab_top`. On 7 Swallow Place the 7th-floor slab is 1.9 m above its spots: check that level before anything else on that floor.
+
+**g. Missing walls (252 on the first run).** First check whether they cluster on one layer or floor (`survey_layers only_unassigned`): fixing the layer and rebuilding the floor beats hand-adding. Otherwise `survey_wall` with the face lines from the issue.
+
+**h. Stairs.** `survey_stairs` reports every flight and the ones missing (two on the 7th floor). There is no stair-building tool yet: report the numbers (count, going, riser, width) for a person.
+
+## 1.6 What the tools can't do yet
+
+Say so rather than working round it badly:
+
+- **Window families from the DWG** (sash divisions, glazing bars, frame sizes drawn on the elevation): no tool yet. Use the reference model's families (`reference_copy types_only`) sized by `place_inserts` / `set_insert`.
+- **Stairs**: checked, not built.
+- **Stepped slabs**: by hand as in 1.5 f; no one-call tool yet.
+- **Real in-place families**: not possible through Revit's API; DirectShapes (`model_sweep`, `model_extrusion`, `facade_details`) are used instead.
+- **A fallback when a window type can't be made**: on the projects side's list.
+
+When you hit something not covered here, write it in Part 2 (your section) with the exact message: that is how the next version of this guide gets written.
+
+---
+
+# Part 2: Coordination between the two agents
 
 ## What this file is
 
@@ -72,6 +304,11 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-12 (later): Part 1, the operating guide, added at the top of this file
+- What: a guide for driving the tools: the catalogue of every hub and Survey to Revit tool by purpose, the workflow in order, how to read the score and each issue kind, and what to do about the hard parts from your first run (elevation vs label heights, window types that fail, wall/ceiling errors, stepped slabs, facade detail, learning from the human-made reference model). Written from the code on `main` 1.11.0 and Survey to Revit's default branch.
+- Please keep Part 1 current: if you change how a tool behaves, update its line in Part 1 in the same commit. If something in Part 1 turns out wrong in Revit, say so in your section and we'll correct it.
+- Files: COORDINATION.md only (both repos, identical). Version: none.
 
 ### 2026-11-12 (afternoon): every open pull request is merged; main is 1.11.0
 - What: merged into MCP-Rev `main`: #1 CI, #5 this file, #3 the hub scores against Survey to Revit's own reading, #2 terrain/rooms/batch (1.10.0), #4 3D section score, curved walls, view images (1.11.0). Merged into Survey to Revit `claude/project-thread-owac6b`: #1 CI, #4 this file, #2 surveyor standards, #3 the `survey_reading` / `survey_layer_roles` tools. No pull requests are open in either repo now.
