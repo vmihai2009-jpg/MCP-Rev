@@ -65,6 +65,10 @@ namespace SurveyCoreTests
             var b = a.Select(mv.Apply).ToList();
             var (fit, rms, n) = ModelCompare.Align(a, b, PlanMove.Identity, 3000);
             T.Check(T.Near(fit.Angle, 0.02, 1e-6) && T.Near(fit.Dx, 300, 0.5) && T.Near(fit.Dy, -120, 0.5) && rms < 1, "align: rotation and shift recovered");
+            var far = new PlanMove { Angle = Math.PI / 2 + 0.01, Dx = 1e6, Dy = -2e5 };
+            var grid = new List<Pt>(); for (int i = 0; i < 12; i++) for (int j = 0; j < 6; j++) if (i == 0 || j == 0 || i == 11 || j == 5 || i == 4) grid.Add(new Pt(i * 1000, j * 700));
+            var (any, rmsAny, nAny) = ModelCompare.AlignAny(grid, grid.Select(far.Apply).ToList());
+            T.Check(T.Near(any.Angle, far.Angle, 1e-4) && T.Near(any.Dx, far.Dx, 1) && rmsAny < 1, "align with no start: a quarter turn and a km away found");
             var r = new List<CmpItem> { new CmpItem { Id = 1, Key = "Windows", C = new Pt(0, 0, 0), Sx = 1000, Sy = 200, Sz = 1500 },
                                         new CmpItem { Id = 2, Key = "Windows", C = new Pt(3000, 0, 0), Sx = 1000, Sy = 200, Sz = 1500 } };
             var o = new List<CmpItem> { new CmpItem { Id = 11, Key = "Windows", C = new Pt(20, 0, 0), Sx = 1000, Sy = 200, Sz = 1500 } };
