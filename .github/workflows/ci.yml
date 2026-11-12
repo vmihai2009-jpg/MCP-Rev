@@ -36,6 +36,9 @@ jobs:
       - name: Build the Revit 2025 add-in (against Revit API reference packages)
         run: dotnet build BGMCP.csproj -c Release -p:RevitApiFromNuGet=true
 
+      - name: Build the loader (against Revit API reference packages)
+        run: dotnet build loader/BGMCP.Loader.csproj -c Release -p:RevitApiFromNuGet=true
+
       - name: Survey core tests
         run: dotnet run --project tests/SurveyCore -c Release
 

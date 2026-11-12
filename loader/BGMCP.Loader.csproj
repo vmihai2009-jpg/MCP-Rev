@@ -17,7 +17,13 @@
     <RevitDir Condition="'$(RevitDir)' == ''">C:\Program Files\Autodesk\Revit 2025</RevitDir>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!-- Build without Revit installed (CI): -p:RevitApiFromNuGet=true, as in BGMCP.csproj -->
+  <ItemGroup Condition="'$(RevitApiFromNuGet)' == 'true'">
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.4.60" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.4.60" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RevitApiFromNuGet)' != 'true'">
     <Reference Include="RevitAPI"><HintPath>$(RevitDir)\RevitAPI.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="RevitAPIUI"><HintPath>$(RevitDir)\RevitAPIUI.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
