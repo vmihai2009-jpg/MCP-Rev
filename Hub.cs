@@ -54,7 +54,7 @@ namespace BarrGazetas.RevitMcp
                     // read tools can look at a reference model opened with reference_open instead of the active project
                     string docName = t.Write || OwnDocArg(t.Name) ? null : Args.Str(args, "document");
                     object result;
-                    using (Reference.Use(docName)) result = t.Run(app, args);
+                    using (Popups.Scope(app)) using (Reference.Use(docName)) result = t.Run(app, args);
                     return result as string ?? JsonSerializer.Serialize(result, Compact);
                 }),
             }).ToList();

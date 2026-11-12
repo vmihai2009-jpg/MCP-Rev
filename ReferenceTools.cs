@@ -685,14 +685,18 @@ namespace BarrGazetas.RevitMcp
 
         private sealed class FormData
         {
-            public string kind, sub, detail;
-            public bool solid, visible;
-            public double[] size, at;
+            public string kind { get; set; }
+            public string sub { get; set; }
+            public string detail { get; set; }
+            public bool solid { get; set; }
+            public bool visible { get; set; }
+            public double[] size { get; set; }
+            public double[] at { get; set; }
         }
 
         // ================================================================ dialogs and warnings while opening
 
-        private static void Answer(DialogBoxShowingEventArgs e, List<string> notes)
+        internal static void Answer(DialogBoxShowingEventArgs e, List<string> notes)
         {
             string what = e.DialogId;
             if (e is TaskDialogShowingEventArgs td) what += ": " + td.Message;
