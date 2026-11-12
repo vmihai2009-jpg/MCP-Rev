@@ -42,7 +42,7 @@ namespace BarrGazetas.RevitMcp
 
             _own = RevitTools.All().Concat(RevitTools.Repair()).Concat(BuildTools.All()).Concat(SurveyTools.All()).Concat(SurveyTools.Facade())
                 .Concat(SurveyTools.Phase1()).Concat(SurveyTools.Phase2()).Concat(SurveyTools.Phase2Index()).Concat(SurveyTools.Phase3())
-                .Concat(ReferenceTools.All()).Concat(HostTools.All()).Concat(SurveyTools.Phase4()).Select(t => new ToolInfo
+                .Concat(ReferenceTools.All()).Concat(HostTools.All()).Concat(SurveyTools.Phase4()).Concat(SurveyTools.Sections3D()).Concat(SurveyTools.Views()).Select(t => new ToolInfo
             {
                 Name = t.Name, Description = t.Description, InputSchema = WithDocument(t), Write = t.Write,
                 Invoke = async args => (string)await _dispatcher.InvokeAsync(app =>
@@ -51,6 +51,7 @@ namespace BarrGazetas.RevitMcp
                     string docName = t.Write || OwnDocArg(t.Name) ? null : Args.Str(args, "document");
                     object result;
                     using (Popups.Scope(app)) using (Reference.Use(docName)) result = t.Run(app, args);
+                    if (result is ToolContent content) return content.Encode(); // text with pictures (view_image, survey_section)
                     return result as string ?? JsonSerializer.Serialize(result, Compact);
                 }),
             }).ToList();

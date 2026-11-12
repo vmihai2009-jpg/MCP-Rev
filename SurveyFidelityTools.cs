@@ -351,6 +351,7 @@ namespace BarrGazetas.RevitMcp
                     var c = ((LocationCurve)w.Location).Curve;
                     return new FitWall { Id = w.Id.Value, A = CadLink.ToMm(c.GetEndPoint(0)), B = CadLink.ToMm(c.GetEndPoint(1)), ThicknessMm = w.Width * Mm, Type = w.WallType.Name };
                 }).ToList();
+            input.ArcWalls = ArcWallsOn(doc, level);
             var wallIds = new HashSet<long>(input.Walls.Select(w => w.Id));
             foreach (var cat in new[] { BuiltInCategory.OST_Windows, BuiltInCategory.OST_Doors })
                 foreach (var fi in new FilteredElementCollector(doc).OfCategory(cat).WhereElementIsNotElementType().OfType<FamilyInstance>())

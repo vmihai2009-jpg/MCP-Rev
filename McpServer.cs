@@ -32,6 +32,40 @@ namespace BarrGazetas.RevitMcp
         public Func<JsonObject, Task<string>> Invoke;
     }
 
+    /// <summary>
+    /// An answer with pictures. Tools answer in strings (the hub's own and other add-ins' alike), so this travels as a
+    /// string with a marker in front; the server turns it into MCP text and image content. An add-in's McpBridge can
+    /// return the same string to send images.
+    /// </summary>
+    internal sealed class ToolContent
+    {
+        public const string Marker = "\u0001mcp-content/1\u0001";
+        public string Text;
+        public List<(string mime, byte[] data)> Images = new List<(string, byte[])>();
+
+        public string Encode()
+        {
+            var imgs = new JsonArray();
+            foreach (var (mime, data) in Images) imgs.Add(new JsonObject { ["mimeType"] = mime, ["data"] = Convert.ToBase64String(data) });
+            return Marker + new JsonObject { ["text"] = Text ?? "", ["images"] = imgs }.ToJsonString();
+        }
+
+        public static bool TryDecode(string s, out ToolContent c)
+        {
+            c = null;
+            if (s == null || !s.StartsWith(Marker, StringComparison.Ordinal)) return false;
+            try
+            {
+                var o = JsonNode.Parse(s.Substring(Marker.Length)) as JsonObject;
+                c = new ToolContent { Text = o?["text"]?.ToString() ?? "" };
+                foreach (var i in (o?["images"] as JsonArray) ?? new JsonArray())
+                    c.Images.Add((i?["mimeType"]?.ToString() ?? "image/png", Convert.FromBase64String(i?["data"]?.ToString() ?? "")));
+                return true;
+            }
+            catch { c = null; return false; }
+        }
+    }
+
     /// <summary>Ready-made instructions an assistant can load (MCP "prompts").</summary>
     internal sealed class PromptInfo
     {
@@ -347,6 +381,7 @@ namespace BarrGazetas.RevitMcp
             if (work.IsFaulted || work.IsCanceled)
                 return Text("Error: " + (work.IsCanceled ? "the call was cancelled." : Unwrap(work.Exception).Message), true);
             string text = work.Result ?? "";
+            if (ToolContent.TryDecode(text, out var content)) return Rich(content);
             if (text.Length > _o.MaxResultChars)
                 text = text.Substring(0, _o.MaxResultChars) + $"\n... (cut: the full answer is {text.Length} characters. Ask for less: a filter, a limit, fewer ids.)";
             return Text(text, false);
@@ -410,6 +445,17 @@ namespace BarrGazetas.RevitMcp
                 if (req) required.Add(name);
             }
             return new JsonObject { ["type"] = "object", ["properties"] = properties, ["required"] = required };
+        }
+
+        /// <summary>A text answer with pictures (view_image, survey_section image): the text is cut as any answer is, the images go as they are.</summary>
+        private JsonObject Rich(ToolContent c)
+        {
+            string text = c.Text ?? "";
+            if (text.Length > _o.MaxResultChars) text = text.Substring(0, _o.MaxResultChars) + "\n... (cut)";
+            var items = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = text });
+            foreach (var (mime, data) in c.Images)
+                items.Add(new JsonObject { ["type"] = "image", ["data"] = Convert.ToBase64String(data), ["mimeType"] = mime });
+            return new JsonObject { ["content"] = items, ["isError"] = false };
         }
 
         private static JsonObject Text(string text, bool isError) => new JsonObject
