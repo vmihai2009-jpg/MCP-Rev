@@ -1,0 +1,120 @@
+﻿'Category: 0
+'Bar list: 
+'	Dialog_Revit_DynamicLabelDBar
+'	Dialog_Essentials_FilterSelectionNew
+'Provider list: 
+'	
+'Product: Revit
+'
+'
+'Edit mode context, but no edit mode set.
+'<<End build CT>> 
+'  0.144488   1:<<EndOrAbortUndoTransaction();DOPT; 
+' 4:< Error posted: 
+' 4:< Can't keep elements joined. 
+  'E 12-Nov-2026 15:01:21.533;   4:< 
+  ' [Jrn.PostFailure] 
+' 4:< Error posted: 
+' 4:< Ceiling sketch is invalid. 
+  'E 12-Nov-2026 15:01:21.539;   4:< 
+  ' [Jrn.PostFailure] 
+' 4:< Error posted: 
+' 4:< Can't make Extrusion. 
+  'E 12-Nov-2026 15:01:21.540;   4:< 
+  ' [Jrn.PostFailure] 
+' 4:< Error posted: 
+' 4:< Can't keep elements joined. 
+  'E 12-Nov-2026 15:01:22.251;   4:< 
+  ' [Jrn.PostFailure] 
+' 1:< ::6647:: Delta VM: Avail -16 -> 133876320 MB, Used 3498 MB; RAM: Avail 1113 MB, Used +1 -> 2448 MB 
+' 1:< GUI Resource Usage GDI: Avail 8521, Used 1479, User: Used 594 
+'  0.100839    2:<<;PERF;MISC;regenerating 
+' 4:< Error posted: 
+' 4:< Can't keep elements joined. 
+  'E 12-Nov-2026 15:01:22.377;   4:< 
+  ' [Jrn.PostFailure] 
+' 5:< --TB- Level  314328 - Levels : Level : Ground Floor 
+' 5:< --TB- Level  314339 - Levels : Level : Ground Floor Mezzanine 
+' 8:< --TB- Found  1 unconnected ends. 
+' 6:< Error posted: 
+' 6:< Can't make Wall.  
+  'E 12-Nov-2026 15:01:22.434;   6:< 
+  ' [Jrn.PostFailure] 
+' 6:< Error posted: 
+' 6:< Can't cut instance of Concept Door 850x2100 out of Wall. 
+  'E 12-Nov-2026 15:01:22.436;   6:< 
+  ' [Jrn.PostFailure] 
+' 7:< --TB- Level  314328 - Levels : Level : Ground Floor 
+' 7:< --TB- Level  314339 - Levels : Level : Ground Floor Mezzanine 
+'10:< --TB- Found  1 unconnected ends. 
+' 6:< Error posted: 
+' 6:< Instance(s) of Concept Door 850x2100 not cutting anything. 
+  'E 12-Nov-2026 15:01:22.452;   6:< 
+  ' [Jrn.PostFailure] 
+' 4:< Error posted: 
+' 4:< Can't cut instance of Concept Door 850x2100 out of Wall. 
+  'E 12-Nov-2026 15:01:22.457;   4:< 
+  ' [Jrn.PostFailure] 
+' 4:< Error posted: 
+' 4:< Can't make Wall.  
+  'E 12-Nov-2026 15:01:22.458;   4:< 
+  ' [Jrn.PostFailure] 
+' 4:< Error posted: 
+' 4:< Instance(s) of Concept Door 850x2100 not cutting anything. 
+  'E 12-Nov-2026 15:01:22.459;   4:< 
+  ' [Jrn.PostFailure] 
+'  0.104337   1:<<EndOrAbortUndoTransaction();DOPT; 
+' 4:< Error posted: 
+' 4:< Can't keep elements joined. 
+  'E 12-Nov-2026 15:01:22.572;   4:< 
+  ' [Jrn.PostFailure] 
+' 4:< Error posted: 
+' 4:< Can't keep elements joined. 
+  'E 12-Nov-2026 15:01:22.573;   4:< 
+  ' [Jrn.PostFailure] 
+' 4:< Error posted: 
+' 4:< Element is reversed 
+  'E 12-Nov-2026 15:01:22.575;   4:< 
+  ' [Jrn.PostFailure] 
+' 5:< --TB- Level  314328 - Levels : Level : Ground Floor 
+' 5:< --TB- Level  314339 - Levels : Level : Ground Floor Mezzanine 
+' 8:< --TB- Found  1 unconnected ends. 
+' 4:< Error posted: 
+' 4:< Can't keep elements joined. 
+  'E 12-Nov-2026 15:01:22.596;   4:< 
+  ' [Jrn.PostFailure] 
+' 4:< Error posted: 
+' 4:< Element is reversed 
+  'E 12-Nov-2026 15:01:22.597;   4:< 
+  ' [Jrn.PostFailure] 
+' 2:< Error posted: 
+' 2:< Can't keep elements joined. 
+  'E 12-Nov-2026 15:01:22.605;   2:< 
+  ' [Jrn.PostFailure] 
+' 2:< Error posted: 
+' 2:< Can't keep elements joined. 
+  'E 12-Nov-2026 15:01:22.607;   2:< 
+  ' [Jrn.PostFailure] 
+' 2:< Error posted: 
+' 2:< Element is reversed 
+  'E 12-Nov-2026 15:01:22.607;   2:< 
+  ' [Jrn.PostFailure] 
+' 6:< Error posted: 
+' 6:< Can't make Wall.  
+  'E 12-Nov-2026 15:01:22.646;   6:< 
+  ' [Jrn.PostFailure] 
+' 6:< Error posted: 
+' 6:< Element is reversed 
+  'E 12-Nov-2026 15:01:22.650;   6:< 
+  ' [Jrn.PostFailure] 
+' 7:< --TB- Level  314328 - Levels : Level : Ground Floor 
+' 7:< --TB- Level  314339 - Levels : Level : Ground Floor Mezzanine 
+'10:< --TB- Found  1 unconnected ends. 
+' 4:< Error posted: 
+' 4:< Can't make Wall.  
+  'E 12-Nov-2026 15:01:22.668;   4:< 
+  ' [Jrn.PostFailure] 
+' 4:< Error posted: 
+' 4:< Element is reversed 
+  'E 12-Nov-2026 15:01:22.669;   4:< 
+  ' [Jrn.PostFailure] 
