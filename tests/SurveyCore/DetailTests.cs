@@ -88,6 +88,29 @@ namespace SurveyCoreTests
             T.Check(m.Pairs.Count == 1 && m.Pairs[0].Ref.Id == 1 && m.Missing.Count == 1 && m.Missing[0].Id == 2, "compare: nearest pairs, the other is missing");
 
             WindowPatterns();
+            Relief();
+        }
+
+        static void Relief()
+        {
+            Console.WriteLine("facade relief (1.14.2)");
+            // plan: a facade along x, a 600 mm square pier standing 400 mm out at x 2000-2600, a wall face line at 0
+            var plan = new List<Seg> { S(0, 0, 10000, 0), S(2000, 0, 2000, 400), S(2000, 400, 2600, 400), S(2600, 400, 2600, 0) };
+            var prof = FacadeRelief.Profile(plan, new Pt(0, 0), 1, 0, 0, 1, 10000);
+            T.Check(T.Near(prof.Over(2050, 2550), 400, 1) && prof.Over(4000, 5000) == 0, "relief profile: the pier stands 400 out, the wall face is not a projection");
+            // elevation: the pier's outline (tall), a band across, a window box
+            var el = new List<Seg>
+            {
+                S(2000, 0, 2000, 3000), S(2600, 0, 2600, 3000), S(0, 0, 10000, 0), S(0, 3000, 10000, 3000),   // pier sides, ground, top
+                S(0, 3200, 10000, 3200), S(0, 3000, 0, 3200), S(10000, 3000, 10000, 3200),                    // a band 200 high on top
+                S(0, 0, 0, 3000), S(10000, 0, 10000, 3000),
+            };
+            var faces = FacadeRelief.Build(el, new List<(double, double, double, double)>(), (z0, z1) => z0 <= 1000 && z1 >= 1000 ? prof : null, new ReliefOptions { MaxFaceM2 = 10 });
+            var pier = faces.FirstOrDefault(f => f.U0 >= 1990 && f.U1 <= 2610);
+            var bandF = faces.FirstOrDefault(f => f.Z0 >= 2990 && f.Z1 <= 3210);
+            T.Check(pier != null && pier.Source == "plan" && T.Near(pier.Depth, 400, 1), "relief: the pier's face takes the plan's 400");
+            T.Check(bandF != null && bandF.Source == "band" && bandF.Depth == 120, "relief: the band above takes the band depth (it doesn't cross the plan's cut height)");
+            T.Check(faces.All(f => f.AreaM2 <= 10), "relief: no face bigger than the plain-wall limit");
         }
 
         static DwgLine L(double x1, double y1, double x2, double y2) => new DwgLine { A = new Pt(x1, y1), B = new Pt(x2, y2), Layer = "Ss_25_30_95-Window" };
