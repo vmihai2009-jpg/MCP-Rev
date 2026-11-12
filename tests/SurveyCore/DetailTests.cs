@@ -50,6 +50,13 @@ namespace SurveyCoreTests
             var stairs = SurveyDetail.Stairs(st);
             T.Check(stairs.Count == 1 && stairs[0].Treads == 10 && T.Near(stairs[0].GoingMm, 250) && T.Near(stairs[0].WidthMm, 1100), "stairs: 10 treads, going 250, width 1100");
 
+            // terraces: a 10 x 4 m outline, left half spots at 1000, right half at 1500
+            var ter = SurveyDetail.Terraces(new List<Pt> { new Pt(0, 0), new Pt(10000, 0), new Pt(10000, 4000), new Pt(0, 4000) },
+                new List<Pt> { new Pt(1000, 2000, 1000), new Pt(3000, 1000, 1010), new Pt(8000, 2000, 1500), new Pt(9000, 3000, 1490) });
+            double Area(List<(double x0, double y0, double x1, double y1)> rs) => rs.Sum(r => (r.x1 - r.x0) * (r.y1 - r.y0));
+            T.Check(ter.Count == 2 && T.Near(Area(ter[0].rects) + Area(ter[1].rects), 40e6, 1) && T.Near(ter[0].z, 1005, 1e-6), "terraces: two levels cover the outline exactly");
+            T.Check(ter.All(t => t.rects.Count <= 50), $"terraces: cells merged into few rectangles ({ter[0].rects.Count}, {ter[1].rects.Count})");
+
             // merged openings: 4900 wide with two 230 piers drawn inside
             var parts = SurveyDetail.SplitSpan(-2450, 2450, new[] { -900.0, -670, 700, 930, 701 });
             T.Check(parts.Count == 3 && T.Near(parts[0].a, -2450) && T.Near(parts[0].b, -900) && T.Near(parts[1].a, -670) && T.Near(parts[1].b, 700) && T.Near(parts[2].a, 930), "split: a 4.9 m opening with two piers is three openings");
