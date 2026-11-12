@@ -1,0 +1,49 @@
+# Builds the add-in and runs both test suites on every push and pull request.
+# No Revit is needed: the add-in compiles against the Revit 2025 API reference packages (RevitApiFromNuGet=true).
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Build the Revit 2025 add-in (against Revit API reference packages)
+        run: dotnet build BGMCP.csproj -c Release -p:RevitApiFromNuGet=true
+
+      - name: Survey core tests
+        run: dotnet run --project tests/SurveyCore -c Release
+
+      - name: MCP server smoke test
+        run: dotnet run --project tests/McpSmoke -c Release
+
+      - name: Keep the built add-in
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BGMCP.Revit-${{ github.sha }}
+          path: bin/Release/
+          retention-days: 14
