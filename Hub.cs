@@ -110,7 +110,7 @@ namespace BarrGazetas.RevitMcp
                 new PromptInfo
                 {
                     Name = "survey_to_one_to_one",
-                    Description = "Take survey DWGs to a 1:1 Revit model: Survey to Revit builds the base, then every wall, window, floor and facade detail is checked and corrected against the DWGs.",
+                    Description = "The survey workflow: Survey to Revit reads the DWGs and builds the base, then every floor is scored (survey_fidelity) against that same reading and fixed (survey_autofix) until it matches 1:1, with floors, ceilings, stairs, roofs and facade detail after. Use this instead of survey_to_model when the hub is here.",
                     Text = SurveyGuide.OneToOne,
                 },
                 new PromptInfo
