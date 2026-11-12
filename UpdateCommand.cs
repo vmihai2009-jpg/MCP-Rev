@@ -91,7 +91,13 @@ namespace BarrGazetas.RevitMcp
             }
             try
             {
-                Updater.Install(zip, Updater.AddinsFolder, Updater.RunningFolder, out Version version);
+                Updater.Install(zip, Updater.AddinsFolder, Updater.RunningFolder, out Version version, writeManifest: !Hosted.Active);
+                if (Hosted.Active)
+                {
+                    TaskDialog.Show(Title, $"BG MCP {version.ToString(3)} is installed and starts now (no restart needed).");
+                    Hosted.RequestReload(version.ToString(3));
+                    return;
+                }
                 App.Instance.WaitingVersion = version;
                 App.Instance.RefreshUpdate(null);
                 TaskDialog.Show(Title, $"BG MCP {version.ToString(3)} is installed.\n\nRestart Revit to use it. Until then {running.ToString(3)} keeps working.");
