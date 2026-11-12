@@ -69,6 +69,13 @@ each spot belongs to the slab whose top is nearest it; a slab moves only on >= 3
 ### 5. The facade: relief from the elevation, profiles from the sections
 This is what makes the model look like the survey. Do it per facade that has an elevation.
 
+**0. `facade_detail_map facade: F.. image: true` first (1.17.0, changes nothing).** It names what the elevation
+draws (bands, rustication, architraves, sills, hoods, pediments, keystones, consoles, pilasters, quoins,
+balustrades, modillions, leftovers), groups repeats into types (one family per type), and says how to build each and
+where its depth comes from. With `reference: <name>` it lists, per item, how the hand model built it and how far it
+projects; with `reference: active`, what our model has built there (items with nothing are still to do). Method and
+what each detail looks like in the DWG: `docs/FACADE-DETAIL.md`.
+
 **a. `facade_relief facade: F..`** (dry run, then build). The elevation draws stonework as loose overlapping lines
 (columns, flutes, capitals, bases, pilasters, surrounds, pediments, consoles, balustrades, dormers). Split where they
 cross they give faces exactly as the drawing reads; each face is pushed out from the **model's own outer wall face**

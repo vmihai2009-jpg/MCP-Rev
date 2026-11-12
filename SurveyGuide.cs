@@ -60,10 +60,14 @@ Rules
    (create_floor with replace_id); stair and lift voids (create_opening). Rooms the build left unnamed or missed:
    dwg_read for the label, then place_rooms at it. The ground: dwg_terrain on the site plan (dry run first: check
    the dropped levels), holes = the building footprint, then toposolid_subdivide for paving.
-7. FACADE
-   facade_details for cornices, string courses, copings and plinths from the sections and elevations;
-   dwg_elevation with facade = the id and the index's sheet_x_range, include_lines, for anything else (model_sweep,
-   model_extrusion, place_family for pilasters, surrounds, quoins).
+7. FACADE (editable only: families, profiles on wall sweeps, roofs; see docs/FACADE-DETAIL.md)
+   facade_detail_map facade: F.. image: true first: what the elevation draws, named (bands, rustication,
+   architraves, sills, hoods, pediments, keystones, consoles, pilasters, quoins, balustrades), repeats grouped
+   into types, how to build each. With reference: <a reference_open name> it says how the human model built
+   each item and how far it projects. Then facade_profile (bands, mansard: wall sweeps from the section),
+   facade_columns (pilasters, columns from the plan), window_family + window_look (windows), facade_relief
+   (the rest of the stonework, a family per window design). Check: facade_detail_map reference: active
+   (items with nothing built yet), view_image beside the elevation.
 8. FINAL SCORE
    survey_fidelity on every floor must pass. Report per floor: the numbers before and after, what is left for
    a person (with element ids), and every value you could not read from the drawings." + "\n" + Sections3D;
