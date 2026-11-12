@@ -19,7 +19,15 @@
     <RevitDir Condition="'$(RevitDir)' == ''">C:\Program Files\Autodesk\Revit 2025</RevitDir>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!-- Normal build: Revit 2025's own DLLs from RevitDir.
+       Build without Revit installed (CI): dotnet build -p:RevitApiFromNuGet=true uses the Revit 2025 API reference
+       packages instead. They are compile-time only and never copied to the output. -->
+  <ItemGroup Condition="'$(RevitApiFromNuGet)' == 'true'">
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.4.60" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.4.60" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RevitApiFromNuGet)' != 'true'">
     <Reference Include="RevitAPI">
       <HintPath>$(RevitDir)\RevitAPI.dll</HintPath>
       <Private>false</Private>
