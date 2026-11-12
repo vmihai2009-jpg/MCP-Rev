@@ -231,6 +231,7 @@ one undo step with a preview-then-confirm.
 | `ConnectWindow.cs`, `Icons.cs`, `Settings.cs` | The Connect window, icons, settings and call log |
 | `tests/McpSmoke` | Runs the real server outside Revit and checks it: `dotnet run --project tests/McpSmoke -c Release` |
 | `tests/SurveyCore` | The survey core's tests (91): `dotnet run --project tests/SurveyCore -c Release` |
+| `.github/workflows/ci.yml` | On every push and pull request: builds the add-in without Revit (`dotnet build BGMCP.csproj -c Release -p:RevitApiFromNuGet=true`, using the Revit 2025 API reference packages) and runs both test suites. Results are on the repository's Actions tab |
 
 Deliberately left out: a tool that runs arbitrary code in Revit. Any program on the computer that can reach the
 server could use it.

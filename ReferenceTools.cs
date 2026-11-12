@@ -332,7 +332,8 @@ namespace BarrGazetas.RevitMcp
                     var doc = Doc(app);
                     var cat = ResolveCategory(doc, Args.Str(a, "category"));
                     string lvl = Args.Str(a, "level"), text = Args.Str(a, "name_contains");
-                    var tf = Args.Bool(a, "shared") == true ? doc.ActiveProjectLocation.GetTotalTransform() : Transform.Identity;
+                    // GetTotalTransform maps shared to internal (checked 1.9.3: a model 26.47 m above datum); its inverse gives shared
+                    var tf = Args.Bool(a, "shared") == true ? doc.ActiveProjectLocation.GetTotalTransform().Inverse : Transform.Identity;
                     var all = new FilteredElementCollector(doc).OfCategoryId(cat.Id).WhereElementIsNotElementType()
                         .Where(e => !(e is FamilyInstance fi && fi.SuperComponent != null))
                         .Where(e => lvl == null || string.Equals(LevelName(doc, e), lvl, StringComparison.OrdinalIgnoreCase))
@@ -368,15 +369,17 @@ namespace BarrGazetas.RevitMcp
                               "what the reference has that ours lacks (with where), and what ours has extra. Reference positions are given in OUR frame.",
                 InputSchema = McpServer.Obj(
                     ("document", "string", "The reference's name (from reference_open)", true),
+                    ("ours", "string", "Our model, if it is not the active project: its reference_open name", false),
                     ("categories", "string[]", "Categories to compare (default Walls, Windows, Doors, Floors, Roofs, Ceilings, Stairs, Columns, Structural Columns, Generic Models)", false),
                     ("align", "string", "shared (default: trust both survey positions), auto (shared then fit on walls), internal (no move)", false),
+                    ("align_on", "string", "What auto fits on: walls (default) or windows", false),
                     ("offset_mm", "number[]", "Extra shift [dx, dy] applied to the reference before fitting", false),
                     ("rotate_deg", "number", "Extra rotation of the reference (degrees) before fitting", false),
                     ("max_distance_mm", "number", "Furthest two elements may be apart and still pair (default 1000)", false),
                     ("list", "integer", "How many missing items and worst pairs to list per category (default 15)", false)),
                 Run = (app, a) =>
                 {
-                    var ours = app.ActiveUIDocument?.Document ?? throw new InvalidOperationException("No project is open.");
+                    var ours = Args.Str(a, "ours") is string on ? Reference.Get(on) : app.ActiveUIDocument?.Document ?? throw new InvalidOperationException("No project is open.");
                     var refDoc = Reference.Get(Args.Str(a, "document"));
                     var (move, fit) = Alignment(ours, refDoc, a);
                     var cats = Args.Strings(a, "categories");
@@ -425,6 +428,7 @@ namespace BarrGazetas.RevitMcp
                               "are not copied without their wall. dry_run (default) says what would come. Copies are marked 'BGMCP ref copy' in Comments. One undo step.",
                 InputSchema = McpServer.Obj(
                     ("document", "string", "The reference's name", true),
+                    ("ours", "string", "The model to copy into, if not the active project: its reference_open name", false),
                     ("element_ids", "integer[]", "Reference elements to copy", false),
                     ("category", "string", "Or every element of this category...", false),
                     ("name_contains", "string", "...whose family/type name contains this", false),
@@ -435,7 +439,7 @@ namespace BarrGazetas.RevitMcp
                     ("dry_run", "boolean", "Only report (default true)", false)),
                 Run = (app, a) =>
                 {
-                    var ours = app.ActiveUIDocument?.Document ?? throw new InvalidOperationException("No project is open.");
+                    var ours = Args.Str(a, "ours") is string on ? Reference.Get(on) : app.ActiveUIDocument?.Document ?? throw new InvalidOperationException("No project is open.");
                     if (ours.IsReadOnly || ours.IsModifiable) throw new InvalidOperationException("The project can't be changed right now.");
                     var refDoc = Reference.Get(Args.Str(a, "document"));
                     var picked = new List<Element>();
@@ -507,7 +511,7 @@ namespace BarrGazetas.RevitMcp
         {
             string mode = Args.Str(a, "align") ?? "shared";
             Transform t = mode == "internal" ? Transform.Identity
-                : ours.ActiveProjectLocation.GetTotalTransform().Inverse.Multiply(refDoc.ActiveProjectLocation.GetTotalTransform());
+                : ours.ActiveProjectLocation.GetTotalTransform().Multiply(refDoc.ActiveProjectLocation.GetTotalTransform().Inverse); // ref internal -> shared -> ours internal
             var extraOff = Args.Numbers(a, "offset_mm");
             double extraRot = (Args.Dbl(a, "rotate_deg") ?? 0) * Math.PI / 180;
             if (extraOff.Count >= 2 || extraRot != 0)
@@ -515,9 +519,12 @@ namespace BarrGazetas.RevitMcp
                     .Multiply(Transform.CreateRotation(XYZ.BasisZ, extraRot)).Multiply(t);
             if (mode != "auto")
                 return (t, new { mode, angleDeg = R(Math.Atan2(t.BasisX.Y, t.BasisX.X) * 180 / Math.PI, 3), shiftMm = new[] { R(t.Origin.X * Mm), R(t.Origin.Y * Mm), R(t.Origin.Z * Mm) } });
-            var from = WallSamples(refDoc).Select(p => ToPt(t.OfPoint(p))).ToList();
-            var to = WallSamples(ours).Select(ToPt).ToList();
-            var (move, rms, paired) = ModelCompare.Align(from, to, PlanMove.Identity);
+            bool onWindows = Args.Str(a, "align_on") == "windows";
+            var from = (onWindows ? InsertCentres(refDoc) : WallSamples(refDoc)).Select(p => ToPt(t.OfPoint(p))).ToList();
+            var to = (onWindows ? InsertCentres(ours) : WallSamples(ours)).Select(ToPt).ToList();
+            // a reference without survey coordinates starts nowhere near: search the quarter turns from the medians
+            var near = ModelCompare.Align(from, to, PlanMove.Identity);
+            var (move, rms, paired) = near.paired >= from.Count * 0.3 && near.rms < 300 ? near : ModelCompare.AlignAny(from, to);
             var total = ToTransform(move).Multiply(t);
             return (total, new
             {
@@ -530,6 +537,12 @@ namespace BarrGazetas.RevitMcp
 
         private static Transform ToTransform(PlanMove m) =>
             Transform.CreateTranslation(new XYZ(m.Dx / Mm, m.Dy / Mm, 0)).Multiply(Transform.CreateRotation(XYZ.BasisZ, m.Angle));
+
+        /// <summary>Window centres (from their boxes), one per window: features both models place where the survey does.</summary>
+        private static IEnumerable<XYZ> InsertCentres(Document d) =>
+            new FilteredElementCollector(d).OfCategory(BuiltInCategory.OST_Windows).WhereElementIsNotElementType().OfType<FamilyInstance>()
+                .Where(fi => fi.SuperComponent == null && !(fi.Symbol?.Family?.IsInPlace ?? false))
+                .Select(fi => fi.get_BoundingBox(null)).Where(b => b != null).Select(b => (b.Min + b.Max) / 2);
 
         private static IEnumerable<XYZ> WallSamples(Document d)
         {
