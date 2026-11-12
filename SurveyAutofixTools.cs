@@ -22,17 +22,20 @@ namespace BarrGazetas.RevitMcp
             {
                 Name = "survey_autofix",
                 Write = true,
-                Description = "Fix a floor (or several) towards 1:1 in one go, then score it again and return only what still fails. Per floor: walls moved and resized onto the DWG faces (dwg_wall_fit, moderate confidence only); windows given the sill and head their S/H labels give (only labels that clearly belong to one window); widths and positions from the plan's masonry reveals (only when both reveals are within 150 mm); windows the indexed elevations draw that the model lacks placed (sill, head and width from the elevation); gaps in window columns from Survey to Revit's review list filled from the window above or below, and ticked. Each floor is one undo step; a change Revit refuses is skipped, never forced. dry_run: everything is tried and rolled back, the counts say what would change. Takes a while on a big floor: it comes back as a job.",
+                Description = "Fix a floor (or several) towards 1:1 in one go, then score it again and return only what still fails. It measures against the same plan reading as survey_fidelity (Survey to Revit's, when loaded). Per floor: walls moved and resized onto the plan's faces (dwg_wall_fit, moderate confidence only); windows Survey to Revit read on the plan that the model lacks placed (plan width, labelled heights; missing doors listed for a person); windows given the sill and head their labels give (only labels that clearly belong to one window); widths and positions from the plan's masonry reveals (only when both reveals are within 150 mm); windows the indexed elevations draw that the model lacks placed (sill, head and width from the elevation); gaps in window columns from Survey to Revit's review list filled from the window above or below, and ticked. Each floor is one undo step; a change Revit refuses is skipped, never forced. dry_run: everything is tried and rolled back, the counts say what would change. Takes a while on a big floor: it comes back as a job.",
                 InputSchema = Schema(
                     ("levels", Arr("string", "Floors to fix (default: every floor with a plan DWG that fails survey_fidelity)"), false),
                     ("walls", S("boolean", "Fit walls (default true)"), false),
                     ("openings", S("boolean", "Fix and place windows (default true)"), false),
                     ("dry_run", S("boolean", "Try everything and roll it back (default false)"), false),
                     ("max_issues", S("integer", "Remaining issues to return per floor (default 10)"), false),
-                    ("elevations", Arr("object", "As survey_fidelity (default: elevation-index.json)"), false)),
+                    ("elevations", Arr("object", "As survey_fidelity (default: elevation-index.json)"), false),
+                    ("source", S("string", "As survey_fidelity: auto (Survey to Revit's reading if loaded), survey_to_revit or cad_link"), false),
+                    ("survey_folder", S("string", "As survey_fidelity"), false)),
                 Run = (app, a) =>
                 {
                     var doc = Writable(app);
+                    var source = ReadingFor(app, doc, a);
                     bool dry = Args.Bool(a, "dry_run") == true, doWalls = Args.Bool(a, "walls") != false, doOpenings = Args.Bool(a, "openings") != false;
                     int maxIssues = Math.Clamp(Args.Int(a, "max_issues", 10), 0, 100);
                     var gate = McpSettings.Load().FidelityGate ?? new FidelityGate();
@@ -41,32 +44,34 @@ namespace BarrGazetas.RevitMcp
                     var plans = CadLink.All(doc).Where(i => i.ViewSpecific && doc.GetElement(i.OwnerViewId) is ViewPlan vp && vp.GenLevel != null)
                         .GroupBy(i => ((ViewPlan)doc.GetElement(i.OwnerViewId)).GenLevel.Id.Value).ToDictionary(g => g.Key, g => g.First());
                     var wanted = Args.Strings(a, "levels");
-                    var floors = levels.Where(l => plans.ContainsKey(l.Id.Value) && (wanted.Count == 0 || wanted.Any(w => w.Equals(l.Name, StringComparison.OrdinalIgnoreCase)))).ToList();
-                    if (floors.Count == 0) throw new ArgumentException("No floor with a plan DWG to fix. list_cad shows the links.");
+                    var floors = levels.Where(l => source.Has(l, plans) && (wanted.Count == 0 || wanted.Any(w => w.Equals(l.Name, StringComparison.OrdinalIgnoreCase)))).ToList();
+                    if (floors.Count == 0) throw new ArgumentException("No floor with a plan to fix against (" + source.Note + "). list_cad shows the links.");
 
                     // elevations once
                     var elevMissing = new List<ElevMissing>();
                     foreach (var spec in ElevationSpecs(doc, a))
-                        try { elevMissing.AddRange(ElevationOnFacade(doc, spec).missing); } catch { /* reported by survey_fidelity */ }
+                        try { elevMissing.AddRange(ElevationOnFacade(doc, spec, source.Roles).missing); } catch { /* reported by survey_fidelity */ }
 
+                    ImportInstance Plan(Level l) => plans.TryGetValue(l.Id.Value, out var imp) ? imp : null;
                     var results = new List<object>();
                     foreach (var level in floors)
                     {
-                        var before = Fidelity.Measure(FidelityInputFor(doc, level, plans[level.Id.Value], datumMm), gate).score;
+                        var before = Fidelity.Measure(FidelityInputFor(doc, level, Plan(level), datumMm, source), gate).score;
                         if (wanted.Count == 0 && before.Pass) { results.Add(new { level = level.Name, pass = true, note = "already passes: left alone" }); continue; }
                         var log = new FloorFixLog();
                         using (var g = new TransactionGroup(doc, $"MCP: survey autofix {level.Name}"))
                         {
                             g.Start();
-                            if (doWalls) FixWalls(doc, level, plans[level.Id.Value], log);
+                            if (doWalls) FixWalls(doc, level, Plan(level), FidelityInputFor(doc, level, Plan(level), datumMm, source), log);
                             if (doOpenings)
                             {
-                                var input = FidelityInputFor(doc, level, plans[level.Id.Value], datumMm); // walls may have moved
+                                var input = FidelityInputFor(doc, level, Plan(level), datumMm, source); // walls may have moved
                                 FixOpenings(doc, level, input, log);
+                                PlacePlanMissing(doc, level, input, log);
                                 PlaceMissing(doc, level, input, elevMissing.Where(m => m.Level == level.Name).ToList(), log);
                                 FillRhythmGaps(app, doc, level, input, log, tick: !dry);
                             }
-                            var after = Fidelity.Measure(FidelityInputFor(doc, level, plans[level.Id.Value], datumMm), gate);
+                            var after = Fidelity.Measure(FidelityInputFor(doc, level, Plan(level), datumMm, source), gate);
                             if (dry || log.Changed == 0) g.RollBack(); else g.Assimilate();
                             results.Add(new
                             {
@@ -85,7 +90,7 @@ namespace BarrGazetas.RevitMcp
                     }
                     return new
                     {
-                        dryRun = dry, floors = results,
+                        dryRun = dry, plans = source.Note, floors = results,
                         next = "Work the stillFailing items by hand (each says how), then survey_fidelity for the whole building.",
                     };
                 }
@@ -229,10 +234,10 @@ namespace BarrGazetas.RevitMcp
             public int Changed => WallsFitted + Reshaped + Placed + GapsFilled;
         }
 
-        private static void FixWalls(Document doc, Level level, ImportInstance imp, FloorFixLog log)
+        /// <summary>Walls fitted to the plan's face lines: the same lines the score measures against (Survey to Revit's reading, or the linked plan).</summary>
+        private static void FixWalls(Document doc, Level level, ImportInstance imp, FidelityInput input, FloorFixLog log)
         {
-            var (_, _, walls, segs) = FitInputs(doc, new JsonObject { ["level"] = level.Name, ["import_id"] = imp.Id.Value });
-            foreach (var p in WallFit.Fit(walls, segs, new FitOptions()).Where(p => p.Confidence == "moderate"))
+            foreach (var p in WallFit.Fit(input.Walls, input.WallFaces, new FitOptions()).Where(p => p.Confidence == "moderate"))
             {
                 var wall = doc.GetElement(new ElementId(p.Id)) as Wall;
                 if (wall == null) continue;
@@ -265,7 +270,7 @@ namespace BarrGazetas.RevitMcp
                 if (fi == null) continue;
                 double? newSill = null, newHeight = null, newWidth = null; XYZ slide = null;
 
-                var (sl, hl) = Fidelity.LabelsFor(ins.At, input.Labels);
+                var (sl, hl) = Fidelity.LabelsFor(ins.At, input);
                 double curSill = ins.Sill ?? 0, curHead = ins.Head ?? 0;
                 if (sl is double s && Math.Abs(s - curSill) > 30) newSill = s;
                 if (hl is double h && Math.Abs(h - curHead) > 30 || (newSill != null && hl != null)) newHeight = (hl ?? curHead) - (newSill ?? curSill);
@@ -292,6 +297,39 @@ namespace BarrGazetas.RevitMcp
             }
         }
 
+        /// <summary>
+        /// Windows Survey to Revit read on the plan that the model lacks (removed, or refused by Revit at the build):
+        /// placed in the wall there, as wide as the plan, at the heights its labels give. Doors are left for a person
+        /// (their family and swing matter), and listed.
+        /// </summary>
+        private static void PlacePlanMissing(Document doc, Level level, FidelityInput input, FloorFixLog log)
+        {
+            foreach (var po in input.PlanOpenings)
+            {
+                if (input.Inserts.Any(i => i.At.Dist2D(po.At) <= Math.Max(400, po.W / 2))) continue;
+                if (po.Door) { log.Unconfirmed.Add($"{level.Name}: the plan has a {po.W:0} wide door at {po.At.X:0},{po.At.Y:0} the model lacks (place it by hand: family and swing)"); continue; }
+                var (ls, lh) = Fidelity.LabelsFor(po.At, input);
+                double? sill = ls ?? po.Sill, head = lh ?? po.Head;
+                if (po.W < 300 || sill == null || head == null || head - sill < 300) { log.Unconfirmed.Add($"{level.Name}: a window at {po.At.X:0},{po.At.Y:0} on the plan has no usable size"); continue; }
+                var host = input.Walls.Select(w => (w, d: DistToSeg(po.At, w.A, w.B))).Where(x => x.d <= x.w.ThicknessMm / 2 + 150).OrderBy(x => x.d).Select(x => x.w).FirstOrDefault();
+                if (host == null) { log.Unconfirmed.Add($"{level.Name}: the plan has a window at {po.At.X:0},{po.At.Y:0} but no model wall there"); continue; }
+                var item = new JsonObject
+                {
+                    ["category"] = "Windows", ["x"] = Math.Round(po.At.X), ["y"] = Math.Round(po.At.Y), ["level"] = level.Name,
+                    ["width_mm"] = Math.Round(po.W), ["height_mm"] = Math.Round(head.Value - sill.Value), ["sill_mm"] = Math.Round(sill.Value),
+                    ["wall_id"] = host.Id,
+                    ["comments"] = "MCP|autofix|plan window (Survey to Revit's reading)" + (ls != null ? " + labels" : po.HeightsFromSurvey ? "" : ", heights assumed"),
+                };
+                try
+                {
+                    BuildTools.Tx.Run(doc, "MCP: place window from the plan", () => BuildTools.PlaceInsertHere(doc, item));
+                    log.Placed++;
+                    input.Inserts.Add(new FidInsert { At = po.At, W = po.W, Category = "Windows", HostWallId = host.Id, Sill = sill, Head = head }); // the elevation pass must not place it again
+                }
+                catch (Exception ex) { log.OpeningsFailed++; log.Problems.Add($"plan window at {po.At.X:0},{po.At.Y:0}: {McpServer.Unwrap(ex).Message}"); }
+            }
+        }
+
         private static void PlaceMissing(Document doc, Level level, FidelityInput input, List<ElevMissing> missing, FloorFixLog log)
         {
             foreach (var m in missing)
@@ -311,7 +349,7 @@ namespace BarrGazetas.RevitMcp
                 double L = host.A.Dist2D(host.B), ux = (host.B.X - host.A.X) / L, uy = (host.B.Y - host.A.Y) / L;
                 double width = m.W + jambs.Value.right - jambs.Value.left, shift = (jambs.Value.left + jambs.Value.right) / 2;
                 m.X += ux * shift; m.Y += uy * shift; m.W = width;
-                var (ls, lh) = Fidelity.LabelsFor(new Pt(m.X, m.Y), input.Labels);
+                var (ls, lh) = Fidelity.LabelsFor(new Pt(m.X, m.Y), input);
                 if (ls != null) m.Sill = ls;
                 if (lh != null) m.Head = lh;
                 // not where a window already is (the elevation may have matched another storey's)
@@ -356,7 +394,7 @@ namespace BarrGazetas.RevitMcp
                     .OrderBy(f => Math.Abs(((LocationPoint)f.Location).Point.Z - level.Elevation)).FirstOrDefault();
                 if (twin == null) continue;
                 var (tw, th) = BuildTools.InsertSizeOf(doc, twin);
-                var (sl, hl) = Fidelity.LabelsFor(new Pt(x, y), input.Labels);
+                var (sl, hl) = Fidelity.LabelsFor(new Pt(x, y), input);
                 double sill = sl ?? (twin.get_Parameter(BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM)?.AsDouble() * Mm ?? 900);
                 double height = hl is double h && sl is double s ? h - s : th ?? 1500;
                 var item = new JsonObject
