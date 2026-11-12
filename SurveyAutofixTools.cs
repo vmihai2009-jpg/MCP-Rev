@@ -27,6 +27,7 @@ namespace BarrGazetas.RevitMcp
                     ("levels", Arr("string", "Floors to fix (default: every floor with a plan DWG that fails survey_fidelity)"), false),
                     ("walls", S("boolean", "Fit walls (default true)"), false),
                     ("openings", S("boolean", "Fix and place windows (default true)"), false),
+                    ("elevation_only_windows", S("boolean", "Place a window an elevation draws even where the plan shows no opening, if a model wall on the facade stands over its whole height (default true; false: only where the plan's reveals agree)"), false),
                     ("dry_run", S("boolean", "Try everything and roll it back (default false)"), false),
                     ("max_issues", S("integer", "Remaining issues to return per floor (default 10)"), false),
                     ("elevations", Arr("object", "As survey_fidelity (default: elevation-index.json)"), false),
@@ -80,7 +81,7 @@ namespace BarrGazetas.RevitMcp
                                 var input = FidelityInputFor(doc, level, Plan(level), datumMm, source); // walls may have moved
                                 FixOpenings(doc, level, input, log, elevById);
                                 PlacePlanMissing(doc, level, input, log);
-                                PlaceMissing(doc, level, input, elevMissing.Where(m => m.Level == level.Name).ToList(), log);
+                                PlaceMissing(doc, level, input, elevMissing.Where(m => m.Level == level.Name).ToList(), log, Args.Bool(a, "elevation_only_windows") != false);
                                 FillRhythmGaps(app, doc, level, input, log, tick: !dry);
                             }
                             var after = Fidelity.Measure(Scored(level), gate);
@@ -423,28 +424,51 @@ namespace BarrGazetas.RevitMcp
             }
         }
 
-        private static void PlaceMissing(Document doc, Level level, FidelityInput input, List<ElevMissing> missing, FloorFixLog log)
+        /// <summary>
+        /// Windows an elevation draws that the model lacks (1.16.0). Sill and head are the elevation's (outside, frame to frame;
+        /// the plan's S/H labels are measured inside and are not used for these). Where the plan's reveals agree (both within
+        /// 150 mm) the plan gives width and centre; where the plan shows no opening (a window above the plan's cut, or merged
+        /// on the plan) it is placed from the elevation alone when elevationOnly and a wall of this floor on the facade stands
+        /// over its whole height, and said for review. With the "BG Window" family loaded, each gets a BG Window type from its
+        /// drawn panes (as window_look makes them); otherwise the usual family, sized (with the 1.12.0 fallbacks).
+        /// </summary>
+        private static void PlaceMissing(Document doc, Level level, FidelityInput input, List<ElevMissing> missing, FloorFixLog log, bool elevationOnly = true)
         {
             foreach (var m in missing)
             {
-                if (m.Sill == null || m.Head == null || m.W < 300) continue;
-                // the plan must agree: an opening in a wall there, both reveals within 150 mm of the elevation's.
-                // Width and centre then come from the plan (it cuts through the opening), heights from the labels or the elevation.
+                if (m.Sill == null || m.Head == null || m.W < 300 || m.Head - m.Sill < 300) continue;
                 var at = new Pt(m.X, m.Y);
                 var host = input.Walls.Select(w => (w, d: DistToSeg(at, w.A, w.B))).Where(x => x.d <= x.w.ThicknessMm / 2 + 400).OrderBy(x => x.d).Select(x => x.w).FirstOrDefault();
-                var probe = new FidInsert { At = at, W = m.W, HostWallId = host?.Id ?? 0 };
-                var jambs = host == null ? null : Fidelity.PlanJambs(host, probe, input.WallFaces);
-                if (jambs == null || Math.Abs(jambs.Value.left) > 150 || Math.Abs(jambs.Value.right) > 150)
+                if (host == null) { log.Unconfirmed.Add($"{level.Name}: the elevation draws a {m.W:0} wide window at {m.X:0},{m.Y:0} (sill {m.Sill:0}) but this floor has no wall there (model the wall first)"); continue; }
+                var probe = new FidInsert { At = at, W = m.W, HostWallId = host.Id };
+                var jambs = Fidelity.PlanJambs(host, probe, input.WallFaces);
+                bool planAgrees = jambs != null && Math.Abs(jambs.Value.left) <= 150 && Math.Abs(jambs.Value.right) <= 150;
+                string how;
+                if (planAgrees)
+                {
+                    double L = host.A.Dist2D(host.B), ux = (host.B.X - host.A.X) / L, uy = (host.B.Y - host.A.Y) / L;
+                    double shift = (jambs.Value.left + jambs.Value.right) / 2;
+                    m.X += ux * shift; m.Y += uy * shift; m.W += jambs.Value.right - jambs.Value.left;
+                    how = "elevation + plan reveals";
+                }
+                else if (elevationOnly)
+                {
+                    // the wall must stand over the window's whole height (not a parapet or a wall of the floor below)
+                    var wall = doc.GetElement(new ElementId(host.Id)) as Wall;
+                    var bb = wall?.get_BoundingBox(null);
+                    double z0 = level.Elevation * Mm + m.Sill.Value, z1 = level.Elevation * Mm + m.Head.Value;
+                    if (bb == null || bb.Min.Z * Mm > z0 + 100 || bb.Max.Z * Mm < z1 - 100)
+                    {
+                        log.Unconfirmed.Add($"{level.Name}: the elevation draws a {m.W:0} wide window at {m.X:0},{m.Y:0} (sill {m.Sill:0}, head {m.Head:0}); the wall there does not stand over it");
+                        continue;
+                    }
+                    how = "elevation only (the plan shows no opening there)";
+                }
+                else
                 {
                     log.Unconfirmed.Add($"{level.Name}: the elevation draws a {m.W:0} wide window at {m.X:0},{m.Y:0} (sill {m.Sill:0}) but the plan shows no opening there");
                     continue;
                 }
-                double L = host.A.Dist2D(host.B), ux = (host.B.X - host.A.X) / L, uy = (host.B.Y - host.A.Y) / L;
-                double width = m.W + jambs.Value.right - jambs.Value.left, shift = (jambs.Value.left + jambs.Value.right) / 2;
-                m.X += ux * shift; m.Y += uy * shift; m.W = width;
-                var (ls, lh) = Fidelity.LabelsFor(new Pt(m.X, m.Y), input);
-                if (ls != null) m.Sill = ls;
-                if (lh != null) m.Head = lh;
                 // not where a window already is (the elevation may have matched another storey's)
                 var here = new XYZ(m.X / Mm, m.Y / Mm, level.Elevation);
                 bool taken = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Windows).WhereElementIsNotElementType().OfType<FamilyInstance>()
@@ -455,11 +479,50 @@ namespace BarrGazetas.RevitMcp
                     ["category"] = "Windows", ["x"] = Math.Round(m.X), ["y"] = Math.Round(m.Y), ["level"] = level.Name,
                     ["width_mm"] = Math.Round(m.W), ["height_mm"] = Math.Round(m.Head.Value - m.Sill.Value), ["sill_mm"] = Math.Round(m.Sill.Value),
                     ["wall_id"] = host.Id,
-                    ["comments"] = "MCP|autofix|elevation + plan reveals" + (ls != null ? " + labels" : ""),
+                    ["comments"] = "MCP|autofix|" + how,
                 };
-                try { BuildTools.PlaceInsertSafely(doc, item, "MCP: place window from the elevation", out var n); log.Took(n, $"window at {m.X:0},{m.Y:0}"); log.Placed++; }
+                string bgType = null;
+                try { bgType = BgWindowTypeFor(doc, m); } catch (Exception ex) { log.Problems.Add($"window at {m.X:0},{m.Y:0}: no BG Window type ({McpServer.Unwrap(ex).Message}), placed with the usual family"); }
+                if (bgType != null) { item["type_name"] = bgType; item.Remove("width_mm"); item.Remove("height_mm"); }
+                try
+                {
+                    BuildTools.PlaceInsertSafely(doc, item, "MCP: place window from the elevation", out var n);
+                    log.Took(n, $"window at {m.X:0},{m.Y:0}"); log.Placed++;
+                    if (!planAgrees) log.Unconfirmed.Add($"{level.Name}: placed from the elevation alone, {m.W:0} wide at {m.X:0},{m.Y:0}, sill {m.Sill:0} (the plan shows no opening there: check it)");
+                }
                 catch (Exception ex) { log.OpeningsFailed++; log.Problems.Add($"window at {m.X:0},{m.Y:0}: {McpServer.Unwrap(ex).Message}"); }
             }
+        }
+
+        /// <summary>
+        /// A type of the parametric "BG Window" family (window_family) for a window the elevation draws, from its panes
+        /// (WindowPattern.TypeValues, the same values and name window_look gives), made in its own step. Null when the family
+        /// is not loaded, the window is arched (its own family: window_look) or no panes were read.
+        /// </summary>
+        private static string BgWindowTypeFor(Document doc, ElevMissing m)
+        {
+            if (m.Pattern == null || !m.Pattern.FromDrawing || m.Pattern.Arched) return null;
+            var fam = new FilteredElementCollector(doc).OfClass(typeof(Family)).Cast<Family>().FirstOrDefault(f => f.Name == WindowFamilyBuilder.FamilyName);
+            if (fam == null) return null;
+            var pat = m.Pattern.FitWidth(m.W) ?? m.Pattern;
+            var v = pat.TypeValues(out _);
+            v["Inset"] = 100; v["Frame Depth"] = 70; // as window_look's defaults
+            string name = WindowPattern.TypeName(v);
+            var syms = fam.GetFamilySymbolIds().Select(id => doc.GetElement(id)).OfType<FamilySymbol>().ToList();
+            if (syms.Count == 0) return null;
+            if (!syms.Any(s => s.Name == name))
+                BuildTools.Tx.Run(doc, "MCP: BG Window type " + name, () =>
+                {
+                    var sym = (FamilySymbol)syms[0].Duplicate(name);
+                    foreach (var kv in v)
+                    {
+                        var prm = sym.LookupParameter(kv.Key);
+                        if (prm == null || prm.IsReadOnly) continue;
+                        if (prm.StorageType == StorageType.Integer) prm.Set((int)Math.Round(kv.Value)); else prm.Set(kv.Value / Mm);
+                    }
+                    if (!sym.IsActive) sym.Activate();
+                });
+            return $"{WindowFamilyBuilder.FamilyName}: {name}";
         }
 
         private static void FillRhythmGaps(UIApplication app, Document doc, Level level, FidelityInput input, FloorFixLog log, bool tick)

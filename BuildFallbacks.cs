@@ -119,6 +119,14 @@ namespace BarrGazetas.RevitMcp
             var all = new FilteredElementCollector(doc).OfCategoryId(baseSym.Category.Id).WhereElementIsElementType().OfType<FamilySymbol>().ToList();
             if (ctx.Mode == TypeFallback.PerInstanceFamily)
             {
+                // 1.16.0: the parametric "BG Window" (window_family), when loaded, takes any size as a type of its own
+                if (baseSym.Category.Id.Value == (long)BuiltInCategory.OST_Windows && baseSym.FamilyName != WindowFamilyBuilder.FamilyName
+                    && BgWindowSized(doc, wMm, hMm) is FamilySymbol bg)
+                {
+                    ctx.MadeType = bg.Name;
+                    ctx.Note = $"{bg.FamilyName}: {bg.Name} used (Revit can't make a {wMm:0}x{hMm:0} type of {baseSym.FamilyName}; plain panes: window_look gives it the elevation's)";
+                    return bg;
+                }
                 var use = new FilteredElementCollector(doc).OfCategoryId(baseSym.Category.Id).WhereElementIsNotElementType().OfType<FamilyInstance>()
                     .GroupBy(f => f.Symbol.Family.Id).ToDictionary(g => g.Key, g => g.Count());
                 var pick = all.Where(s => s.Family.Id != baseSym.Family.Id && !s.Family.IsInPlace
@@ -138,6 +146,26 @@ namespace BarrGazetas.RevitMcp
             var n0 = near[0];
             ctx.Note = $"nearest existing type {n0.s.FamilyName}: {n0.s.Name} used, {n0.dw:+0;-0;0} mm wide and {n0.dh:+0;-0;0} mm high of the {wMm:0}x{hMm:0} asked (Revit can't make that type of {baseSym.FamilyName})";
             return n0.s;
+        }
+
+        /// <summary>A plain "BG Window" type of this size (made if missing), or null when the family is not loaded.</summary>
+        private static FamilySymbol BgWindowSized(Document doc, double wMm, double hMm)
+        {
+            var fam = new FilteredElementCollector(doc).OfClass(typeof(Family)).Cast<Family>().FirstOrDefault(f => f.Name == WindowFamilyBuilder.FamilyName);
+            var syms = fam?.GetFamilySymbolIds().Select(id => doc.GetElement(id)).OfType<FamilySymbol>().ToList();
+            if (syms == null || syms.Count == 0) return null;
+            string name = $"{wMm:0}x{hMm:0} plain";
+            var sym = syms.FirstOrDefault(s => s.Name == name);
+            if (sym == null)
+            {
+                sym = (FamilySymbol)syms[0].Duplicate(name);
+                foreach (var (p, v) in new[] { ("Width", wMm / MmPerFoot), ("Height", hMm / MmPerFoot) })
+                    if (sym.LookupParameter(p) is Parameter prm && !prm.IsReadOnly) prm.Set(v);
+                foreach (var (p, v) in new[] { ("Panes Across", 1), ("Panes High Bottom", 1), ("Panes High Top", 1), ("Meeting Rail", 0) })
+                    if (sym.LookupParameter(p) is Parameter prm && !prm.IsReadOnly && prm.StorageType == StorageType.Integer) prm.Set(v);
+            }
+            if (!sym.IsActive) sym.Activate();
+            return sym;
         }
 
         /// <summary>With a per-instance fallback family, the size must really have taken; otherwise this fallback does not apply.</summary>
