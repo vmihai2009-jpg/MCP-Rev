@@ -103,6 +103,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 
 | Tool | What it fixes |
 |---|---|
+| `survey_run` (1.15.0) | **The fast way: one call per floor** instead of driving the tools by hand. Scores the floor, autofixes windows (and walls with `walls: true`, off by default while the wall-fix crash is open), scores again, and answers with what still fails **grouped by cause** (count, median deviation, `systematic` when they agree, sample ids, `at`, what to do). Writes `run-*.json` (full detail) and appends to `score-history.csv` in the reports folder. `levels` (default: every failing floor), `dry_run`, `autofix: false` (score and group only), `rebuild: true` (S2R rebuilds the floor first: ask the user), `save: true`. |
 | `survey_autofix` | Per floor, in one go: walls onto the plan faces (moderate-confidence only), windows to their sill/head (elevation first, labels where no elevation), widths/positions from plan reveals, missing windows placed (from plan or elevation), window-column gaps filled. Re-scores and returns only what still fails. `walls` / `openings` switch halves off. |
 | `survey_section_autofix` | Wall/parapet tops, slab tops, roofs moved up/down, where the sections are certain. |
 | `dwg_wall_fit` + `dwg_wall_fit_apply` | The wall half of autofix, one floor, with the list to choose from (`review` ones by id). |
@@ -155,6 +156,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 
 | Tool | What it's for |
 |---|---|
+| `dwg_image` (1.15.0) | **Look at the survey DWG as a picture** instead of reading coordinates. `element_id` = a window/door on its indexed elevation with the model's window in red; `facade: F..` (+ `along_mm`, `z_mm` for one bay or band) = the elevation with every model window in red, rulers in m along the facade and m AOD; `path` + `box`/`near` = any sheet (sections, details); `level` + `near` = the linked plan in model mm round an issue's `at`. Also returns the texts in view and mm per pixel. |
 | `check_view` | Aim a view at a facade id, a survey section, or some elements. |
 | `view_image` | That view (or any view) as a picture you can see. Compare with the elevation/section by eye. |
 | `survey_section image: true` | The section sheet with the model's cut drawn over it in red, issues ringed. |
@@ -172,11 +174,11 @@ Floor by floor, lowest first. Report counts before and after each step.
 3. **Build.** `survey_build` (preview), then `confirm: true` after the user agrees. Then `survey_coordinates`: the survey point must carry the survey's coordinates. On an existing build (testmcp) skip this; rebuild a floor only with `levels` and only if most of it is wrong.
 4. **Key the drawings.** `facade_list` → `elevation_index` (the elevation sheets' paths; check each match: jambs matched ≥ 6, the facade's name looks right) → `section_index`. Without these, elevations and sections are not used and window heights fall back to the internal labels.
 5. **Score 0.** `survey_fidelity` on every floor. Confirm the answer says it read the plans through Survey to Revit. Keep the per-floor numbers.
-6. **Autofix, per failing floor.** In this order, each as a dry run first, then for real:
+6. **Autofix, per failing floor.** Fast way (1.15.0): `survey_run levels: [floor]` (once with `dry_run: true` if unsure) does score, window autofix and re-score in one call and returns the causes; then go to 7 with its `causes`. By hand, in this order, each as a dry run first, then for real:
    1. `survey_autofix levels: [floor], walls: false` (windows only),
    2. `survey_autofix levels: [floor], openings: false` (walls only),
    then `survey_fidelity` on that floor. Doing openings first means wall moves carry already-correct windows with them. Read `stillFailing` and `forReview`.
-7. **Work the queue**, worst first: the issues from `survey_fidelity` (each has a ready `fix` line) and `survey_review`. Table in 1.4. **Many issues of one kind on one floor means a reading problem, not 30 hand fixes**: fix `layers.txt` and rebuild that floor.
+7. **Work the queue**, worst first. With `survey_run`, work its `causes` top down: a `systematic` cause is one fix (a layer rule, a build default, a level), not many hand edits; look before acting with `dwg_image` (`element_id`, or `level` + `near: at`). Otherwise the issues from `survey_fidelity` (each has a ready `fix` line) and `survey_review`. Table in 1.4. **Many issues of one kind on one floor means a reading problem, not 30 hand fixes**: fix `layers.txt` and rebuild that floor.
 8. **Heights and 3D.** `survey_floor_levels` (slabs vs spots) → `survey_section image: true` → `survey_section_autofix dry_run: true`, then for real → `survey_ceilings` → `survey_stairs` → `roof_from_survey` → `plan_columns` → `window_detail`. Rooms the build missed: `dwg_read` for the label, `place_rooms`.
 9. **Facade detail**, facade by facade (1.5 e).
 10. **Final.** `survey_fidelity` every floor and `survey_section` every section. Report per floor: before and after, what is left for a person (element ids), every value the drawings didn't give. Record the run in Part 2 using the template.
@@ -321,6 +323,13 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-12 (night): speed tools survey_run and dwg_image (1.15.0)
+
+- What: two tools to cut round-trips (PLAN.md P1, P2, V2, V5). `survey_run`: one call per floor, score -> window autofix -> re-score, remaining issues grouped by cause with what to do, `run-*.json` + `score-history.csv` in the reports folder. `dwg_image`: a picture of any part of a DWG (a window on its elevation with the model's window in red, a facade bay, a section, a plan round a point) with rulers, plus the texts in view.
+- Wall autofix is OFF by default in `survey_run` (`walls: true` turns it on) because of your crash report (1.12.0 wall fallback). 1.14.7 (below) made that path safer but it is not yet confirmed in Revit: turn `walls: true` on only after your crash check passes.
+- Files: SpeedTools.cs (new), Survey/DwgRaster.cs (renderer + PNG, Revit-free), Survey/IssueCauses.cs (cause grouping, Revit-free), Hub.cs and BatchTool.cs (registration; survey_run is not allowed inside batch), tests/SurveyCore/SpeedTests.cs (23 new checks; 286 pass).
+- Not yet run in Revit. Needs from the other side: on testmcp, `dwg_image element_id: <a front-facade window>` and `dwg_image facade: <front F id>` (does the red model window sit on the drawn one? are the rulers right?), then `survey_run levels: ["First"], dry_run: true` and paste its `causes`. Report any exception text exactly.
 
 ### 2026-11-12 (evening): wall-fallback crash made safer, single-line walls with their face on the line (S2R 0.23.1), no more false "missing walls" (hub 1.14.7), please re-run
 - What, Survey to Revit (`WallDetector.FromSingleLines`, `SurveyAnalyzer`): a wall drawn as one line is no longer a 100 mm wall centred on the line. The line is one face; the wall's face sits on it and the body goes on one side, chosen by: wall material on the plan grid, else the side that is not a room, else away from the nearest room name / spot height within 3 m, else inside the building outline. New `WallCandidate.DrawnFaceSide` says which side the drawn face is. Expected to clear most of the 459 wall-face misses at 50-59 mm (about 60% of all wall-face misses). Thickness is still 100 mm, so the "model 100 mm, DWG pair 380 mm" `wall_thickness` issues are not addressed by this.

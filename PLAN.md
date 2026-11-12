@@ -94,10 +94,10 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 | Id | Tool / change | What it does | Repo | Pri |
 |---|---|---|---|---|
 | V1 | `survey_fidelity` missing-wall filter (partly done 1.14.7: ≤1 m, no line between, no face on a model wall, no room/spot height between; layer-role checks still to do) | A face pair counts as a missing wall only if it is on the wall layer, 50-900 mm apart (more only for a basement/party wall flagged by S2R), both lines longer than 300 mm, and not a chimney breast, stair, step or joinery outline (S2R layer roles). Others go to an "unclassified pairs" list, not the score. | Hub | P0 |
-| V2 | issue causes | Groups issues by likely cause before listing them: "256 walls exactly 50 mm off: single-line walls centred on their face", "40 windows: elevation head 150 mm above label". Claude fixes one cause instead of 400 items. | Hub | P0 |
+| V2 | issue causes (done 1.15.0, in `survey_run`) | Groups issues by likely cause before listing them: "256 walls exactly 50 mm off: single-line walls centred on their face", "40 windows: elevation head 150 mm above label". Claude fixes one cause instead of 400 items. | Hub | P0 |
 | V3 | `survey_section` on roofs and slabs | Already merged (1.11.0); needs its first Revit run and the roof DirectShapes included. | Hub | P1 |
 | V4 | `facade_score` | See F1. | Hub | P0 |
-| V5 | score history | Every scoring call appends to `runs/score-history.csv` (floor, metric, value, version), so progress and regressions are visible between versions. | Hub | P1 |
+| V5 | score history (done 1.15.0, `survey_run` writes it) | Every scoring call appends to `runs/score-history.csv` (floor, metric, value, version), so progress and regressions are visible between versions. | Hub | P1 |
 
 ### Plan walls (S, A)
 | Id | Tool / change | What it does | Repo | Pri |
@@ -133,8 +133,8 @@ Note on "model in place": the Revit API cannot create in-place families, so tool
 ### Speed (P)
 | Id | Tool / change | What it does | Repo | Pri |
 |---|---|---|---|---|
-| P1 | `survey_run` | One call per floor (a background job): score, autofix walls, autofix openings, re-score, save; returns only the remaining causes (V2). Claude spends its time on the leftovers, not on driving 15 tools per floor. | Hub | P1 |
-| P2 | `dwg_image` | A picture of any part of a DWG sheet (a window, a bay of the elevation, a section detail) with the level marks, cropped and scaled, so Claude looks before it measures. Pairs with `check_view` + `view_image` for the model. | Hub | P0 |
+| P1 | `survey_run` (done 1.15.0; walls off by default until the wall-fix crash is fixed) | One call per floor (a background job): score, autofix walls, autofix openings, re-score, save; returns only the remaining causes (V2). Claude spends its time on the leftovers, not on driving 15 tools per floor. | Hub | P1 |
+| P2 | `dwg_image` (done 1.15.0) | A picture of any part of a DWG sheet (a window, a bay of the elevation, a section detail) with the level marks, cropped and scaled, so Claude looks before it measures. Pairs with `check_view` + `view_image` for the model. | Hub | P0 |
 | P3 | usage guide + recipes | COORDINATION.md tells the org-side Claude which tool for which question, in order, with "if you see X do Y" recipes. Being written in the thread *Write MCP usage guide*. | docs | P0 |
 | P4 | answers that fit | Every tool answers with counts and the worst 10 items by default, details in a JSON file in `runs/`, so a call never floods Claude's context. Audit the tools that still return raw linework. | Hub | P1 |
 
@@ -179,7 +179,7 @@ The rules this plan builds towards:
 | Extend 1:1 scoring to 3D | V3 (done, merged 1.11.0) | waiting for a Revit run |
 | **Proposed: Plan walls to 95%** | V1, V2, S1-S3 | to open (highest value: about 60% of wall misses) |
 | **Proposed: Window families from DWG** | W1-W4 | to open |
-| **Proposed: Speed tools** | P1, P2, P4, V5 | to open (P2 first, small) |
+| Add speed tools for faster runs | P1, P2, V2, V5 (P4 still open) | done in 1.15.0, awaiting first Revit run |
 | Org side (Mihai's work account) | live Revit runs; ceilings room lookup | after each merge |
 
 ## 8. What the org side should run next (for COORDINATION.md)
