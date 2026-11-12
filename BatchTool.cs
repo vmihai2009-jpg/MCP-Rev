@@ -17,7 +17,7 @@ namespace BarrGazetas.RevitMcp
     /// </summary>
     internal static class BatchTool
     {
-        private static readonly string[] NotInBatch = { "batch", "save_model", "mcp_reload", "reference_open", "reference_close", "reference_copy", "job_status", "mcp_status" };
+        private static readonly string[] NotInBatch = { "batch", "survey_run", "save_model", "mcp_reload", "reference_open", "reference_close", "reference_copy", "job_status", "mcp_status" };
         private static readonly Regex Ref = new Regex(@"^\$(\d+)\.([A-Za-z0-9_.\[\]]+)$");
 
         public static RevitTool Make(IReadOnlyList<RevitTool> own, Func<object, string, JsonObject, string> other, JsonSerializerOptions json) => new RevitTool
