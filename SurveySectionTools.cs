@@ -1,4 +1,4 @@
-// 1.10.0: the 3D part of the 1:1 score. survey_section cuts the model on each survey section's plane and measures
+// 1.11.0: the 3D part of the 1:1 score. survey_section cuts the model on each survey section's plane and measures
 // every element there (slabs, roofs, wall and parapet tops, stairs: Survey/SectionFit.cs) against the section sheet;
 // survey_section_autofix makes the height fixes that are certain. Where a section is comes from section_index
 // (section-index.json), else Survey to Revit's "Survey Section X" views (cut lines from the key plan), else the call.

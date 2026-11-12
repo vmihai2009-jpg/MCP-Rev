@@ -50,6 +50,11 @@ namespace SurveyCoreTests
             var stairs = SurveyDetail.Stairs(st);
             T.Check(stairs.Count == 1 && stairs[0].Treads == 10 && T.Near(stairs[0].GoingMm, 250) && T.Near(stairs[0].WidthMm, 1100), "stairs: 10 treads, going 250, width 1100");
 
+            // merged openings: 4900 wide with two 230 piers drawn inside
+            var parts = SurveyDetail.SplitSpan(-2450, 2450, new[] { -900.0, -670, 700, 930, 701 });
+            T.Check(parts.Count == 3 && T.Near(parts[0].a, -2450) && T.Near(parts[0].b, -900) && T.Near(parts[1].a, -670) && T.Near(parts[1].b, 700) && T.Near(parts[2].a, 930), "split: a 4.9 m opening with two piers is three openings");
+            T.Check(SurveyDetail.SplitSpan(0, 1200, new double[0]).Count == 1, "split: nothing inside, one opening");
+
             // sections: verticals at x = 1000 + t for walls at t = 0, 230, 5000, 5230, 9000
             var walls = new List<double> { 0, 230, 5000, 5230, 9000 };
             var vert = walls.Select(t => 71000 - t).ToList(); // drawn the other way round

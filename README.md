@@ -138,7 +138,7 @@ The DWG build, QA and coordinate tools are ported from the survey pipeline writt
 reads the linked DWG in place. `dwg_read` uses ACadSharp (MIT), shipped beside the add-in, the reader Survey to
 Revit uses; the Revit CAD link cannot give text.
 
-### 3D: sections, curved walls, looking at the model (1.10.0)
+### 3D: sections, curved walls, looking at the model (1.11.0)
 
 | Tool | What it does |
 |---|---|

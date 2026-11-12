@@ -45,7 +45,7 @@ Rules
    survey_fidelity on every floor must pass. Report per floor: the numbers before and after, what is left for
    a person (with element ids), and every value you could not read from the drawings." + "\n" + Sections3D;
 
-        /// <summary>1.10.0: the 3D step, kept as its own block so the workflow above can change round it.</summary>
+        /// <summary>1.11.0: the 3D step, kept as its own block so the workflow above can change round it.</summary>
         public const string Sections3D = @"SECTIONS, HEIGHTS AND CURVES (3D), before the final score
    section_index (cut lines and where each section sits), then survey_section: every element the section
    plane cuts against the section sheet: slab tops and thickness, wall and parapet tops, roof ridge, eaves

@@ -1,4 +1,4 @@
-// 1.10.0: Claude can look at the model. view_image exports a view as a PNG and returns it as MCP image content;
+// 1.11.0: Claude can look at the model. view_image exports a view as a PNG and returns it as MCP image content;
 // check_view makes (or re-aims) one view for that: a facade seen square on, a survey section, or a box round elements.
 using System;
 using System.Collections.Generic;

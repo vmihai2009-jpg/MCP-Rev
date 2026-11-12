@@ -24,7 +24,7 @@ namespace BarrGazetas.RevitMcp.Survey
         public double LevelMm { get; set; } = 10;
         public int MissingWalls { get; set; } = 0;
         public int MissingOpenings { get; set; } = 0;
-        // 1.8.0: sections (survey_section) and curved walls
+        // 1.11.0: sections (survey_section) and curved walls
         /// <summary>Section profile: share of the model's cut edges within SectionTolMm of a section line (%).</summary>
         public double SectionWithinPct { get; set; } = 90;
         public double SectionTolMm { get; set; } = 20;
@@ -54,7 +54,7 @@ namespace BarrGazetas.RevitMcp.Survey
         public double LevelZ, DatumMm;
         public List<FitWall> Walls = new List<FitWall>();
         public List<FidInsert> Inserts = new List<FidInsert>();
-        /// <summary>Curved walls (1.8.0 hub section work): scored with CurvedFit.</summary>
+        /// <summary>Curved walls (1.11.0): scored with CurvedFit.</summary>
         public List<ArcWall> ArcWalls = new List<ArcWall>();
         /// <summary>The plan DWG's wall face lines, and its window and door lines.</summary>
         public List<Seg> WallFaces = new List<Seg>(), OpeningLines = new List<Seg>();
