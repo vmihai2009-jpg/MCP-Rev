@@ -306,6 +306,35 @@ namespace BarrGazetas.RevitMcp.Survey
                 }).ToList();
         }
 
+        // ------------------------------------------------------------------ merged openings
+
+        /// <summary>
+        /// One wide opening split at the piers the plan draws inside it: reveal lines across the wall at positions
+        /// (mm along the wall, inside u0..u1) pair up into piers (between minPier and maxPier wide); the openings
+        /// are what lies between. Returns one span (u0, u1) when there is nothing to split.
+        /// </summary>
+        public static List<(double a, double b)> SplitSpan(double u0, double u1, IEnumerable<double> reveals, double minPier = 80, double maxPier = 1500, double minOpening = 300)
+        {
+            var cuts = new List<double>();
+            foreach (var r in reveals.Where(r => r > u0 + 50 && r < u1 - 50).OrderBy(r => r))
+                if (cuts.Count == 0 || r - cuts[^1] > 25) cuts.Add(r);
+            var piers = new List<(double a, double b)>();
+            for (int i = 0; i + 1 < cuts.Count; i++)
+            {
+                double w = cuts[i + 1] - cuts[i];
+                if (w >= minPier && w <= maxPier) { piers.Add((cuts[i], cuts[i + 1])); i++; }
+            }
+            var spans = new List<(double, double)>();
+            double start = u0;
+            foreach (var (a, b) in piers)
+            {
+                if (a - start >= minOpening) spans.Add((start, a));
+                start = b;
+            }
+            if (u1 - start >= minOpening) spans.Add((start, u1));
+            return spans.Count == 0 ? new List<(double, double)> { (u0, u1) } : spans;
+        }
+
         // ------------------------------------------------------------------ sections on the plan
 
         /// <summary>
