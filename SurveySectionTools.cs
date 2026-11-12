@@ -61,7 +61,7 @@ namespace BarrGazetas.RevitMcp
                 {
                     var doc = Doc(app);
                     var gate = McpSettings.Load().FidelityGate ?? new FidelityGate();
-                    var (inputs, notes) = SectionInputs(doc, a);
+                    var (inputs, notes) = SectionInputs(doc, a, app);
                     var scores = new List<SectionScore>(); var all = new List<FidIssue>(); var images = new List<(string name, byte[] png)>();
                     foreach (var input in inputs)
                     {
@@ -119,7 +119,7 @@ namespace BarrGazetas.RevitMcp
                     var gate = McpSettings.Load().FidelityGate ?? new FidelityGate();
                     bool dry = Args.Bool(a, "dry_run") == true;
                     double maxChange = Args.Dbl(a, "max_change_mm") ?? 3000;
-                    var (inputs, notes) = SectionInputs(doc, a);
+                    var (inputs, notes) = SectionInputs(doc, a, app);
                     var before = inputs.Select(i => SectionFit.Measure(i, gate)).ToList();
                     // one change per element: every section that measured it must agree
                     var byElement = new Dictionary<(long id, string what), List<double>>();
@@ -155,7 +155,7 @@ namespace BarrGazetas.RevitMcp
                             }
                             catch (Exception ex) { left.Add($"{kv.Key.what} {kv.Key.id}: {McpServer.Unwrap(ex).Message}"); }
                         }
-                        var (after, notes2) = SectionInputs(doc, a);
+                        var (after, notes2) = SectionInputs(doc, a, app);
                         var afterScores = after.Select(i => SectionFit.Measure(i, gate)).ToList();
                         if (dry || done.Count == 0) g.RollBack(); else g.Assimilate();
                         return new
@@ -230,15 +230,18 @@ namespace BarrGazetas.RevitMcp
             public string From;
         }
 
-        private static (List<SectionInput> inputs, List<string> notes) SectionInputs(Document doc, JsonObject a)
+        private static (List<SectionInput> inputs, List<string> notes) SectionInputs(Document doc, JsonObject a, Autodesk.Revit.UI.UIApplication app)
         {
             var notes = new List<string>();
-            var specs = SectionSpecs(doc, a, notes);
+            // Survey to Revit's reading of the survey: section cut lines and the role of each layer; null without it
+            SurveySource source = null;
+            if (app != null) { try { source = ReadingFor(app, doc, a); } catch (Exception ex) { notes.Add("Survey to Revit's reading: " + McpServer.Unwrap(ex).Message); } }
+            var specs = SectionSpecs(doc, a, notes, source?.Reading);
             if (specs.Count == 0) throw new ArgumentException("No section to measure: run section_index (or Survey to Revit's survey_build with sections), or give path and cut_line. " + string.Join(" ", notes));
             var inputs = new List<SectionInput>();
             foreach (var spec in specs)
             {
-                try { inputs.Add(SectionInputFor(doc, spec, a, notes)); }
+                try { inputs.Add(SectionInputFor(doc, spec, a, notes, source?.Roles)); }
                 catch (Exception ex) { notes.Add($"{spec.Name}: {McpServer.Unwrap(ex).Message}"); }
             }
             if (inputs.Count == 0) throw new InvalidOperationException("No section could be read: " + string.Join(" ", notes));
@@ -251,7 +254,7 @@ namespace BarrGazetas.RevitMcp
             return N(a) == N(b);
         }
 
-        private static List<SectionSpec> SectionSpecs(Document doc, JsonObject a, List<string> notes)
+        private static List<SectionSpec> SectionSpecs(Document doc, JsonObject a, List<string> notes, SurveyReading reading = null)
         {
             var wanted = Args.Strings(a, "sections");
             var specs = new List<SectionSpec>();
@@ -301,6 +304,20 @@ namespace BarrGazetas.RevitMcp
                 }
                 if (specs.Count > 0) return specs;
                 notes.Add("section-index.json has none of those sections.");
+            }
+
+            // Survey to Revit's reading: the cut lines it placed from each sheet's key plan
+            if (reading != null)
+            {
+                foreach (var rs in reading.Sections.Where(x => x.Cut != null && x.File != null))
+                {
+                    if (wanted.Count > 0 && !wanted.Any(w => SameSection(w, rs.Name))) continue;
+                    string sheetPath = Path.IsPathRooted(rs.File) ? rs.File : reading.Folder != null ? Path.Combine(reading.Folder, rs.File) : null;
+                    if (sheetPath == null || !File.Exists(sheetPath)) { notes.Add($"Section {rs.Name}: its sheet {rs.File} is not in the survey folder."); continue; }
+                    var (x0, x1) = SheetRangeOf(sheetPath, rs.Name);
+                    specs.Add(new SectionSpec { Name = "Section " + rs.Name, Path = sheetPath, X0 = x0, X1 = x1, A = rs.Cut.Value.A, B = rs.Cut.Value.B, From = $"Survey to Revit's reading (key-plan cut on {rs.File})" });
+                }
+                if (specs.Count > 0) return specs;
             }
 
             // Survey to Revit's section views, with the sheet titled for each
@@ -369,7 +386,7 @@ namespace BarrGazetas.RevitMcp
             return SectionFit.SheetRange(titles.Select(t => (t.name, t.x)).ToList(), hit.name);
         }
 
-        private static SectionInput SectionInputFor(Document doc, SectionSpec spec, JsonObject a, List<string> notes)
+        private static SectionInput SectionInputFor(Document doc, SectionSpec spec, JsonObject a, List<string> notes, Func<IEnumerable<string>, Dictionary<string, string>> roles = null)
         {
             if (spec.Path == null || !File.Exists(spec.Path)) throw new FileNotFoundException("The section sheet can't be found: " + spec.Path);
             double len = spec.A.Dist2D(spec.B);
@@ -378,15 +395,21 @@ namespace BarrGazetas.RevitMcp
             bool InSheet(Pt p) => p.X >= spec.X0 && p.X <= spec.X1 && p.Y >= spec.Y0 && p.Y <= spec.Y1;
             var inRange = file.Lines.Where(l => InSheet(l.A) && InSheet(l.B)).ToList();
             var layers = Args.Strings(a, "line_layers");
+            // what Survey to Revit says each layer is: level marks, and annotation that is never geometry
+            Dictionary<string, string> role = null;
+            try { role = roles?.Invoke(file.Lines.Select(l => l.Layer).Concat(file.Texts.Select(t => t.Layer)).Distinct()); } catch { }
+            bool Is(string layer, string r) => role != null && layer != null && role.TryGetValue(layer, out var v) && v == r;
             List<DwgLine> sec;
             if (layers.Count > 0) sec = inRange.Where(l => DwgFile.LayerMatches(l.Layer, layers)).ToList();
             else
             {
                 sec = inRange.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "*Profile*" })).ToList();
-                if (sec.Count < 20) sec = inRange.Where(l => !DwgFile.LayerMatches(l.Layer, SectionIgnoreLayers)).ToList();
+                if (sec.Count < 20) sec = inRange.Where(l => !DwgFile.LayerMatches(l.Layer, SectionIgnoreLayers) && !Is(l.Layer, "Annotation") && !Is(l.Layer, "LevelText")).ToList();
             }
             if (sec.Count == 0) throw new InvalidOperationException("No section lines in that part of the sheet; check sheet_x_range and line_layers.");
-            var lvl = Args.Strings(a, "level_layers"); if (lvl.Count == 0) lvl = new List<string> { "*Level*" };
+            var lvl = Args.Strings(a, "level_layers");
+            if (lvl.Count == 0 && role != null) lvl = role.Where(kv => kv.Value == "LevelText").Select(kv => kv.Key).ToList();
+            if (lvl.Count == 0) lvl = new List<string> { "*Level*" };
             double sx0 = sec.Min(l => Math.Min(l.A.X, l.B.X)), sx1 = sec.Max(l => Math.Max(l.A.X, l.B.X));
             var heights = ElevationFit.Heights(file.Texts.Where(t => DwgFile.LayerMatches(t.Layer, lvl) && InSheet(t.At)), inRange.Where(l => DwgFile.LayerMatches(l.Layer, lvl)), sx0, sx1);
             double datumMm = doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero).Elevation * Mm;

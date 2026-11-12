@@ -153,12 +153,38 @@ the DWG points) and `survey_autofix` re-curves them onto the DWG. The gate has n
 
 Tools from other add-ins appear with their own prefix, for example `survey_build` and `survey_review` from Survey to Revit.
 
+### One reading of the survey: Survey to Revit's
+
+`survey_fidelity` and `survey_autofix` no longer read the plan DWGs with the hub's own layer names (`*Wall*`,
+`*Window*`, `*Level*`) and the `S 0.94` / `H 3.27` labels only. When Survey to Revit is loaded (with its
+`survey_reading` tool), they ask it for its reading of the survey and measure against that: its layer roles, the
+survey's `layers.txt`, every sill and head label style it knows (`S`/`H`, `FS`+`SH`, `c800 h2400`, `OH`...), its
+spot heights. So a survey drawn to another office's standard scores the way it builds, and a layers.txt fixes both.
+The score also gains what only that reading has: windows and doors read on the plan that the model lacks, room
+names against the model's rooms, ceiling notes against the model's ceilings. `survey_autofix` places the missing
+plan windows. The elevations the hub still reads itself take their layers from Survey to Revit's roles too
+(`survey_layer_roles`), with the hub's names as well. Without Survey to Revit, or with `source: cad_link`, the
+hub reads the linked plans as before; every answer says which reader was used (`plans`).
+
+How the two add-ins share it (strings only, as the bridge requires): `survey_reading` writes
+`survey-reading.json` (schema `survey-reading/1`, documented in Survey to Revit's `Core/Survey/SurveyReading.cs`)
+to its reports folder and answers with the path; the hub loads it with `Survey/SurveyReading.cs` and moves it into
+the project's internal coordinates (the identity for a project Build from Survey set up; through the survey grid
+otherwise). Other tools can use the same file: per floor, wall faces and arcs as drawn, window and door lines,
+walls, windows, doors, height notes, spot heights, rooms, ceilings, stairs and the slab outline; sections and
+roofs for the building.
+
+`survey_fidelity` with `against_reference` also returns Survey to Revit's `survey_score` (right / off / missed /
+invented against a hand-made model linked in), so there is one score to ask for. Gate settings added:
+`ceilingMm` (20), `missingCeilings` (0), `missingRooms` (0).
+
 Ready-made prompts (slash commands in Claude Code, e.g. `/mcp__revit__survey_to_one_to_one`):
-- `survey_to_one_to_one`: the whole job, survey DWGs to a 1:1 model: base build, then walls, windows, floors and
-  facade checked and corrected floor by floor against the DWGs, measuring rather than guessing.
+- `survey_to_one_to_one`: the one survey workflow: Survey to Revit's analysis and base build, then every floor
+  scored and fixed against the same reading until it passes, then floors, ceilings, stairs, roofs and facade.
 - `dwg_survey_build`: building from a linked DWG by layer rules, with an example config.
 - `revit_model_check`: a health check of the open model.
-- `survey_to_model` (from Survey to Revit): build, then work through the review list.
+- `survey_to_model` (from Survey to Revit): build, then work through the review list; with the hub there it
+  points to `survey_to_one_to_one`, which includes it.
 
 ## How it works
 
@@ -218,6 +244,7 @@ one undo step with a preview-then-confirm.
 | `ConnectWindow.cs`, `Icons.cs`, `Settings.cs` | The Connect window, icons, settings and call log |
 | `tests/McpSmoke` | Runs the real server outside Revit and checks it: `dotnet run --project tests/McpSmoke -c Release` |
 | `tests/SurveyCore` | The survey core's tests (91): `dotnet run --project tests/SurveyCore -c Release` |
+| `.github/workflows/ci.yml` | On every push and pull request: builds the add-in without Revit (`dotnet build BGMCP.csproj -c Release -p:RevitApiFromNuGet=true`, using the Revit 2025 API reference packages) and runs both test suites. Results are on the repository's Actions tab |
 
 Deliberately left out: a tool that runs arbitrary code in Revit. Any program on the computer that can reach the
 server could use it.

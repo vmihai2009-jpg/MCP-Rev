@@ -137,6 +137,11 @@ namespace SurveyCoreTests
             var okDwg = dwg.Select(sg => new Seg(Scale(sg.A, 5000.0 / 5020), Scale(sg.B, 5000.0 / 5020), 0)).ToList();
             var (fs2, _) = Fidelity.Measure(new FidelityInput { Level = "L0", ArcWalls = { arcWall }, WallFaces = okDwg }, g);
             T.Check(fs2.Walls.WithinTolPct >= 95, $"a curved wall on its DWG passes ({fs2.Walls.WithinTolPct}%)");
+            // Survey to Revit's reading gives the faces as true arcs (degrees, anticlockwise)
+            var fromReading = new FidelityInput { Level = "L0", ArcWalls = { arcWall }, WallArcs = { new[] { 0.0, 0, 4870, 0, 90 }, new[] { 0.0, 0, 5170, 0, 90 } } };
+            var (fs3, fis3) = Fidelity.Measure(fromReading, g);
+            T.Check(fs3.Walls.Checked == 1 && fis3.Any(x => x.Kind == "wall_face_curved" && x.Fix.Contains("radius 5020")), $"curved walls measured against the reading's arcs ({fis3.FirstOrDefault()?.Fix})");
+            T.Check(CurvedFit.Pieces(new[] { 0.0, 0, 1000, 350, 10 }).All(sg => sg.A.X > 900), "an arc across 0 degrees runs anticlockwise the short way");
         }
 
         static Pt Scale(Pt p, double k) => new Pt(p.X * k, p.Y * k);

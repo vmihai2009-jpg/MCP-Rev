@@ -134,13 +134,40 @@ namespace BarrGazetas.RevitMcp.Survey
             return new ArcFaceFit { Cx = cx, Cy = cy, R = R, RmsMm = rms, Points = pts.Count };
         }
 
+        /// <summary>The floor's wall face lines plus its true arcs (from Survey to Revit's reading) in short pieces.</summary>
+        public static List<Seg> FacesWithArcs(FidelityInput f)
+        {
+            var all = new List<Seg>(f.WallFaces);
+            foreach (var a in f.WallArcs) all.AddRange(Pieces(a));
+            return all;
+        }
+
+        /// <summary>An arc (centre x, y, radius, start and end degrees, anticlockwise from start to end) as straight pieces of at most 1 degree (finer than a DWG reader's, so the refitted radius is not pulled in by the chords).</summary>
+        public static List<Seg> Pieces(double[] a)
+        {
+            var list = new List<Seg>();
+            if (a == null || a.Length < 5 || a[2] <= 0) return list;
+            double s0 = a[3] * Math.PI / 180, sweep = ((a[4] - a[3]) % 360 + 360) % 360;
+            if (sweep < 1e-6) sweep = 360;
+            sweep *= Math.PI / 180;
+            int n = Math.Max(2, (int)Math.Ceiling(sweep / (Math.PI / 180)));
+            for (int i = 0; i < n; i++)
+            {
+                double t0 = s0 + sweep * i / n, t1 = s0 + sweep * (i + 1) / n;
+                list.Add(new Seg(new Pt(a[0] + a[2] * Math.Cos(t0), a[1] + a[2] * Math.Sin(t0)), new Pt(a[0] + a[2] * Math.Cos(t1), a[1] + a[2] * Math.Sin(t1)), 0));
+            }
+            return list;
+        }
+
         /// <summary>Adds the curved walls of a floor to its wall score (called from Fidelity.Measure).</summary>
         internal static void Score(FidelityInput f, FidelityGate g, WallScore ws, List<FidIssue> issues, ref double total, ref double inTol, ref double in25, ref double max)
         {
+            if (f.ArcWalls.Count == 0) return;
+            var faces = FacesWithArcs(f);
             foreach (var w in f.ArcWalls)
             {
                 if (w.LengthMm < 300 || w.ThicknessMm < 30) continue;
-                var r = Measure(w, f.WallFaces, g.WallTolMm);
+                var r = Measure(w, faces, g.WallTolMm);
                 ws.CurvedChecked++;
                 if (!r.Verified) { ws.Unverified++; continue; }
                 ws.Checked++;

@@ -3,45 +3,64 @@ namespace BarrGazetas.RevitMcp
     /// <summary>The ready-made instructions (MCP prompts) for the survey work.</summary>
     internal static class SurveyGuide
     {
-        public const string OneToOne = @"Take the survey DWGs to a Revit model that matches them 1:1. Survey to Revit builds the base; you then check
-and correct every wall, window, door, floor and facade element against the DWGs. Measure, never guess: every
-position, thickness and height comes from a DWG line, label or elevation. Where the drawings do not say, leave
+        public const string OneToOne = @"Take the survey DWGs to a Revit model that matches them 1:1. This is the one workflow for the survey: Survey
+to Revit reads the DWGs and builds the base; the hub then measures every floor against that same reading
+(survey_fidelity) and fixes it (survey_autofix) until it passes. Measure, never guess: every position,
+thickness and height comes from a DWG line, label, section or elevation. Where the drawings do not say, leave
 it and list it for a person.
 
 Rules
 - Work on a copy of the project. save_model after each floor.
 - Never touch any other Revit window: only this connection's model.
 - No dialogs: every tool resolves Revit's warnings itself. If a fix is refused, try once another way, then list it.
-- Each change is one undo step. Ask before deleting or rebuilding.
+- Each change is one undo step. Ask before deleting or rebuilding, and before survey_build / survey_layer_rules
+  with confirm.
 - Keep answers short; work floor by floor, lowest first, and report counts before and after.
+- One reader: the survey is read by Survey to Revit (its layer roles, the survey's layers.txt, every sill/head
+  label style it knows). Do not use dwg_build_model for a survey Survey to Revit can read.
 
-1. BASE
-   mcp_status, get_model_info. If nothing is built: survey_status, survey_analyze (the survey folder),
-   survey_layers if floors look thin, then survey_build (preview, then confirm). survey_coordinates: the
-   survey point should carry the survey's coordinates.
-2. KEY AND SCORE 0
-   facade_list (the facades and their ids), then elevation_index with the elevation DWGs (it matches each
-   elevation to its facade; check the matches it reports). survey_fidelity on every floor: this is the
-   baseline. Report its numbers.
-3. AUTOFIX, per failing floor (one call each; a job on big floors)
-   survey_autofix with levels [the floor]: walls fitted to the DWG faces, windows given their labelled sills
-   and heads and their plan widths, windows the elevations draw placed, window-column gaps filled. It scores
-   the floor again and returns only what still fails. dry_run first if unsure.
-4. YOUR QUEUE: only the stillFailing items, worst first (each says what it was measured against and how to fix)
+1. READ THE SURVEY
+   mcp_status, survey_status (no project: ask for one). Ask for the survey DWG folder if you do not have it.
+   survey_analyze. Drawings skipped, floors with no height, or few walls on a floor: survey_layers with
+   only_unassigned; if busy layers have role Other, propose a layers.txt (survey_layer_rules) and ask before
+   writing it. Analyse again. Say in a few lines: floors and heights, walls (how many low confidence), windows,
+   doors, rooms, sections, the checks.
+2. BUILD THE BASE
+   survey_build without confirm shows the plan; build after the user says yes (confirm: true). Report warnings
+   and what Revit refused. survey_coordinates: the survey point should carry the survey's coordinates.
+3. KEY AND SCORE 0
+   facade_list (the facades and their ids), then elevation_index with the elevation DWGs (check the matches it
+   reports). survey_fidelity on every floor: the baseline. It reads the plans through Survey to Revit
+   (survey_reading, done for you; its answer says which reader was used) and measures walls, thickness,
+   openings (plan jambs, labels, elevations, and windows/doors read on the plan but missing), room names,
+   ceiling notes and the level. A hand-made model of the building linked in: add against_reference (its name)
+   for Survey to Revit's right/off/missed/invented count in the same answer. Report the numbers.
+4. AUTOFIX, per failing floor (one call each; a job on big floors)
+   survey_autofix with levels [the floor]: walls fitted to the plan's faces, windows given their labelled sills
+   and heads and their plan widths, windows the plan or the elevations show placed, window-column gaps filled.
+   It scores the floor again and returns only what still fails (forReview: what it would not do on its own).
+   dry_run first if unsure.
+5. YOUR QUEUE: survey_review (Survey to Revit's doubts) and the stillFailing items, worst first
+   survey_review item: survey_review_context, decide, fix (survey_wall for a missed wall), survey_review_tick with
+   a note. Many of one kind on a floor is a layer or reading problem: fix the cause (layers.txt) and rebuild that
+   floor (survey_build with levels) rather than patching by hand.
    wall_face / wall_thickness: cad_lines + wall_info, then set_wall_line / change_type / split_wall (a wall
-   thicker at piers: the wall at the window plane, piers with model_extrusion). wall_missing: create_walls
-   with the DWG line and thickness after checking it with cad_lines. opening: dwg_read near it for its labels,
-   set_insert. opening_missing: place_inserts. level: set the level's Elevation, then re-score. Blocked
-   windows and solid wall stay solid. survey_review_tick what Survey to Revit listed. save_model per floor.
-5. FLOORS, ROOFS, OPENINGS
-   Slab edges from the plan outline (create_floor with replace_id); stair and lift voids (create_opening);
-   roofs from the roof plan and sections (create_roof, a slope per edge for mansards). Levels from spot
-   heights (dwg_read with contains '+' or the level layer) and the sections.
-6. FACADE
-   dwg_elevation with facade = the id and the index's sheet_x_range, include_lines: the elevation's lines on
-   the facade plane in model mm. model_sweep for cornices, string courses, copings and plinths along the
-   facade line; model_extrusion for piers, pilasters, quoins and window surrounds.
-7. FINAL SCORE
+   thicker at piers: the wall at the window plane, piers with model_extrusion). wall_missing: survey_wall or
+   create_walls with the DWG line and thickness after checking it with cad_lines. opening: dwg_read near it for
+   its labels, set_insert. opening_missing: place_inserts (doors: pick the family and swing). room_missing /
+   room_name: a room (room separation lines if the walls do not close it) / its Name. ceiling / ceiling_missing:
+   the ceiling's height offset, or a ceiling. level: the level's Elevation, then re-score. Blocked windows and
+   solid wall stay solid. save_model per floor.
+6. FLOORS, CEILINGS, STAIRS, ROOFS
+   survey_floor_levels (slabs against the spot heights), section_index then survey_ceilings (ceilings against the
+   sections), survey_stairs, plan_columns, roof_from_survey (roofs from the roof plan and sections; create_roof
+   with a slope per edge for mansards), window_detail (window depth in the wall). Slab edges from the plan outline
+   (create_floor with replace_id); stair and lift voids (create_opening).
+7. FACADE
+   facade_details for cornices, string courses, copings and plinths from the sections and elevations;
+   dwg_elevation with facade = the id and the index's sheet_x_range, include_lines, for anything else (model_sweep,
+   model_extrusion, place_family for pilasters, surrounds, quoins).
+8. FINAL SCORE
    survey_fidelity on every floor must pass. Report per floor: the numbers before and after, what is left for
    a person (with element ids), and every value you could not read from the drawings." + "\n" + Sections3D;
 

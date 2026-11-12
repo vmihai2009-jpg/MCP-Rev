@@ -33,6 +33,29 @@ namespace BarrGazetas.RevitMcp.Survey
         public double SlabThicknessMm { get; set; } = 20;
         public double PitchDeg { get; set; } = 1.5;
         public double RiserMm { get; set; } = 5;
+        /// <summary>Ceiling height against the plan's ceiling notes (u/s, CH...), where Survey to Revit's reading gives them.</summary>
+        public double CeilingMm { get; set; } = 20;
+        public int MissingCeilings { get; set; } = 0;
+        /// <summary>Room names on the plan with no room (or a room of another name) in the model.</summary>
+        public int MissingRooms { get; set; } = 0;
+    }
+
+    /// <summary>A room name on the plan and the model's room at that point (none: RoomId null).</summary>
+    public class RoomCheck
+    {
+        public Pt At;
+        public string Survey;
+        public long? RoomId;
+        public string ModelName;
+    }
+
+    /// <summary>A ceiling height on the plan and the model's ceiling over that point (none: Id null).</summary>
+    public class CeilingCheck
+    {
+        public Pt At;
+        public double SurveyMm;
+        public long? Id;
+        public double? ModelMm;
     }
 
     /// <summary>A window or door in the model, for the score.</summary>
@@ -56,10 +79,18 @@ namespace BarrGazetas.RevitMcp.Survey
         public List<FidInsert> Inserts = new List<FidInsert>();
         /// <summary>Curved walls (1.11.0): scored with CurvedFit.</summary>
         public List<ArcWall> ArcWalls = new List<ArcWall>();
+        /// <summary>Wall face arcs as Survey to Revit's reading gives them (centre x, y, radius, start and end angle in degrees, anticlockwise), model mm.</summary>
+        public List<double[]> WallArcs = new List<double[]>();
         /// <summary>The plan DWG's wall face lines, and its window and door lines.</summary>
         public List<Seg> WallFaces = new List<Seg>(), OpeningLines = new List<Seg>();
-        /// <summary>The plan's text near openings ("S 0.94", "H 3.27", in m above the floor) in model mm.</summary>
+        /// <summary>The plan's text near openings ("S 0.94", "H 3.27", in m above the floor) in model mm (read by the hub).</summary>
         public List<DwgText> Labels = new List<DwgText>();
+        /// <summary>Height notes as Survey to Revit reads them (every label style it knows), in model mm.</summary>
+        public List<HeightLabel> Heights = new List<HeightLabel>();
+        /// <summary>Windows and doors Survey to Revit read on the plan: one with no insert near it is missing.</summary>
+        public List<PlanOpening> PlanOpenings = new List<PlanOpening>();
+        public List<RoomCheck> Rooms = new List<RoomCheck>();
+        public List<CeilingCheck> Ceilings = new List<CeilingCheck>();
         /// <summary>Spot heights on the plan: where, and the value above datum (mm).</summary>
         public List<(Pt at, double aodMm)> SpotHeights = new List<(Pt, double)>();
         /// <summary>Elevation matches for this floor's inserts, and openings the elevations draw that the model lacks.</summary>
@@ -107,8 +138,25 @@ namespace BarrGazetas.RevitMcp.Survey
         public int ElevationChecked { get; set; }
         public int ElevationOver { get; set; }
         public int Missing { get; set; }
+        /// <summary>Of Missing: read on the plan (the rest are drawn on an elevation).</summary>
+        public int MissingOnPlan { get; set; }
         public int Extra { get; set; }
         public int NotChecked { get; set; }
+    }
+
+    public class RoomScore
+    {
+        public int Checked { get; set; }
+        public int Missing { get; set; }
+        public int Misnamed { get; set; }
+    }
+
+    public class CeilingScore
+    {
+        public int Checked { get; set; }
+        public int Over { get; set; }
+        public int Missing { get; set; }
+        public double MaxMm { get; set; }
     }
 
     public class LevelScore
@@ -130,6 +178,8 @@ namespace BarrGazetas.RevitMcp.Survey
         public WallScore Walls { get; set; } = new WallScore();
         public OpeningScore Openings { get; set; } = new OpeningScore();
         public LevelScore LevelCheck { get; set; } = new LevelScore();
+        public RoomScore Rooms { get; set; } = new RoomScore();
+        public CeilingScore Ceilings { get; set; } = new CeilingScore();
         /// <summary>0..1, for tracking progress; the gate decides, not this.</summary>
         public double Score { get; set; }
         public int IssueCount { get; set; }
@@ -161,17 +211,43 @@ namespace BarrGazetas.RevitMcp.Survey
         /// The S and H labels that belong to a window: the nearest of each within 1.2 m, and only when no other label
         /// of that kind is within 200 mm as near (two windows' labels between them would be a guess).
         /// </summary>
-        public static (double? sill, double? head) LabelsFor(Pt at, IEnumerable<DwgText> labels)
+        public static (double? sill, double? head) LabelsFor(Pt at, IEnumerable<DwgText> labels) => LabelsFor(at, Parse(labels));
+
+        /// <summary>A floor's labels: Survey to Revit's height notes when it read the floor, else the hub's own S/H reading.</summary>
+        public static (double? sill, double? head) LabelsFor(Pt at, FidelityInput f) => LabelsFor(at, LabelsOf(f));
+
+        /// <summary>
+        /// The same, for height notes of any style: a sill ('S') and a head ('H'), or a sill and its sill-to-head height
+        /// ('O') when the plan writes it that way.
+        /// </summary>
+        public static (double? sill, double? head) LabelsFor(Pt at, IEnumerable<HeightLabel> labels)
         {
-            var parsed = labels.Select(t => (t.At, lab: Label(t.Value))).Where(x => x.lab != null).Select(x => (at: x.At, kind: x.lab.Value.kind, mm: x.lab.Value.mm, d: x.At.Dist2D(at))).ToList();
+            var near = labels.Select(l => (l.Kind, l.Mm, d: l.At.Dist2D(at))).Where(x => x.d <= 1200).ToList();
             double? Pick(char k)
             {
-                var c = parsed.Where(x => x.kind == k && x.d <= 1200).OrderBy(x => x.d).ToList();
+                var c = near.Where(x => x.Kind == k).OrderBy(x => x.d).ToList();
                 if (c.Count == 0) return null;
-                if (c.Count > 1 && c[1].d - c[0].d < 200 && Math.Abs(c[1].mm - c[0].mm) > 1) return null;
-                return c[0].mm;
+                if (c.Count > 1 && c[1].d - c[0].d < 200 && Math.Abs(c[1].Mm - c[0].Mm) > 1) return null;
+                return c[0].Mm;
             }
-            return (Pick('S'), Pick('H'));
+            double? sill = Pick('S'), head = Pick('H');
+            if (head == null && sill != null && Pick('O') is double oh) head = sill + oh;
+            return (sill, head);
+        }
+
+        /// <summary>The hub's own reading of label text ("S 0.94", "H 3.27").</summary>
+        public static List<HeightLabel> Parse(IEnumerable<DwgText> labels) =>
+            labels.Select(t => (t.At, lab: Label(t.Value))).Where(x => x.lab != null).Select(x => new HeightLabel { At = x.At, Kind = x.lab.Value.kind, Mm = x.lab.Value.mm }).ToList();
+
+        public static List<HeightLabel> LabelsOf(FidelityInput f) => f.Heights.Count > 0 ? f.Heights : Parse(f.Labels);
+
+        /// <summary>The nearest sill and head within 1.2 m (the score's reading: no ambiguity rule, the nearest wins).</summary>
+        private static (double? sill, double? head) Nearest(Pt at, List<HeightLabel> labels)
+        {
+            double? Near(char k) => labels.Where(l => l.Kind == k && l.At.Dist2D(at) <= 1200).OrderBy(l => l.At.Dist2D(at)).Select(l => (double?)l.Mm).FirstOrDefault();
+            double? sill = Near('S'), head = Near('H');
+            if (head == null && sill != null && Near('O') is double oh) head = sill + oh;
+            return (sill, head);
         }
 
         /// <summary>One floor against the gate. Issues come back in the floor's own list (all of them, worst first).</summary>
@@ -287,7 +363,7 @@ namespace BarrGazetas.RevitMcp.Survey
                 });
 
             // ---- openings ----
-            var labels = f.Labels.Select(t => (t, lab: Label(t.Value))).Where(x => x.lab != null).Select(x => (at: x.t.At, kind: x.lab.Value.kind, mm: x.lab.Value.mm)).ToList();
+            var labels = LabelsOf(f);
             var jambLines = f.WallFaces.Concat(f.OpeningLines).ToList();
             var elevById = f.Elevation.GroupBy(e => e.Insert.Id).ToDictionary(x => x.Key, x => x.First());
             foreach (var ins in f.Inserts)
@@ -310,8 +386,7 @@ namespace BarrGazetas.RevitMcp.Survey
                 }
                 // labels (windows only: a door's sill is the floor): the nearest S and H within 1.2 m
                 bool isWindow = ins.Category == null || ins.Category.IndexOf("Window", StringComparison.OrdinalIgnoreCase) >= 0;
-                double? Near(char k) => !isWindow ? null : labels.Where(l => l.kind == k && l.at.Dist2D(ins.At) <= 1200).OrderBy(l => l.at.Dist2D(ins.At)).Select(l => (double?)l.mm).FirstOrDefault();
-                double? sl = Near('S'), hl = Near('H');
+                var (sl, hl) = isWindow ? Nearest(ins.At, labels) : (null, null);
                 bool labelChecked = false, labelOver = false;
                 if (ins.Sill is double sill && sl is double slv)
                 { labelChecked = true; double d = sill - slv; labelOver |= Math.Abs(d) > g.OpeningMm; Take(d, $"sill label S {slv / 1000:0.00}"); }
@@ -339,8 +414,28 @@ namespace BarrGazetas.RevitMcp.Survey
                         Fix = $"set_insert id {ins.Id} (width / sill / head / move) to match {worstWhat}", Severity = Math.Abs(worst) / g.OpeningMm,
                     });
             }
-            s.Openings.Missing = f.ElevationMissing.Count;
-            foreach (var m in f.ElevationMissing)
+            // windows and doors Survey to Revit read on the plan that have no insert near them
+            var planMissing = new List<PlanOpening>();
+            foreach (var po in f.PlanOpenings)
+            {
+                bool there = f.Inserts.Any(i => i.At.Dist2D(po.At) <= Math.Max(400, po.W / 2)
+                    && (po.Door ? i.Category == null || i.Category.IndexOf("Door", StringComparison.OrdinalIgnoreCase) >= 0 : i.Category == null || i.Category.IndexOf("Door", StringComparison.OrdinalIgnoreCase) < 0));
+                if (there) continue;
+                planMissing.Add(po);
+                string what = po.Door ? "door" : "window";
+                issues.Add(new FidIssue
+                {
+                    Kind = "opening_missing", Level = f.Level, DevMm = Math.Round(po.W), At = new[] { Math.Round(po.At.X), Math.Round(po.At.Y) },
+                    Against = $"plan (Survey to Revit's reading): a {what} {po.W:0} wide" + (po.Door ? (po.Head is double dh ? $", head {dh:0}" : "") : $", sill {po.Sill:0}, head {po.Head:0}") + (po.HeightsFromSurvey ? " (heights from the survey)" : " (heights assumed)"),
+                    Fix = po.Door ? "place_inserts a door in the wall there (width from the plan)" : "survey_autofix places it (plan width, labelled heights), or place_inserts on the wall there",
+                    Severity = 2 + po.W / 1000,
+                });
+            }
+            // an elevation's missing window that the plan already reports is not counted twice
+            var elevOnly = f.ElevationMissing.Where(m => !planMissing.Any(p => !p.Door && Math.Abs(p.At.X - m.X) + Math.Abs(p.At.Y - m.Y) <= 800)).ToList();
+            s.Openings.MissingOnPlan = planMissing.Count;
+            s.Openings.Missing = planMissing.Count + elevOnly.Count;
+            foreach (var m in elevOnly)
                 issues.Add(new FidIssue
                 {
                     Kind = "opening_missing", Level = f.Level, DevMm = Math.Round(m.W), Against = $"elevation: {m.W:0} wide, sill {m.Sill:0}, head {m.Head:0}",
@@ -370,6 +465,62 @@ namespace BarrGazetas.RevitMcp.Survey
             }
             else s.LevelCheck.Note = "no spot heights within 600 mm of the level on the plan";
 
+            // ---- rooms: each room name on the plan, a room of that name in the model at that place ----
+            static string Key(string n) => Regex.Replace((n ?? "").ToLowerInvariant(), @"[^a-z0-9]+", " ").Trim();
+            foreach (var rc in f.Rooms)
+            {
+                s.Rooms.Checked++;
+                var at = new[] { Math.Round(rc.At.X), Math.Round(rc.At.Y) };
+                if (rc.RoomId == null)
+                {
+                    s.Rooms.Missing++;
+                    issues.Add(new FidIssue
+                    {
+                        Kind = "room_missing", Level = f.Level, At = at, Against = $"plan room name \"{rc.Survey}\"",
+                        Fix = $"a room there named \"{rc.Survey}\" (the walls may not close it: room separation lines)", Severity = 1.5,
+                    });
+                }
+                else
+                {
+                    string a = Key(rc.Survey), b = Key(rc.ModelName);
+                    if (a.Length > 0 && b != a && !b.Contains(a) && !a.Contains(b))
+                    {
+                        s.Rooms.Misnamed++;
+                        issues.Add(new FidIssue
+                        {
+                            Kind = "room_name", Level = f.Level, Id = rc.RoomId, At = at, Against = $"plan room name \"{rc.Survey}\" (model \"{rc.ModelName}\")",
+                            Fix = $"set_parameters id {rc.RoomId} Name \"{rc.Survey}\"", Severity = 1.2,
+                        });
+                    }
+                }
+            }
+
+            // ---- ceilings: each ceiling height written on the plan, the model's ceiling over that point ----
+            foreach (var cc in f.Ceilings)
+            {
+                s.Ceilings.Checked++;
+                var at = new[] { Math.Round(cc.At.X), Math.Round(cc.At.Y) };
+                if (cc.Id == null || cc.ModelMm == null)
+                {
+                    s.Ceilings.Missing++;
+                    issues.Add(new FidIssue
+                    {
+                        Kind = "ceiling_missing", Level = f.Level, At = at, DevMm = Math.Round(cc.SurveyMm), Against = $"plan ceiling note {cc.SurveyMm / 1000:0.00} m",
+                        Fix = $"a ceiling at {cc.SurveyMm:0} mm above the level over that room", Severity = 1.5,
+                    });
+                    continue;
+                }
+                double dev = cc.ModelMm.Value - cc.SurveyMm;
+                s.Ceilings.MaxMm = Math.Max(s.Ceilings.MaxMm, Math.Round(Math.Abs(dev)));
+                if (Math.Abs(dev) <= g.CeilingMm) continue;
+                s.Ceilings.Over++;
+                issues.Add(new FidIssue
+                {
+                    Kind = "ceiling", Level = f.Level, Id = cc.Id, At = at, DevMm = Math.Round(dev), Against = $"plan ceiling note {cc.SurveyMm / 1000:0.00} m (model {cc.ModelMm / 1000:0.00} m)",
+                    Fix = $"set_parameters id {cc.Id} \"Height Offset From Level\" {cc.SurveyMm:0} mm", Severity = Math.Abs(dev) / g.CeilingMm,
+                });
+            }
+
             // ---- gate ----
             if (s.Walls.Checked == 0) s.Unverified.Add("walls");
             else
@@ -383,6 +534,9 @@ namespace BarrGazetas.RevitMcp.Survey
             if (s.Openings.Checked > 0 && s.Openings.NotChecked == s.Openings.Checked) s.Unverified.Add("openings");
             if (!s.LevelCheck.Checked) s.Unverified.Add("level");
             else if (Math.Abs(s.LevelCheck.DevMm ?? 0) > g.LevelMm) s.FailedOn.Add("level");
+            if (s.Rooms.Missing + s.Rooms.Misnamed > g.MissingRooms) s.FailedOn.Add("rooms");
+            if (s.Ceilings.Over > 0) s.FailedOn.Add("ceilings");
+            if (s.Ceilings.Missing > g.MissingCeilings) s.FailedOn.Add("missing ceilings");
             s.Pass = s.FailedOn.Count == 0;
 
             int openingsOver = issues.Count(i => i.Kind == "opening");
