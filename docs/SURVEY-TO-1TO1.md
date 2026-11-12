@@ -25,6 +25,11 @@ The operating guide for every tool is Part 1 of `COORDINATION.md`. This file is 
 5. **Look, then measure.** `check_view` + `view_image` (facade elevation and a 3D box) before and after each step;
    compare with the survey elevation rendered from the DWG.
 
+6. **Editable, not frozen.** What the team will work on must be native, editable Revit: profiles as Profile families
+   on wall sweeps, roofs as roofs, windows/columns/surrounds as loadable families with parameters. DirectShapes
+   (`facade_relief`, `as: shapes`) are only for carved ornament with no profile (cartouches, volutes) and for
+   checking. (Mihai: "none of these elements are editable, I thought they would be profiles".)
+
 ## Order of work
 
 ### 1. Read and key the drawings
@@ -82,6 +87,22 @@ mansard (Roofs category). A facade with no elevation is refused.
 ### 6. Score and log
 `survey_fidelity` per floor, `survey_section image: true`, then add a row to `docs/SURVEY-RESULTS.md`.
 
+**c. Editable bands (1.14.5): `facade_profile` builds wall sweeps by default.** Each continuous band's surveyed
+profile becomes a Profile family (`reports\profiles\BG profile F.. z.rfa`, from Metric Profile.rft), a wall sweep type
+"BG F.. z" (duplicated from any wall sweep type; **the profile must be set on the type**, `WALL_SWEEP_PROFILE_PARAM`,
+the one passed with a new sweep is not kept) and native wall sweeps on the facade's walls at the band's height above
+each wall's base. Placement is tried both sides, flipped or not, offset to the facade line, and the one that runs
+from the facade line out to the profile's projection kept (walls are drawn either way round). Only **continuous**
+bands become sweeps (drawn along >= 50% and <= 1 m tall, or >= 90%): a wall sweep runs a whole wall, so local pieces
+at the section's bay (pediments, balconies) would spread along it. `facade_relief` then leaves out its long band
+faces there (pediments, dentils, consoles at those heights stay).
+
+**d. Vertical pieces from the plan (1.14.4, `facade_columns`).** What the storey plan draws in front of the facade
+(here fluted pilasters, drawn with their flutes as small arcs) is the shaft's exact section: extruded between the
+heights the elevation draws its edges. Lessons: ignore the wall-face lines within the closing tolerance (the model's
+face can sit 27 mm off the line); measure edges at the piece's front face (its outline includes the wall nibs).
+Still DirectShape: to become a loadable column family (next).
+
 ## How the hand-made reference model was built (7 Swallow Place, "MCP Check")
 Learnt with `reference_open`, `reference_inventory`, `family_detail`, `element_geometry`:
 - Cornices and string courses: in-place sweeps along the facades (profile per band).
@@ -92,6 +113,18 @@ Learnt with `reference_open`, `reference_inventory`, `family_detail`, `element_g
 - Roof: basic roofs, dormer roofs, `EF_30_10-Roof_Chimney` pots.
 Our equivalents: profiles swept (`facade_profile`, `model_sweep`), relief from the elevation (`facade_relief`),
 parametric BG Window types, mansard from the section. Revit's API can't make in-place families; DirectShapes stand in.
+
+### Construction techniques read from the reference (family_detail on its families), to reproduce from the survey
+| Element | How the reference builds it | How we build it from the survey alone |
+|---|---|---|
+| Giant column (`EF_25_10-Wall_Ext_Detail_01`) | Blend for the 9.8 m tapered shaft (entasis), Revolutions for the round base and capital, Extrusions for flutes/details | **Revolve the elevation's silhouette** about the column's axis (the axis from the plan's circle; a round thing's outline in elevation is its profile): gives base mouldings, entasis, capital bell. Flutes as grooves round the shaft. |
+| Capital (`..._66`) | Revolution (bell) + small Sweeps (volutes) | Revolved silhouette; volutes stay relief (elevation faces) |
+| Window surround / architrave (`..._63`, `..._53`) | Sweeps of a moulding profile along the opening's outline (path 2.7 m = a surround's perimeter), Extrusions for consoles and panels | **Sweep a stepped moulding** along the outline the elevation draws round the window (concentric lines = the fasciae; steps outward to the plan's nib depth) |
+| Pediment (`..._34`) | Extrusions + a Sweep along the raking/segmental line | Sweep the cornice moulding along the pediment's outline from the elevation |
+| Cornices / string courses | In-place sweeps along the facades ("External cornice 1-15") | `facade_profile` (section profile, elevation runs); continue round corners with mitres |
+| Mansard, roofs | Basic roofs (`EF_30_10-Roof_H60` x47) | `facade_profile` mansard skin; flat roofs from the roof plan (`roof_from_survey`) |
+| Balconies, balustrades | Railings (`Pr_25_30_36-Railing_Type_31/34`, `Baluster_Square`), round balusters | Railings along the balcony fronts read from the plan/elevation (to do) |
+| Dormers | Dormer roofs + walls | Box from the elevation's dormer outline back into the mansard slope, its roof from the pediment line (to do) |
 
 ## Known gaps (next)
 - Dormers: fronts only (relief); cheeks and roofs back to the mansard not built yet.

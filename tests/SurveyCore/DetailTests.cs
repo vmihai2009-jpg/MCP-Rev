@@ -120,6 +120,21 @@ namespace SurveyCoreTests
             };
             var env = SectionProfile.Envelope(sec, 0, 5000);
             T.Check(T.Near(env[290], 400, 1) && T.Near(env[100], 0, 1) && T.Near(env[400], -400, 5), $"section envelope: cornice 400 out, wall at 0, mansard back ({env[290]}, {env[100]}, {env[400]})");
+            // a fluted pilaster on a plan: 850 wide, 140 proud, flutes as small arcs; the elevation draws its edges 6000-16000
+            var pil = new List<Seg> { S(0, -50, 0, 0), S(-2000, 0, 0, 0), S(0, 0, 0, 140) };
+            double fx = 0;
+            for (int k = 0; k < 6; k++, fx += 140)
+            {
+                pil.Add(S(fx, 140, fx + 50, 140));
+                for (int q = 0; q < 6; q++) { double a0 = Math.PI * q / 6, a1 = Math.PI * (q + 1) / 6; pil.Add(S(fx + 70 - 20 * Math.Cos(a0), 140 - 20 * Math.Sin(a0), fx + 70 - 20 * Math.Cos(a1), 140 - 20 * Math.Sin(a1))); }
+                pil.Add(S(fx + 90, 140, fx + 140, 140));
+            }
+            pil.Add(S(840, 140, 840, 0)); pil.Add(S(840, 0, 3000, 0));
+            var pp = FacadeColumns.PlanPieces(pil, new Pt(-2000, 0), 1, 0, 0, 1, 6000);
+            T.Check(pp.Count == 1 && T.Near(pp[0].Max(p => p.Y), 140, 1) && T.Near(pp[0].Max(p => p.X) - pp[0].Min(p => p.X), 840, 1) && pp[0].Count > 40, $"plan piece: the fluted pilaster's outline, flutes and all ({pp.Count}, {(pp.Count > 0 ? pp[0].Count : 0)} points)");
+            var elv = new List<Seg> { S(2000, 6000, 2000, 16000), S(2840, 6000, 2840, 16000), S(1000, 0, 1000, 20000) };
+            var run = FacadeColumns.EdgeRun(elv, 2000, 2840, 9000);
+            T.Check(run != null && T.Near(run.Value.z0, 6000, 1) && T.Near(run.Value.z1, 16000, 1), "plan piece: its height from the elevation's edges");
             var regs = SectionProfile.Regions(env, 0, 10, 3000);
             T.Check(regs.Count == 2, $"section regions: the cornice and the mansard ({regs.Count})");
             T.Check(regs.Any(r => T.Near(r.Max(p => p.X), 400, 1) && r.Max(p => p.Y) <= 3000), "section regions: the cornice stands 400 out");
