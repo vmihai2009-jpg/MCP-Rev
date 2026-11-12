@@ -104,6 +104,8 @@ namespace BarrGazetas.RevitMcp.Survey
             // the arch of the outline: the panes' upper hull, widened to the opening and lifted to its top
             var hull = UpperHull(all.Where(p => p.Y >= spring - 1).ToList());
             double cx = (minX + maxX) / 2, sx = maxX > minX ? w.Width / (maxX - minX) : 1;
+            // the opening found up to the panes' own crown leaves no frame there: keep at least minFrame above it
+            if (w.Height < maxY + minFrame) w.Height = maxY + minFrame;
             double sy = maxY > spring ? (w.Height - spring) / (maxY - spring) : 1;
             var arch = hull.Select(p => new Pt(Math.Clamp(w.Width / 2 + (p.X - cx) * sx, 0, w.Width), spring + (p.Y - spring) * sy)).ToList();
             w.Outline = new List<Pt> { new Pt(0, 0), new Pt(w.Width, 0), new Pt(w.Width, spring) };

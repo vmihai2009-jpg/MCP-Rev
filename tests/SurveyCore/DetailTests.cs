@@ -122,7 +122,8 @@ namespace SurveyCoreTests
             var ops = ElevationFit.Openings(arch, 0, 1000);
             T.Check(ops.Count == 1 && T.Near(ops[0].Top, 2000, 1), $"arch: the opening reaches the crown ({(ops.Count > 0 ? ops[0].Top : 0):0})");
             var w3 = WindowPattern.Read(arch, ops[0]);
-            T.Check(w3.Arched && w3.Panes.Count == 1 && w3.Outline.Count > 6 && T.Near(w3.Outline.Max(q => q.Y), 2000, 1), "arch: arched outline up to the crown");
+            T.Check(w3.Arched && w3.Panes.Count == 1 && w3.Outline.Count > 6 && T.Near(w3.Outline.Max(q => q.Y), 2025, 1), "arch: arched outline over the crown, a frame's width above the glass");
+            T.Check(w3.Outline.Where(q => q.X > 300 && q.X < 700).All(q => q.Y > 1500 + 25), "arch: the outline stays above the arched pane");
             T.Check(w3.Describe().StartsWith("arched"), "arch: described " + w3.Describe());
 
             // two windows either side of a pier: the pier's two facing jambs are not an opening
