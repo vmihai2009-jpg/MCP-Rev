@@ -1,4 +1,4 @@
-// 1.9.0: the detail tools, after studying how the colleague's Swallow Place model was built by hand (cornices as
+﻿// 1.9.0: the detail tools, after studying how the colleague's Swallow Place model was built by hand (cornices as
 // sweeps along the facades, pilasters/surrounds as placed pieces, parametric sash windows with an inset, dormers,
 // chimneys, flat and pitched roof faces, stairs, ceilings). Each measures against the survey first and changes the
 // model only when asked (apply / build). The measuring is in Survey/SurveyDetail.cs (Revit-free, tested).
@@ -543,6 +543,94 @@ namespace BarrGazetas.RevitMcp
                 }
             };
 
+            // ------------------------------------------------------------------ merged openings
+            yield return new RevitTool
+            {
+                Name = "split_opening",
+                Write = true,
+                Description = "Wide windows that are really several: Survey to Revit can merge a row of sashes and the piers between them into one " +
+                              "opening. For each window wider than min_width_mm, the plan DWG's reveal lines across the wall inside it are paired into " +
+                              "piers and the opening is split at them. Reports what it would make; apply: true reshapes the window to the first part " +
+                              "and places the others (same family, height and sill). One undo step.",
+                InputSchema = Schema(
+                    ("levels", Arr("string", "Floors (default all with a plan)"), false),
+                    ("window_ids", Arr("integer", "Only these windows"), false),
+                    ("min_width_mm", S("number", "Only windows wider than this (default 1800)"), false),
+                    ("apply", S("boolean", "Split them (default false)"), false)),
+                Run = (app, a) =>
+                {
+                    var doc = Doc(app);
+                    double minW = Args.Dbl(a, "min_width_mm") ?? 1800;
+                    var only = Args.Numbers(a, "window_ids").Select(d => (long)d).ToHashSet();
+                    var plans = new List<(FamilyInstance fi, Wall w, XYZ dir, List<(double a, double b)> parts, double width)>();
+                    foreach (var (level, imp) in PlanFloors(doc, Args.Strings(a, "levels")))
+                    {
+                        var segs = CadLink.Segments(CadLink.Read(doc, imp, new ReadStats()), new[] { "EF_25*", "*Wall*" });
+                        foreach (var fi in new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Windows).WhereElementIsNotElementType().OfType<FamilyInstance>())
+                        {
+                            if (fi.LevelId != level.Id || (only.Count > 0 && !only.Contains(fi.Id.Value))) continue;
+                            if (!(fi.Host is Wall w) || !(w.Location is LocationCurve lc) || !(fi.Location is LocationPoint lp)) continue;
+                            double width = WidthOf(fi);
+                            if (width <= minW) continue;
+                            var dir = (lc.Curve.GetEndPoint(1) - lc.Curve.GetEndPoint(0)).Normalize();
+                            var nrm = new XYZ(-dir.Y, dir.X, 0);
+                            var p = lp.Point; double half = w.Width * Mm / 2;
+                            var reveals = new List<double>();
+                            foreach (var s in segs)
+                            {
+                                var sa = new XYZ(s.A.X / Mm, s.A.Y / Mm, p.Z); var sb = new XYZ(s.B.X / Mm, s.B.Y / Mm, p.Z);
+                                var d = sb - sa; double len = d.GetLength() * Mm;
+                                if (len < 40 || len > w.Width * Mm + 400 || Math.Abs(d.Normalize().DotProduct(dir)) > 0.1) continue; // across the wall
+                                var mid = (sa + sb) / 2;
+                                if (Math.Abs((mid - p).DotProduct(nrm)) * Mm > half + 200) continue;
+                                reveals.Add((mid - p).DotProduct(dir) * Mm);
+                            }
+                            var parts = SurveyDetail.SplitSpan(-width / 2, width / 2, reveals);
+                            if (parts.Count > 1) plans.Add((fi, w, dir, parts, width));
+                        }
+                    }
+                    var made = new List<object>(); var problems = new List<string>(); List<string> revit = null;
+                    if (Args.Bool(a, "apply") == true && plans.Count > 0)
+                        revit = BuildTools.Tx.Run(doc, "MCP: split merged windows", () =>
+                        {
+                            foreach (var (fi, w, dir, parts, width) in plans)
+                            {
+                                try
+                                {
+                                    var p = ((LocationPoint)fi.Location).Point;
+                                    var (_, hh) = BuildTools.InsertSizeOf(doc, fi);
+                                    double sill = LenOf(fi, BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM) ?? 900, head = LenOf(fi, BuiltInParameter.INSTANCE_HEAD_HEIGHT_PARAM) ?? sill + 1500;
+                                    double h = hh is double hv && hv > 0 ? hv : head - sill;
+                                    XYZ At((double a, double b) s) => p + dir * ((s.a + s.b) / 2 / Mm);
+                                    var ids = new List<long> { fi.Id.Value };
+                                    BuildTools.ReshapeInsert(doc, fi, parts[0].b - parts[0].a, h, null, At(parts[0]));
+                                    foreach (var s in parts.Skip(1))
+                                    {
+                                        var at = At(s);
+                                        var it = new JsonObject
+                                        {
+                                            ["category"] = "Windows", ["x"] = at.X * Mm, ["y"] = at.Y * Mm, ["wall_id"] = w.Id.Value,
+                                            ["width_mm"] = Math.Round(s.b - s.a), ["height_mm"] = Math.Round(h), ["sill_mm"] = Math.Round(sill),
+                                            ["family"] = fi.Symbol.FamilyName, ["comments"] = $"MCP|split_opening|from {fi.Id.Value}",
+                                        };
+                                        var r = BuildTools.PlaceInsertHere(doc, it);
+                                        ids.Add((long)r.GetType().GetProperty("id").GetValue(r));
+                                    }
+                                    made.Add(new { from = fi.Id.Value, windows = ids });
+                                }
+                                catch (Exception ex) { problems.Add($"{fi.Id.Value}: {McpServer.Unwrap(ex).Message}"); }
+                            }
+                        });
+                    return new
+                    {
+                        wouldSplit = plans.Count,
+                        list = plans.Take(30).Select(x => new { window = x.fi.Id.Value, widthMm = R(x.width), into = x.parts.Select(s => R(s.b - s.a)).ToList() }).ToList(),
+                        made, problems = problems.Take(20).ToList(), revit,
+                        next = Args.Bool(a, "apply") == true ? "survey_fidelity to see the openings score." : "apply: true to split them (with testmcp active).",
+                    };
+                }
+            };
+
             // ------------------------------------------------------------------ placing loaded families
             yield return new RevitTool
             {
@@ -719,7 +807,7 @@ namespace BarrGazetas.RevitMcp
         private static Func<Pt, Pt> SurveyMap(Document doc, DwgContent file, out string note)
         {
             var pp = doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero);
-            var total = doc.ActiveProjectLocation.GetTotalTransform().Inverse;
+            var total = doc.ActiveProjectLocation.GetTotalTransform(); // shared -> internal
             var ways = new List<(string name, Func<Pt, Pt> f)>
             {
                 ("shared coordinates", p => { var q = total.OfPoint(new XYZ(p.X / Mm, p.Y / Mm, 0)); return new Pt(q.X * Mm, q.Y * Mm); }),

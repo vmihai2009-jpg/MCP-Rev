@@ -54,7 +54,7 @@ namespace BarrGazetas.RevitMcp
                     var doc = Doc(app);
                     string path = Args.Str(a, "path"), coords, note = null;
                     Func<Pt, Pt> toModel;
-                    var sharedToInternal = doc.ActiveProjectLocation.GetTotalTransform().Inverse;
+                    var sharedToInternal = doc.ActiveProjectLocation.GetTotalTransform() /* shared -> internal (checked in 1.9.3/1.9.8) */;
                     DwgContent content;
                     if (path == null)
                     {
@@ -100,7 +100,7 @@ namespace BarrGazetas.RevitMcp
                     }
                     bool modelZ = string.Equals(Args.Str(a, "heights"), "model", StringComparison.OrdinalIgnoreCase);
                     double offset = Args.Dbl(a, "z_offset_mm") ?? 0;
-                    var pts = mapped.Select(p => new XYZ(p.X / Mm, p.Y / Mm, ModelZ(sharedToInternal, p.Z + offset, modelZ))).ToList();
+                    var pts = mapped.Select(p => new XYZ(p.X / Mm, p.Y / Mm, ModelZ(DatumMm(doc), p.Z + offset, modelZ))).ToList();
 
                     bool dry = Args.Bool(a, "dry_run") != false;
                     object made = null;
@@ -150,14 +150,14 @@ namespace BarrGazetas.RevitMcp
                 Run = (app, a) =>
                 {
                     var doc = Writable(app);
-                    var tf = doc.ActiveProjectLocation.GetTotalTransform().Inverse;
+                    var tf = doc.ActiveProjectLocation.GetTotalTransform() /* shared -> internal (checked in 1.9.3/1.9.8) */;
                     bool modelZ = string.Equals(Args.Str(a, "heights"), "model", StringComparison.OrdinalIgnoreCase);
                     var pts = new List<XYZ>();
                     foreach (var p in (a["points"] as JsonArray)?.OfType<JsonArray>() ?? Enumerable.Empty<JsonArray>())
                     {
                         var n = p.OfType<JsonValue>().Select(v => double.TryParse(v.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double d) ? d : double.NaN).ToList();
                         if (n.Count < 3 || n.Any(double.IsNaN)) throw new ArgumentException("Each point is [x, y, z] in mm.");
-                        pts.Add(new XYZ(n[0] / Mm, n[1] / Mm, ModelZ(tf, n[2], modelZ)));
+                        pts.Add(new XYZ(n[0] / Mm, n[1] / Mm, ModelZ(DatumMm(doc), n[2], modelZ)));
                     }
                     if (pts.Count < 3) throw new ArgumentException("At least 3 points are needed.");
                     return MakeToposolid(doc, pts, MmLoop(a["boundary"] as JsonArray), a, Args.Bool(a, "dry_run") == true, "MCP: make Toposolid");
@@ -284,9 +284,11 @@ namespace BarrGazetas.RevitMcp
             };
         }
 
-        /// <summary>Survey datum (AOD) mm to the model's internal Z, in feet: through the shared coordinates.</summary>
-        private static double ModelZ(Transform sharedToInternal, double mm, bool alreadyModel) =>
-            alreadyModel ? mm / Mm : sharedToInternal.OfPoint(new XYZ(0, 0, mm / Mm)).Z;
+        /// <summary>
+        /// Survey datum (AOD) mm to the model's internal Z, in feet: less the shared elevation at the internal origin (as
+        /// survey_ceilings does), which does not depend on which way round the shared transform goes.
+        /// </summary>
+        private static double ModelZ(double datumMm, double mm, bool alreadyModel) => alreadyModel ? mm / Mm : (mm - datumMm) / Mm;
 
         private static double DatumMm(Document doc) => doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero).Elevation * Mm;
 
