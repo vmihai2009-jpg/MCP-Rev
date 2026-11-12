@@ -66,6 +66,8 @@ namespace BarrGazetas.RevitMcp.Survey
         public WindowPattern Pattern;
         /// <summary>The opening on the sheet (sheet units).</summary>
         public ElevOpening Sheet;
+        /// <summary>The facade's direction in plan (unit, model X/Y): U grows along it. Set by whoever knows the facade line.</summary>
+        public double DirX, DirY;
     }
 
     /// <summary>An opening the elevation draws with no model insert at that place and storey.</summary>
@@ -361,12 +363,13 @@ namespace BarrGazetas.RevitMcp.Survey
                             if (Math.Min(x.A.Y, x.B.Y) <= tt + 5 && Math.Max(x.A.Y, x.B.Y) > tt + 0.5) { tt = Math.Max(x.A.Y, x.B.Y); grew = true; }
                     }
                     var o = new ElevOpening { Left = l, Right = r, Bottom = Math.Min(b, bb), Top = Math.Max(t, tt) };
-                    // the masonry opening round the frame (the reveal lines on the wall layer, up to 200 mm outside
-                    // the frame and alongside most of it): the outermost each side
+                    // the masonry opening round the frame: the outermost wall-layer line within 120 mm outside the glass
+                    // each side, alongside most of it (Plowman Craven: 65 mm out, with a frame line at 30). Lines
+                    // further out are the stone surround (on 7 Swallow Place 156-197 mm out all round), not the opening.
                     double fb = o.Bottom, ft = o.Top;
                     bool Beside((double x, double y0, double y1) v) => Math.Min(v.y1, ft) - Math.Max(v.y0, fb) >= (ft - fb) * 0.5;
-                    var left = reveals.Where(v => v.x >= l - 200 && v.x <= l + 10 && Beside(v)).ToList();
-                    var right = reveals.Where(v => v.x <= r + 200 && v.x >= r - 10 && Beside(v)).ToList();
+                    var left = reveals.Where(v => v.x >= l - 120 && v.x <= l - 5 && Beside(v)).ToList();
+                    var right = reveals.Where(v => v.x <= r + 120 && v.x >= r + 5 && Beside(v)).ToList();
                     if (left.Count > 0 && right.Count > 0)
                     {
                         o.HasReveal = true;

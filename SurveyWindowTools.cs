@@ -105,6 +105,9 @@ namespace BarrGazetas.RevitMcp
                     var winCat = doc.Settings.Categories.get_Item(BuiltInCategory.OST_Windows).Id;
                     var plan = new List<(FamilyInstance fi, WindowPattern p, double thick, string key, ElevMatch m)>();
                     var skipped = new List<object>();
+                    var changed = new List<object>();
+                    var resizedIds = new HashSet<long>();
+                    var slides = new Dictionary<long, XYZ>();
                     foreach (var m in matches.GroupBy(m => m.Insert.Id).Select(g => g.First()))
                     {
                         if (only.Count > 0 && !only.Contains(m.Insert.Id)) continue;
@@ -112,14 +115,38 @@ namespace BarrGazetas.RevitMcp
                         double w = WidthOf(fi);
                         double sill = LenOf(fi, BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM) ?? 0, head = LenOf(fi, BuiltInParameter.INSTANCE_HEAD_HEIGHT_PARAM) ?? 0;
                         double dw = w - m.Pattern.Width, dh = head - sill - m.Pattern.Height;
+                        var pat = m.Pattern; string how = null; XYZ slide = null;
+                        double du = m.Insert.U - (m.U0 + m.U1) / 2;
+                        // height: where the sill agrees with the elevation, the drawn height is the window's (Survey to
+                        // Revit's family could not always take it, e.g. 765x2942); the type's Height sets it
+                        if (Math.Abs(dh) > tol && Math.Abs(sill - m.Sill) <= 40 && pat.Height >= 300) { dh = 0; how = "height from the elevation"; }
+                        if (Math.Abs(dw) > 5 && Math.Abs(dh) <= tol)
+                        {
+                            // width: the plan's (it cuts through the opening) where the drawn glass fits inside it, centred
+                            // within 100 mm; where the glass is wider than the model's window (a width the old family
+                            // capped, e.g. 4930), the elevation's, the window slid to the drawn centre (within 250 mm)
+                            if (Math.Abs(du) <= 100 && pat.FitWidth(w) is WindowPattern fitted) { pat = fitted; dw = 0; }
+                            else if (pat.FitWidth(w) == null && Math.Abs(du) <= 250 && Math.Abs(sill - m.Sill) <= 40 && !pat.Arched && (m.DirX != 0 || m.DirY != 0))
+                            {
+                                dw = 0; how = (how == null ? "" : how + "; ") + $"width from the elevation (its glass is wider than the model's {w:0}), slid {-du:+0;-0} mm";
+                                if (Math.Abs(du) > 2) slide = new XYZ(-du * m.DirX / Mm, -du * m.DirY / Mm, 0);
+                            }
+                        }
                         if (Math.Abs(dw) > tol || Math.Abs(dh) > tol)
                         {
-                            skipped.Add(new { window = fi.Id.Value, why = $"model {w:0}x{head - sill:0}, elevation {m.Pattern.Width:0}x{m.Pattern.Height:0}" });
+                            skipped.Add(new { window = fi.Id.Value, level = m.Insert.Level, why = $"model {w:0}x{head - sill:0}, elevation {m.Pattern.Width:0}x{m.Pattern.Height:0}",
+                                modelW = R(w), modelH = R(head - sill), modelSill = R(sill), elevW = R(m.Pattern.Width), elevH = R(m.Pattern.Height), elevSill = R(m.Sill),
+                                modelU = R(m.Insert.U), elevU0 = R(m.U0), elevU1 = R(m.U1), panes = m.Pattern.Panes.Count, reveal = m.Sheet.HasReveal,
+                                paneX0 = R(m.Pattern.Panes.SelectMany(q => q).Min(q => q.X)), paneX1 = R(m.Pattern.Panes.SelectMany(q => q).Max(q => q.X)),
+                                sheet = new[] { R(m.Sheet.OpeningLeft), R(m.Sheet.OpeningRight), R(m.Sheet.Bottom), R(m.Sheet.Top) } });
                             continue;
                         }
-                        var p = fi.Mirrored ? m.Pattern.Mirrored() : m.Pattern;
+                        var p = fi.Mirrored ? pat.Mirrored() : pat;
                         double thick = fi.Host is Wall hw ? Math.Round(hw.Width * Mm / 25) * 25 : 300;
                         plan.Add((fi, p, thick, p.Key + "|t" + thick, m));
+                        if (how != null) resizedIds.Add(fi.Id.Value);
+                        if (how != null) changed.Add(new { window = fi.Id.Value, level = m.Insert.Level, how, from = $"{w:0}x{head - sill:0}", to = $"{pat.Width:0}x{pat.Height:0}" });
+                        if (slide != null) slides[fi.Id.Value] = slide;
                     }
                     // rectangular windows: types of the one parametric family; arched ones (a different design): their own family
                     var typed = plan.Where(x => !x.p.Arched).Select(x =>
@@ -149,33 +176,55 @@ namespace BarrGazetas.RevitMcp
                         string famPath = Path.Combine(ReportsFolder(doc), "window-families", WindowFamilyBuilder.FamilyName + ".rfa");
                         bool have = new FilteredElementCollector(doc).OfClass(typeof(Family)).Any(f => f.Name == WindowFamilyBuilder.FamilyName);
                         if (!have) WindowFamilyBuilder.Build(app, famPath);
-                        var tnotes = BuildTools.Tx.Run(doc, "MCP: windows as BG Window types", () =>
+                        FamilySymbol TypeFor(string name, Dictionary<string, double> values)
                         {
                             Family fam = new FilteredElementCollector(doc).OfClass(typeof(Family)).Cast<Family>().FirstOrDefault(f => f.Name == WindowFamilyBuilder.FamilyName);
                             if (fam == null && !doc.LoadFamily(famPath, new Overwrite(), out fam)) throw new InvalidOperationException("BG Window did not load from " + famPath);
                             var syms = fam.GetFamilySymbolIds().Select(id => doc.GetElement(id)).OfType<FamilySymbol>().ToList();
+                            var sym = syms.FirstOrDefault(s => s.Name == name) ?? (FamilySymbol)syms[0].Duplicate(name);
+                            foreach (var kv in values)
+                            {
+                                var prm = sym.LookupParameter(kv.Key);
+                                if (prm == null || prm.IsReadOnly) continue;
+                                if (prm.StorageType == StorageType.Integer) prm.Set((int)Math.Round(kv.Value)); else prm.Set(kv.Value / Mm);
+                            }
+                            if (!sym.IsActive) sym.Activate();
+                            return sym;
+                        }
+                        // windows keeping their size and place: all in one go
+                        revit = BuildTools.Tx.Run(doc, "MCP: windows as BG Window types", () =>
+                        {
                             foreach (var g in typeGroups)
                             {
+                                var keep = g.Where(x => !resizedIds.Contains(x.fi.Id.Value)).ToList();
+                                if (keep.Count == 0) continue;
                                 try
                                 {
-                                    var sym = syms.FirstOrDefault(s => s.Name == g.Key);
-                                    if (sym == null) { sym = (FamilySymbol)syms[0].Duplicate(g.Key); syms.Add(sym); }
-                                    foreach (var kv in g.First().values)
-                                    {
-                                        var prm = sym.LookupParameter(kv.Key);
-                                        if (prm == null || prm.IsReadOnly) continue;
-                                        if (prm.StorageType == StorageType.Integer) prm.Set((int)Math.Round(kv.Value)); else prm.Set(kv.Value / Mm);
-                                    }
-                                    if (!sym.IsActive) sym.Activate();
-                                    foreach (var x in g)
+                                    var sym = TypeFor(g.Key, g.First().values);
+                                    foreach (var x in keep)
                                         try { x.fi.Symbol = sym; swapped++; }
                                         catch (Exception ex) { problems.Add($"{x.fi.Id.Value}: {McpServer.Unwrap(ex).Message}"); }
-                                    made.Add(new { type = g.Key, windows = g.Count() });
+                                    made.Add(new { type = g.Key, windows = keep.Count });
                                 }
                                 catch (Exception ex) { problems.Add($"{g.Key}: {McpServer.Unwrap(ex).Message}"); }
                             }
                         });
-                        revit = tnotes;
+                        // windows taking a new size or place from the elevation: each on its own, so one the wall can't take
+                        // (too short for it, a join) is left as it was and said, not the lot
+                        foreach (var g in typeGroups)
+                            foreach (var x in g.Where(x => resizedIds.Contains(x.fi.Id.Value)))
+                                try
+                                {
+                                    revit.AddRange(BuildTools.Tx.Run(doc, $"MCP: window {x.fi.Id.Value} to its elevation", () =>
+                                    {
+                                        var sym = TypeFor(g.Key, g.First().values);
+                                        if (slides.TryGetValue(x.fi.Id.Value, out var mv)) ElementTransformUtils.MoveElement(doc, x.fi.Id, mv);
+                                        x.fi.Symbol = sym;
+                                    }));
+                                    swapped++;
+                                    made.Add(new { type = g.Key, windows = 1, resized = x.fi.Id.Value });
+                                }
+                                catch (Exception ex) { problems.Add($"window {x.fi.Id.Value} left as it was: {McpServer.Unwrap(ex).Message}"); }
                     }
                     if (!dry && groups.Count > 0)
                     {
@@ -211,7 +260,7 @@ namespace BarrGazetas.RevitMcp
                     return new
                     {
                         windowsOnElevations = matches.Count, toSwap = plan.Count, types = types.Count, arched = looks.Count, sizeDiffers = skipped.Count,
-                        family = WindowFamilyBuilder.FamilyName, typeList = types.Take(40).ToList(), archedList = looks.ToList(), skipped = skipped.Take(20).ToList(),
+                        family = WindowFamilyBuilder.FamilyName, resized = changed, typeList = types.Take(40).ToList(), archedList = looks.ToList(), skipped = skipped.ToList(),
                         swapped, made = made.Take(40).ToList(), problems = problems.Take(20).ToList(), revit, elevations = notes,
                         next = dry ? "dry_run: false to build the families and swap them (with testmcp active)." : "Look at the elevations in Revit; survey_fidelity still scores sizes.",
                     };

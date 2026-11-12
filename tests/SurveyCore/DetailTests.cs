@@ -147,6 +147,19 @@ namespace SurveyCoreTests
             T.Check(ElevationFit.Openings(pair, 900, 1800).Count == 0, "pier: the jambs either side of it are two windows', not one opening");
             T.Check(ElevationFit.Openings(pair, 0, 900).Count == 1, "pier: each window is still found");
 
+            // a surround drawn round the reveal: the reveal is the first wall line outside the glass, not the outermost
+            DwgLine W(double x1, double y1, double x2, double y2) => new DwgLine { A = new Pt(x1, y1), B = new Pt(x2, y2), Layer = "EF_25-Wall" };
+            var walls = new List<DwgLine> { W(0, 0, 0, 2200), W(1000, 0, 1000, 2200), W(-110, -50, -110, 2300), W(1110, -50, 1110, 2300) };
+            var sops = ElevationFit.Openings(sash, 70, 930, walls);
+            T.Check(sops.Count == 1 && sops[0].HasReveal && T.Near(sops[0].RevealLeft, 0, 1e-6) && T.Near(sops[0].RevealRight, 1000, 1e-6), "surround: the reveal is the line 70 mm out, not the surround 180 mm out");
+            var far = new List<DwgLine> { W(-110, -50, -110, 2300), W(1040, -50, 1040, 2300) };
+            T.Check(!ElevationFit.Openings(sash, 70, 930, far)[0].HasReveal, "surround only (180 mm out): no reveal, the plan gives the width");
+
+            // the plan's width: panes centred in it
+            var fit = w.FitWidth(1100);
+            T.Check(fit != null && T.Near(fit.Width, 1100, 1e-6) && T.Near(fit.Panes.SelectMany(q => q).Min(q => q.X), 120, 1e-6), "fit width: 860 mm of glass centred in 1100");
+            T.Check(w.FitWidth(880) == null, "fit width: glass that doesn't fit is not squeezed");
+
             // nothing drawn: one pane in a default frame
             var w4 = WindowPattern.Read(new List<DwgLine>(), new ElevOpening { Left = 0, Right = 900, Bottom = 0, Top = 1500 });
             T.Check(!w4.FromDrawing && w4.Panes.Count == 1 && w4.Describe() == "plain", "nothing drawn: plain");

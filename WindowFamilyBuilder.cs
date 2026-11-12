@@ -88,7 +88,7 @@ namespace BarrGazetas.RevitMcp
         /// <summary>Type values a window type sets (mm, counts, yes/no as 0/1). Names are the family's parameters.</summary>
         internal static readonly string[] LengthParams = { "Width", "Height", "Frame Width", "Bottom Rail", "Frame Depth", "Inset", "Glass Thickness", "Meeting Rail Height", "Meeting Rail Width", "Glazing Bar Width" };
         internal static readonly string[] IntParams = { "Panes Across", "Panes High Bottom", "Panes High Top", "Meeting Rail" };
-        private const int MaxBarsAcross = 3, MaxBarsUp = 2;
+        private const int MaxBarsAcross = 5, MaxBarsUp = 2;
 
         internal class BuildReport
         {

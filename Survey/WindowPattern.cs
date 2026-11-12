@@ -50,7 +50,7 @@ namespace BarrGazetas.RevitMcp.Survey
         /// The parametric family's type values for this window (mm; counts; Meeting Rail 0/1): panes across = the pane
         /// columns; rows of panes split at the widest gap between them (the meeting rail, 2 rows or more), panes high
         /// counted below and above it; frame from the margins, bottom rail from the panes' bottom, glazing bar from the
-        /// gaps between panes. Counts are capped at the family's 4 across / 3 high per sash (Simplified says so).
+        /// gaps between panes. Counts are capped at the family's 6 across / 3 high per sash (Simplified says so).
         /// </summary>
         public Dictionary<string, double> TypeValues(out bool simplified)
         {
@@ -91,7 +91,7 @@ namespace BarrGazetas.RevitMcp.Survey
                 if (colGaps.Count > 0) v["Glazing Bar Width"] = Math.Max(10, Math.Round(Median(colGaps)));
             }
             v["Panes Across"] = across;
-            if (across > 4) { v["Panes Across"] = 4; simplified = true; }
+            if (across > 6) { v["Panes Across"] = 6; simplified = true; }
             foreach (var k in new[] { "Panes High Bottom", "Panes High Top" }) if (v[k] > 3) { v[k] = 3; simplified = true; }
             return v;
         }
@@ -117,6 +117,25 @@ namespace BarrGazetas.RevitMcp.Survey
         }
 
         private static double Median(List<double> v) { var s = v.OrderBy(x => x).ToList(); return s[s.Count / 2]; }
+
+        /// <summary>
+        /// The same panes in an opening of another width (the plan's, which cuts through the opening; the elevation's
+        /// edges may be the glass or a surround): panes centred, frame = what is left each side. Null when the panes
+        /// don't fit with at least minFrame each side, or the window is arched.
+        /// </summary>
+        public WindowPattern FitWidth(double width, double minFrame = 15)
+        {
+            if (Arched || Panes.Count == 0) return null;
+            double x0 = Panes.SelectMany(p => p).Min(q => q.X), x1 = Panes.SelectMany(p => p).Max(q => q.X);
+            if (x1 - x0 + 2 * minFrame > width) return null;
+            double shift = (width - (x1 - x0)) / 2 - x0;
+            return new WindowPattern
+            {
+                Width = width, Height = Height, FromDrawing = FromDrawing,
+                Outline = Rect(0, 0, width, Height),
+                Panes = Panes.Select(p => p.Select(q => new Pt(q.X + shift, q.Y)).ToList()).ToList(),
+            };
+        }
 
         /// <summary>The same window seen from the other side (a mirrored instance).</summary>
         public WindowPattern Mirrored()
