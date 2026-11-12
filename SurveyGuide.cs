@@ -13,7 +13,8 @@ Rules
 - Work on a copy of the project. save_model after each floor.
 - Never touch any other Revit window: only this connection's model.
 - No dialogs: every tool resolves Revit's warnings itself. If a fix is refused, try once another way, then list it.
-- Each change is one undo step. Ask before deleting or rebuilding, and before survey_build / survey_layer_rules
+- Each change is one undo step; a correction that needs several calls goes in one batch (one undo step, all
+  undone if one fails). Ask before deleting or rebuilding, and before survey_build / survey_layer_rules
   with confirm.
 - Keep answers short; work floor by floor, lowest first, and report counts before and after.
 - One reader: the survey is read by Survey to Revit (its layer roles, the survey's layers.txt, every sill/head
@@ -55,7 +56,9 @@ Rules
    survey_floor_levels (slabs against the spot heights), section_index then survey_ceilings (ceilings against the
    sections), survey_stairs, plan_columns, roof_from_survey (roofs from the roof plan and sections; create_roof
    with a slope per edge for mansards), window_detail (window depth in the wall). Slab edges from the plan outline
-   (create_floor with replace_id); stair and lift voids (create_opening).
+   (create_floor with replace_id); stair and lift voids (create_opening). Rooms the build left unnamed or missed:
+   dwg_read for the label, then place_rooms at it. The ground: dwg_terrain on the site plan (dry run first: check
+   the dropped levels), holes = the building footprint, then toposolid_subdivide for paving.
 7. FACADE
    facade_details for cornices, string courses, copings and plinths from the sections and elevations;
    dwg_elevation with facade = the id and the index's sheet_x_range, include_lines, for anything else (model_sweep,

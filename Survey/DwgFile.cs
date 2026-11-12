@@ -27,6 +27,15 @@ namespace BarrGazetas.RevitMcp.Survey
         public string Layer;
     }
 
+    /// <summary>A POINT, or where a block is inserted (survey spot-height crosses are usually one or the other).</summary>
+    public class DwgMarker
+    {
+        public Pt At;
+        public string Layer;
+        /// <summary>The block's name; null for a POINT.</summary>
+        public string Block;
+    }
+
     public class DwgContent
     {
         public string Path;
@@ -34,6 +43,7 @@ namespace BarrGazetas.RevitMcp.Survey
         public string UnitsNote;
         public List<DwgText> Texts = new List<DwgText>();
         public List<DwgLine> Lines = new List<DwgLine>();
+        public List<DwgMarker> Markers = new List<DwgMarker>();
         public Dictionary<string, int> LayerCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     }
 
@@ -62,6 +72,7 @@ namespace BarrGazetas.RevitMcp.Survey
             var raw = new DwgContent { Path = path };
             var lines = new List<(string layer, double x1, double y1, double z1, double x2, double y2, double z2)>();
             var texts = new List<(double x, double y, double z, string value, string layer, double h, string tag)>();
+            var markers = new List<(double x, double y, double z, string layer, string block)>();
 
             void Count(string layer) { raw.LayerCounts.TryGetValue(layer, out int n); raw.LayerCounts[layer] = n + 1; }
 
@@ -105,7 +116,11 @@ namespace BarrGazetas.RevitMcp.Survey
                     case MText mt:
                         texts.Add((mt.InsertPoint.X, mt.InsertPoint.Y, mt.InsertPoint.Z, mt.PlainText ?? "", layer, mt.Height, null));
                         break;
+                    case Point pt:
+                        markers.Add((pt.Location.X, pt.Location.Y, pt.Location.Z, layer, null));
+                        break;
                     case Insert ins:
+                        markers.Add((ins.InsertPoint.X, ins.InsertPoint.Y, ins.InsertPoint.Z, layer, ins.Block?.Name ?? ""));
                         foreach (var att in ins.Attributes)
                             if (!string.IsNullOrWhiteSpace(att.Value))
                                 texts.Add((att.InsertPoint.X, att.InsertPoint.Y, att.InsertPoint.Z, att.Value, att.Layer?.Name ?? layer, att.Height, att.Tag));
@@ -126,6 +141,7 @@ namespace BarrGazetas.RevitMcp.Survey
             raw.Lines = lines.Select(l => new DwgLine { Layer = l.layer, A = new Pt(l.x1 * k, l.y1 * k, l.z1 * k), B = new Pt(l.x2 * k, l.y2 * k, l.z2 * k) }).ToList();
             raw.Texts = texts.Select(t => new DwgText { At = new Pt(t.x * k, t.y * k, t.z * k), Value = Clean(t.value), Layer = t.layer, HeightMm = Math.Round(t.h * k, 1), Tag = t.tag })
                 .Where(t => t.Value.Length > 0).ToList();
+            raw.Markers = markers.Select(m => new DwgMarker { At = new Pt(m.x * k, m.y * k, m.z * k), Layer = m.layer, Block = m.block }).ToList();
 
             lock (Gate)
             {
