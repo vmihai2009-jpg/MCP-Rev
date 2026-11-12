@@ -1,4 +1,4 @@
-// 1.16.0: facade_detail_map. Names every piece of facade detail an elevation draws (bands, rustication, window
+// 1.17.0: facade_detail_map. Names every piece of facade detail an elevation draws (bands, rustication, window
 // surrounds, sills, hoods, pediments, keystones, consoles, pilasters, quoins, balustrades, and what is left over),
 // groups repeats into types, says how to build each and where its depth comes from, and, given a reference model
 // (a person's model of the same building), says how that person built each item and how far it projects.

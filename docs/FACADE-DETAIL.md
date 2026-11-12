@@ -68,7 +68,7 @@ looks at the picture, confirms or corrects in its answer, and only then builds. 
 ## 4. Tools
 
 ### 4.1 Done
-- `facade_detail_map` (1.16.0, this file's tool): reads an elevation into named items and types (Revit-free core
+- `facade_detail_map` (1.17.0, this file's tool): reads an elevation into named items and types (Revit-free core
   `Survey/FacadeMap.cs`, tests in `tests/SurveyCore/FacadeMapTests.cs`); `reference` matches each item to the human
   model's elements (family, in-place, projection) and lists what the person modelled that the map missed;
   `reference: active` does the same against our own model; writes `facade-map-<F>.json` and a PNG.

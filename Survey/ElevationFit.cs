@@ -78,6 +78,9 @@ namespace BarrGazetas.RevitMcp.Survey
         public double X, Y;
         public string Level;
         public double? Sill, Head;
+        /// <summary>1.16.0: its panes as drawn (for a BG Window type) and the opening on the sheet.</summary>
+        public WindowPattern Pattern;
+        public ElevOpening Sheet;
     }
 
     public static class ElevationFit
@@ -141,6 +144,7 @@ namespace BarrGazetas.RevitMcp.Survey
                     {
                         U = (lo + hi) / 2, W = hi - lo, Z0 = zs, Z1 = zh, Level = lv?.Item1,
                         Sill = lv == null ? (double?)null : zs - lv.Value.Item2, Head = lv == null ? (double?)null : zh - lv.Value.Item2,
+                        Pattern = WindowPattern.Read(windowLines, op, Math.Abs(heights.A)), Sheet = op,
                     });
                 }
             }

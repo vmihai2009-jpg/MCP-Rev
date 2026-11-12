@@ -69,7 +69,7 @@ each spot belongs to the slab whose top is nearest it; a slab moves only on >= 3
 ### 5. The facade: relief from the elevation, profiles from the sections
 This is what makes the model look like the survey. Do it per facade that has an elevation.
 
-**0. `facade_detail_map facade: F.. image: true` first (1.16.0, changes nothing).** It names what the elevation
+**0. `facade_detail_map facade: F.. image: true` first (1.17.0, changes nothing).** It names what the elevation
 draws (bands, rustication, architraves, sills, hoods, pediments, keystones, consoles, pilasters, quoins,
 balustrades, modillions, leftovers), groups repeats into types (one family per type), and says how to build each and
 where its depth comes from. With `reference: <name>` it lists, per item, how the hand model built it and how far it

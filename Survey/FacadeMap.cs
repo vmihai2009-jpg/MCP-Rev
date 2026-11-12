@@ -1,4 +1,4 @@
-// Revit-free. 1.16.0: the facade detail map. Reads one elevation's linework (already in facade coordinates:
+// Revit-free. 1.17.0: the facade detail map. Reads one elevation's linework (already in facade coordinates:
 // u = mm along the facade from its left end as seen from outside, z = mm above datum) and names what it draws:
 // windows, bands (cornices, string courses, plinths), rustication, window surrounds (architraves, sills, hoods,
 // pediments, keystones, consoles), pilasters, quoins, balustrades, and the shapes left over. Repeats are grouped
