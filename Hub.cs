@@ -54,7 +54,8 @@ namespace BarrGazetas.RevitMcp
                     // read tools can look at a reference model opened with reference_open instead of the active project
                     string docName = t.Write || OwnDocArg(t.Name) ? null : Args.Str(args, "document");
                     object result;
-                    using (Popups.Scope(app)) using (Reference.Use(docName)) result = t.Run(app, args);
+                    // write tools: what they add goes into the survey's phase (Existing), not the project's latest
+                    using (Popups.Scope(app)) using (Reference.Use(docName)) using (t.Write ? PhaseKeeper.Track(app) : null) result = t.Run(app, args);
                     if (result is ToolContent content) return content.Encode(); // text with pictures (view_image, survey_section)
                     return result as string ?? JsonSerializer.Serialize(result, Compact);
                 }),

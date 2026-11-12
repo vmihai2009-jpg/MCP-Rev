@@ -111,6 +111,18 @@ namespace SurveyCoreTests
             T.Check(pier != null && pier.Source == "plan" && T.Near(pier.Depth, 400, 1), "relief: the pier's face takes the plan's 400");
             T.Check(bandF != null && bandF.Source == "band" && bandF.Depth == 120, "relief: the band above takes the band depth (it doesn't cross the plan's cut height)");
             T.Check(faces.All(f => f.AreaM2 <= 10), "relief: no face bigger than the plain-wall limit");
+
+            // section profile: wall face at 0 up to 3000, a cornice 400 out at 2800-3000, then a mansard from 3000 sloping back
+            var sec = new List<(Pt, Pt)>
+            {
+                (new Pt(0, 0), new Pt(0, 2800)), (new Pt(0, 2800), new Pt(400, 2800)), (new Pt(400, 2800), new Pt(400, 3000)), (new Pt(400, 3000), new Pt(0, 3000)),
+                (new Pt(0, 3000), new Pt(-800, 5000)),
+            };
+            var env = SectionProfile.Envelope(sec, 0, 5000);
+            T.Check(T.Near(env[290], 400, 1) && T.Near(env[100], 0, 1) && T.Near(env[400], -400, 5), $"section envelope: cornice 400 out, wall at 0, mansard back ({env[290]}, {env[100]}, {env[400]})");
+            var regs = SectionProfile.Regions(env, 0, 10, 3000);
+            T.Check(regs.Count == 2, $"section regions: the cornice and the mansard ({regs.Count})");
+            T.Check(regs.Any(r => T.Near(r.Max(p => p.X), 400, 1) && r.Max(p => p.Y) <= 3000), "section regions: the cornice stands 400 out");
         }
 
         static DwgLine L(double x1, double y1, double x2, double y2) => new DwgLine { A = new Pt(x1, y1), B = new Pt(x2, y2), Layer = "Ss_25_30_95-Window" };
