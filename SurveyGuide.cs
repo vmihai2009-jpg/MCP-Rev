@@ -12,7 +12,8 @@ Rules
 - Work on a copy of the project. save_model after each floor.
 - Never touch any other Revit window: only this connection's model.
 - No dialogs: every tool resolves Revit's warnings itself. If a fix is refused, try once another way, then list it.
-- Each change is one undo step. Ask before deleting or rebuilding.
+- Each change is one undo step; a correction that needs several calls goes in one batch (one undo step, all
+  undone if one fails). Ask before deleting or rebuilding.
 - Keep answers short; work floor by floor, lowest first, and report counts before and after.
 
 1. BASE
@@ -36,7 +37,9 @@ Rules
 5. FLOORS, ROOFS, OPENINGS
    Slab edges from the plan outline (create_floor with replace_id); stair and lift voids (create_opening);
    roofs from the roof plan and sections (create_roof, a slope per edge for mansards). Levels from spot
-   heights (dwg_read with contains '+' or the level layer) and the sections.
+   heights (dwg_read with contains '+' or the level layer) and the sections. Rooms the build left unnamed or
+   missed: dwg_read for the label, then place_rooms at it. The ground: dwg_terrain on the site plan (dry run
+   first: check the dropped levels), holes = the building footprint, then toposolid_subdivide for paving.
 6. FACADE
    dwg_elevation with facade = the id and the index's sheet_x_range, include_lines: the elevation's lines on
    the facade plane in model mm. model_sweep for cornices, string courses, copings and plinths along the

@@ -23,6 +23,7 @@ namespace SurveyCoreTests
             FidelityTests();
             Console.WriteLine("Facades");
             FacadeTests();
+            TerrainTests.Run();
         }
 
         // a 10 x 6 m room of 200 mm walls, drawn as each wall's two faces; and the model of it
