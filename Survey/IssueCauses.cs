@@ -69,7 +69,7 @@ namespace BarrGazetas.RevitMcp.Survey
                 case "wall_face":
                     if (d >= 45 && d <= 60)
                         return ("walls ~50 mm off their face: a single drawn line read as a wall's centre",
-                                "One cause, don't fix one by one: Survey to Revit centres a 100 mm wall on a single drawn face line (PLAN S1). survey_autofix fits the ones with both faces drawn; note the rest in the run results.");
+                                "One cause, don't fix one by one: walls built before Survey to Revit 0.23.1 centred a 100 mm wall on a single drawn face line (PLAN S1). Rebuild the floor's walls with 0.23.1+ (survey_run rebuild: true, ask first); survey_autofix fits the ones with both faces drawn.");
                     if (d <= 25)
                         return ("walls 10-25 mm off: small offsets",
                                 "survey_autofix openings:false (or dwg_wall_fit + dwg_wall_fit_apply) fits these; what it leaves is often a wall between two face pairs: split_wall.");

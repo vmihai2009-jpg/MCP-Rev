@@ -280,6 +280,32 @@ namespace SurveyCoreTests
             var missing = WallFit.Missing(new[] { W(7, 0, 185, 10000, 185, 370) }, plan, 60, 1300, 600);
             T.Check(missing.Count == 1 && T.Near(missing[0].ThicknessMm, 215) && T.Near(missing[0].LengthMm, 6000), "the DWG wall with no model wall is missing; the built one is not");
             T.Check(T.Near(WallFit.Covered(new Pt(0, 185), new Pt(10000, 185), new[] { W(8, 0, 185, 5000, 185, 370) }, 400), 0.5, 1e-9), "coverage counts half a wall as half");
+
+            // face pairs that are not walls are not "missing walls"
+            // a corridor: the inner faces of two built 100 mm walls, 900 mm apart
+            var corridor = new List<Seg> { S(0, 100, 8000, 100), S(0, 1000, 8000, 1000) };
+            var built = new[] { W(10, 0, 50, 8000, 50, 100), W(11, 0, 1050, 8000, 1050, 100) };
+            T.Check(WallFit.Missing(built, corridor, 60, 1000, 600, null, out int nw1).Count == 0 && nw1 == 1, "the gap between two built walls is not a missing wall");
+            // the same corridor with walls built centred on the face lines (50 mm out) still reads as two walls' faces
+            var centred = new[] { W(12, 0, 100, 8000, 100, 100), W(13, 0, 1000, 8000, 1000, 100) };
+            T.Check(WallFit.Missing(centred, corridor, 60, 1000, 600).Count == 0, "faces of walls 50 mm off are still those walls' faces");
+            // wider than the thickest wall
+            T.Check(WallFit.Missing(new FitWall[0], new List<Seg> { S(0, 0, 6000, 0), S(0, 1150, 6000, 1150) }, 60, Fidelity.MaxWallMm, 600).Count == 0, "a pair 1.15 m apart is not a wall");
+            // a step or second wall: another face line between the two
+            var stepped = new List<Seg> { S(0, 0, 6000, 0), S(0, 800, 6000, 800), S(0, 350, 5000, 350) };
+            var wide = new WallCandidate { Start = new Pt(0, 400), End = new Pt(6000, 400), ThicknessMm = 800 };
+            T.Check(!WallFit.IsWall(wide, stepped, new FitWall[0]), "a line between the faces: not one wall");
+            T.Check(WallFit.IsWall(wide, stepped.Take(2).ToList(), new FitWall[0]), "nothing between the faces: a wall");
+            // a spot height between the faces is a space
+            T.Check(!WallFit.IsWall(wide, stepped.Take(2).ToList(), new FitWall[0], new[] { new Pt(3000, 450) }), "a spot height between the faces: a space");
+            // nearest partner first: three lines 200 and 900 apart pair as the 200 mm wall, not the wide pair
+            var three = new List<Seg> { S(0, 0, 6000, 0), S(0, 200, 6000, 200), S(0, 1100, 6000, 1100) };
+            var near = WallDetector.FromParallelPairs(three, 60, 1300, 300, 1.0, nearestFirst: true);
+            T.Check(near.Count == 1 && T.Near(near[0].ThicknessMm, 200), "lines pair with their nearest partner first");
+            // a real missing wall is still found next to built walls
+            var plan2 = new List<Seg> { S(0, 100, 8000, 100), S(0, 1000, 8000, 1000), S(3000, 1000, 3000, 5000), S(3215, 1000, 3215, 5000) };
+            var m2 = WallFit.Missing(built, plan2, 60, 1000, 600);
+            T.Check(m2.Count == 1 && T.Near(m2[0].ThicknessMm, 215), "a missing cross wall is still reported");
         }
 
         static void DwgTests()

@@ -93,7 +93,7 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 ### Scoring (V)
 | Id | Tool / change | What it does | Repo | Pri |
 |---|---|---|---|---|
-| V1 | `survey_fidelity` missing-wall filter | A face pair counts as a missing wall only if it is on the wall layer, 50-900 mm apart (more only for a basement/party wall flagged by S2R), both lines longer than 300 mm, and not a chimney breast, stair, step or joinery outline (S2R layer roles). Others go to an "unclassified pairs" list, not the score. | Hub | P0 |
+| V1 | `survey_fidelity` missing-wall filter (partly done 1.14.7: ≤1 m, no line between, no face on a model wall, no room/spot height between; layer-role checks still to do) | A face pair counts as a missing wall only if it is on the wall layer, 50-900 mm apart (more only for a basement/party wall flagged by S2R), both lines longer than 300 mm, and not a chimney breast, stair, step or joinery outline (S2R layer roles). Others go to an "unclassified pairs" list, not the score. | Hub | P0 |
 | V2 | issue causes (done 1.15.0, in `survey_run`) | Groups issues by likely cause before listing them: "256 walls exactly 50 mm off: single-line walls centred on their face", "40 windows: elevation head 150 mm above label". Claude fixes one cause instead of 400 items. | Hub | P0 |
 | V3 | `survey_section` on roofs and slabs | Already merged (1.11.0); needs its first Revit run and the roof DirectShapes included. | Hub | P1 |
 | V4 | `facade_score` | See F1. | Hub | P0 |
@@ -102,7 +102,7 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 ### Plan walls (S, A)
 | Id | Tool / change | What it does | Repo | Pri |
 |---|---|---|---|---|
-| S1 | single-line walls on the face | One drawn line = one face. Put the wall's face on it, the body on the side away from the room label / towards the other walls; thickness from the same wall on the floors above/below (FacadeStack), else a layers.txt default per layer, else flag as low confidence. | S2R | P0 |
+| S1 | single-line walls on the face (face on the line done in S2R 0.23.1; thickness from floors above/below still to do) | One drawn line = one face. Put the wall's face on it, the body on the side away from the room label / towards the other walls; thickness from the same wall on the floors above/below (FacadeStack), else a layers.txt default per layer, else flag as low confidence. | S2R | P0 |
 | S2 | thickness to the pair | Use the measured face pair (to 5 mm) for the wall type, not the nearest 20 mm step; types made on demand. | S2R | P1 |
 | S3 | missed walls on the plan | Rebuild what V1 still lists after S1 (likely short piers and nibs under 1 m: lower the minimum wall length for piers between openings). | S2R | P1 |
 | A1 | autofix walls finishes | Uses the build-error fixes so a refused wall is retried (unjoin, then move, then recreate) instead of stopping. | Hub | P0 (in *Fix model-build errors*) |

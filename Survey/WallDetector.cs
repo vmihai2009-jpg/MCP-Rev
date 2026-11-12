@@ -16,7 +16,9 @@ namespace BarrGazetas.RevitMcp.Survey
     /// <summary>Finds wall centre-lines from pairs of parallel lines (the usual "double line" wall drawing).</summary>
     public static class WallDetector
     {
-        public static List<WallCandidate> FromParallelPairs(IList<Seg> segs, double minThickMm, double maxThickMm, double minOverlapMm, double angleTolDeg)
+        /// <param name="nearestFirst">Pair each line with its nearest partner first (the scorer's reading: a face belongs to the wall it bounds),
+        /// instead of the longest overlap first.</param>
+        public static List<WallCandidate> FromParallelPairs(IList<Seg> segs, double minThickMm, double maxThickMm, double minOverlapMm, double angleTolDeg, bool nearestFirst = false)
         {
             var result = new List<WallCandidate>();
             int n = segs.Count;
@@ -55,7 +57,8 @@ namespace BarrGazetas.RevitMcp.Survey
 
             // greedy: longest overlap first; a stretch of a segment can only be used once
             var used = new Dictionary<int, List<double[]>>();
-            foreach (var c in candidates.OrderByDescending(x => x.OverlapMm).ThenBy(x => x.SegA).ThenBy(x => x.SegB))
+            var order = nearestFirst ? candidates.OrderBy(x => Math.Round(x.ThicknessMm)).ThenByDescending(x => x.OverlapMm) : candidates.OrderByDescending(x => x.OverlapMm);
+            foreach (var c in order.ThenBy(x => x.SegA).ThenBy(x => x.SegB))
             {
                 double[] ia = Interval(segs[c.SegA], c.Start, c.End), ib = Interval(segs[c.SegB], c.Start, c.End);
                 if (Covered(used, c.SegA, ia) > 0.25 * c.OverlapMm || Covered(used, c.SegB, ib) > 0.25 * c.OverlapMm) continue;

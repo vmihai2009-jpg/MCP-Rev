@@ -252,7 +252,8 @@ namespace BarrGazetas.RevitMcp
             bool keepInserts = false;
             var tried = new List<string>();
             RevitRefusedException first = null;
-            for (int attempt = 0; attempt < 5; attempt++)
+            // 1.14.7: at most 3 tries (the first and two fallbacks); Revit died once after a fast run of refused tries
+            for (int attempt = 0; attempt < 3; attempt++)
             {
                 var fixes = new List<string>();
                 try
@@ -269,6 +270,8 @@ namespace BarrGazetas.RevitMcp
                                 WallUtils.DisallowWallJoinAtEnd(w, end);
                                 fixes.Add($"join stopped at wall {wid}'s {(end == 0 ? "start" : "end")} (set_wall_joins allow=true rejoins it)");
                             }
+                        // the joins settle before the wall moves (moving a wall whose joins were just changed, unregenerated, is a crash suspect)
+                        if (stopJoins.Count > 0) doc.Regenerate();
                         var kept = keepInserts ? InsertPoints(doc, wall) : null;
                         SetLineKeepingOpenings(doc, wall, newLine);
                         if (kept != null) fixes.AddRange(PutInsertsBack(doc, wall, kept));

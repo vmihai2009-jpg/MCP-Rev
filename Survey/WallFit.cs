@@ -137,16 +137,29 @@ namespace BarrGazetas.RevitMcp.Survey
         /// <summary>
         /// Walls the DWG draws (pairs of parallel face lines) with no model wall along them: less than a fifth of the
         /// DWG wall's length has a parallel model wall within 400 mm.
+        /// A pair is not a wall (and not reported) when:
+        /// - either line is already the face of a model wall (the pair is the gap between two walls: a corridor, a chimney breast's side),
+        /// - another drawn face line runs between the two (two walls, or a wall and a step or plinth),
+        /// - a room or spot height sits between them (it is a space),
+        /// - it is wider than <paramref name="maxThickMm"/>.
+        /// Each line pairs with its nearest partner first, so a wall's two faces are not split across wide pairs.
         /// </summary>
-        public static List<MissingWall> Missing(IList<FitWall> walls, IList<Seg> dwg, double minThickMm, double maxThickMm, double minLengthMm)
+        public static List<MissingWall> Missing(IList<FitWall> walls, IList<Seg> dwg, double minThickMm, double maxThickMm, double minLengthMm,
+            IList<Pt> spaceMarkers = null) => Missing(walls, dwg, minThickMm, maxThickMm, minLengthMm, spaceMarkers, out _);
+
+        /// <param name="notWalls">Face pairs left out because they are not walls (see the rules above).</param>
+        public static List<MissingWall> Missing(IList<FitWall> walls, IList<Seg> dwg, double minThickMm, double maxThickMm, double minLengthMm,
+            IList<Pt> spaceMarkers, out int notWalls)
         {
-            var pairs = WallDetector.FromParallelPairs(dwg, minThickMm, maxThickMm, Math.Max(300, minLengthMm), 1.0);
+            var pairs = WallDetector.FromParallelPairs(dwg, minThickMm, maxThickMm, Math.Max(300, minLengthMm), 1.0, nearestFirst: true);
             var result = new List<MissingWall>();
+            notWalls = 0;
             foreach (var p in pairs)
             {
                 double L = p.Start.Dist2D(p.End);
                 if (L < minLengthMm) continue;
                 if (Covered(p.Start, p.End, walls, 400) >= 0.2) continue;
+                if (!IsWall(p, dwg, walls, spaceMarkers)) { notWalls++; continue; }
                 result.Add(new MissingWall
                 {
                     Line = new[] { Math.Round(p.Start.X), Math.Round(p.Start.Y), Math.Round(p.End.X), Math.Round(p.End.Y) },
@@ -154,6 +167,80 @@ namespace BarrGazetas.RevitMcp.Survey
                 });
             }
             return result.OrderByDescending(m => m.LengthMm).ToList();
+        }
+
+        /// <summary>Within this of a model wall's face, a drawn line is that wall's face (wider than the 50 mm of a wall centred on its face line).</summary>
+        public const double OnFaceMm = 60;
+
+        /// <summary>Could this face pair be one wall? See <see cref="Missing(IList{FitWall}, IList{Seg}, double, double, double, IList{Pt})"/>.</summary>
+        public static bool IsWall(WallCandidate p, IList<Seg> dwg, IList<FitWall> walls, IList<Pt> spaceMarkers = null)
+        {
+            double L = p.Start.Dist2D(p.End);
+            if (L < 1e-6) return false;
+            double ux = (p.End.X - p.Start.X) / L, uy = (p.End.Y - p.Start.Y) / L, nx = -uy, ny = ux;
+            double half = p.ThicknessMm / 2;
+            // the two face lines, along the pair's overlap
+            Pt Face(double side, bool end) => new Pt((end ? p.End.X : p.Start.X) + nx * side * half, (end ? p.End.Y : p.Start.Y) + ny * side * half);
+            foreach (var side in new[] { -1.0, 1.0 })
+                if (OnModelFace(Face(side, false), Face(side, true), walls) >= 0.5) return false;
+
+            // another parallel face line between the two, along at least half the pair
+            var inner = new List<(double lo, double hi)>();
+            foreach (var d in dwg)
+            {
+                double dl = d.Length2D; if (dl < 1) continue;
+                double dux = (d.B.X - d.A.X) / dl, duy = (d.B.Y - d.A.Y) / dl;
+                if (Math.Abs(dux * ux + duy * uy) < 0.996) continue;
+                double oa = (d.A.X - p.Start.X) * nx + (d.A.Y - p.Start.Y) * ny, ob = (d.B.X - p.Start.X) * nx + (d.B.Y - p.Start.Y) * ny;
+                double gap = Math.Min(30, half / 3);
+                if (Math.Abs(oa) > half - gap || Math.Abs(ob) > half - gap) continue;
+                double s = GeoMath.Clamp((d.A.X - p.Start.X) * ux + (d.A.Y - p.Start.Y) * uy, 0, L), t = GeoMath.Clamp((d.B.X - p.Start.X) * ux + (d.B.Y - p.Start.Y) * uy, 0, L);
+                if (Math.Abs(t - s) > 1) inner.Add((Math.Min(s, t), Math.Max(s, t)));
+            }
+            if (Union(inner) >= 0.5 * L) return false;
+
+            // a room name or spot height between the faces
+            if (spaceMarkers != null)
+                foreach (var m in spaceMarkers)
+                {
+                    double t = (m.X - p.Start.X) * ux + (m.Y - p.Start.Y) * uy, o = (m.X - p.Start.X) * nx + (m.Y - p.Start.Y) * ny;
+                    if (t > 0 && t < L && Math.Abs(o) < half - 20) return false;
+                }
+            return true;
+        }
+
+        /// <summary>Share of a-b's length that lies on a face of a model wall (parallel, within <see cref="OnFaceMm"/>).</summary>
+        public static double OnModelFace(Pt a, Pt b, IList<FitWall> walls)
+        {
+            double L = a.Dist2D(b);
+            if (L < 1e-6) return 0;
+            double ux = (b.X - a.X) / L, uy = (b.Y - a.Y) / L, nx = -uy, ny = ux;
+            var spans = new List<(double lo, double hi)>();
+            foreach (var w in walls)
+            {
+                double wl = w.A.Dist2D(w.B);
+                if (wl < 1) continue;
+                double wux = (w.B.X - w.A.X) / wl, wuy = (w.B.Y - w.A.Y) / wl;
+                if (Math.Abs(wux * ux + wuy * uy) < 0.996) continue;
+                double oa = (w.A.X - a.X) * nx + (w.A.Y - a.Y) * ny, ob = (w.B.X - a.X) * nx + (w.B.Y - a.Y) * ny;
+                double h = w.ThicknessMm / 2;
+                // one of the wall's faces runs along the line
+                if (!(Math.Abs(Math.Abs(oa) - h) <= OnFaceMm && Math.Abs(Math.Abs(ob) - h) <= OnFaceMm)) continue;
+                double s = GeoMath.Clamp((w.A.X - a.X) * ux + (w.A.Y - a.Y) * uy, 0, L), t = GeoMath.Clamp((w.B.X - a.X) * ux + (w.B.Y - a.Y) * uy, 0, L);
+                if (Math.Abs(t - s) > 1) spans.Add((Math.Min(s, t), Math.Max(s, t)));
+            }
+            return Union(spans) / L;
+        }
+
+        static double Union(List<(double lo, double hi)> spans)
+        {
+            double total = 0, end = double.NegativeInfinity;
+            foreach (var (lo, hi) in spans.OrderBy(x => x.lo))
+            {
+                if (lo > end) { total += hi - lo; end = hi; }
+                else if (hi > end) { total += hi - end; end = hi; }
+            }
+            return total;
         }
 
         /// <summary>Share of a-b's length that model walls run along (parallel within 5 degrees, centre within <paramref name="within"/> mm).</summary>
