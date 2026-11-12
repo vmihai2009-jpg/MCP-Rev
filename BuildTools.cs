@@ -755,7 +755,14 @@ namespace BarrGazetas.RevitMcp
             if (widthMm != null || heightMm != null)
             {
                 var (cw, ch) = InsertSize(doc, fi);
-                var sym = SizedSymbol(doc, fi.Symbol, widthMm ?? cw ?? 0, heightMm ?? ch ?? 0);
+                // families whose size the parameters do not give: head minus sill, and the hosted opening's width
+                double? sillNow = fi.get_Parameter(BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM)?.AsDouble() * MmPerFoot;
+                double? headNow = fi.get_Parameter(BuiltInParameter.INSTANCE_HEAD_HEIGHT_PARAM)?.AsDouble() * MmPerFoot;
+                if ((ch == null || ch <= 0) && sillNow != null && headNow != null && headNow > sillNow) ch = Math.Round(headNow.Value - sillNow.Value);
+                if (cw == null || cw <= 0) cw = SymbolSize(fi.Symbol).w;
+                double newW = widthMm ?? cw ?? 0, newH = heightMm ?? ch ?? 0;
+                if (newW <= 0 || newH <= 0) throw new InvalidOperationException($"the window's current {(newW <= 0 ? "width" : "height")} cannot be read: give both width and height");
+                var sym = SizedSymbol(doc, fi.Symbol, newW, newH);
                 if (sym.Id != fi.Symbol.Id) fi.Symbol = sym;
                 SetInstanceSize(fi, widthMm, heightMm);
             }
@@ -1114,6 +1121,15 @@ namespace BarrGazetas.RevitMcp
 
         // ================================================================ façade solids
 
+        /// <summary>model_sweep inside a transaction the caller runs: path in feet, profile in mm (u left of the path, v up). The DirectShape's id.</summary>
+        internal static long SweepShape(Document doc, List<XYZ> path, List<(double u, double v)> prof, string name, string comments)
+        {
+            var solids = new List<GeometryObject>();
+            try { solids.Add(SweepWhole(path, prof)); }
+            catch { foreach (var s in SweepPieces(path, prof)) solids.Add(s); }
+            return MakeShape(doc, solids, new JsonObject { ["name"] = name, ["comments"] = comments }).Id.Value;
+        }
+
         private static Solid SweepWhole(List<XYZ> path, List<(double u, double v)> prof)
         {
             var pathLoop = new CurveLoop();
@@ -1316,7 +1332,7 @@ namespace BarrGazetas.RevitMcp
         private static List<JsonObject> Objects(JsonObject a, string key) => (a[key] as JsonArray)?.OfType<JsonObject>().ToList() ?? new List<JsonObject>();
 
         private static Document Doc(UIApplication app) =>
-            app?.ActiveUIDocument?.Document ?? throw new InvalidOperationException("No Revit project is open. Ask the user to open one.");
+            Reference.Current ?? app?.ActiveUIDocument?.Document ?? throw new InvalidOperationException("No Revit project is open. Ask the user to open one.");
 
         private static Document Writable(UIApplication app)
         {

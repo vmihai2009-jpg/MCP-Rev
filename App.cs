@@ -120,8 +120,28 @@ namespace BarrGazetas.RevitMcp
             return Result.Succeeded;
         }
 
+        /// <summary>
+        /// Start-up under BGMCP.Loader: the loader owns the ribbon and loaded this assembly (and ACadSharp) itself,
+        /// so only the hub is made here. Called in a Revit API context (the ExternalEvent needs one).
+        /// </summary>
+        internal static void Boot()
+        {
+            var a = new App();
+            Instance = a;
+            a.Hub = new Hub(new RevitDispatcher());
+            if (a.Hub.Settings.AutoStart)
+                try { a.Hub.Start(); } catch { }
+        }
+
+        /// <summary>Lets go of Revit events before another core takes over.</summary>
+        internal void Unhook()
+        {
+            _check = null;
+        }
+
         internal void RefreshButton()
         {
+            if (_toggle == null) { Hosted.Changed?.Invoke(); return; }
             bool on = Hub.Server.IsRunning;
             _toggle.ItemText = on ? "MCP\nOn" : "MCP\nOff";
             _toggle.LargeImage = Icons.Make(32, on);

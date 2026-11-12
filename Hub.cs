@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -40,12 +40,17 @@ namespace BarrGazetas.RevitMcp
             Settings = McpSettings.Load();
             Log.Enabled = () => Settings.LogCalls;
 
-            _own = RevitTools.All().Concat(RevitTools.Repair()).Concat(BuildTools.All()).Concat(SurveyTools.All()).Concat(SurveyTools.Facade()).Concat(SurveyTools.Phase1()).Concat(SurveyTools.Phase2()).Concat(SurveyTools.Phase2Index()).Select(t => new ToolInfo
+            _own = RevitTools.All().Concat(RevitTools.Repair()).Concat(BuildTools.All()).Concat(SurveyTools.All()).Concat(SurveyTools.Facade())
+                .Concat(SurveyTools.Phase1()).Concat(SurveyTools.Phase2()).Concat(SurveyTools.Phase2Index()).Concat(SurveyTools.Phase3())
+                .Concat(ReferenceTools.All()).Concat(HostTools.All()).Concat(SurveyTools.Phase4()).Select(t => new ToolInfo
             {
-                Name = t.Name, Description = t.Description, InputSchema = t.InputSchema, Write = t.Write,
+                Name = t.Name, Description = t.Description, InputSchema = WithDocument(t), Write = t.Write,
                 Invoke = async args => (string)await _dispatcher.InvokeAsync(app =>
                 {
-                    object result = t.Run(app, args);
+                    // read tools can look at a reference model opened with reference_open instead of the active project
+                    string docName = t.Write || OwnDocArg(t.Name) ? null : Args.Str(args, "document");
+                    object result;
+                    using (Reference.Use(docName)) result = t.Run(app, args);
                     return result as string ?? JsonSerializer.Serialize(result, Compact);
                 }),
             }).ToList();
@@ -59,6 +64,22 @@ namespace BarrGazetas.RevitMcp
                 OnCall = Log.Add,
                 Status = Status,
             });
+        }
+
+        private static bool OwnDocArg(string name) => name == "reference_open" || name == "reference_close" || name == "reference_compare" || name == "reference_copy";
+
+        /// <summary>Read tools get a "document" argument: look at a reference model instead of the active project.</summary>
+        private static JsonObject WithDocument(RevitTool t)
+        {
+            if (t.Write || OwnDocArg(t.Name) || !(t.InputSchema?.DeepClone() is JsonObject schema)) return t.InputSchema;
+            if (!(schema["properties"] is JsonObject props)) schema["properties"] = props = new JsonObject();
+            if (!props.ContainsKey("document"))
+                props["document"] = new JsonObject
+                {
+                    ["type"] = "string",
+                    ["description"] = "Look at a reference model opened with reference_open (its name) instead of the active project",
+                };
+            return schema;
         }
 
         public IReadOnlyList<ToolInfo> Tools()

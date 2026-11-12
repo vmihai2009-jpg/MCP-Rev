@@ -60,6 +60,28 @@ namespace SurveyCoreTests
 
         static void FacadeTests()
         {
+            // a section: left wall face at x 1000 from 27 m to 48 m, a cornice stepping out 150 then 300 at 47.0-47.3 m;
+            // right face at 18000 with a 200 string course at 44.5-44.7 m
+            var sec = new List<DwgLine>
+            {
+                L(1000, 27000, 1000, 47000, "Ss_25-Profile"), L(1000, 47000, 850, 47000, "Ss_25-Profile"), L(850, 47000, 850, 47150, "Ss_25-Profile"),
+                L(850, 47150, 700, 47150, "Ss_25-Profile"), L(700, 47150, 700, 47300, "Ss_25-Profile"), L(700, 47300, 1000, 47300, "Ss_25-Profile"), L(1000, 47300, 1000, 48000, "Ss_25-Profile"),
+                L(18000, 27000, 18000, 44500, "Ss_25-Profile"), L(18000, 44500, 18200, 44500, "Ss_25-Profile"), L(18200, 44500, 18200, 44700, "Ss_25-Profile"),
+                L(18200, 44700, 18000, 44700, "Ss_25-Profile"), L(18000, 44700, 18000, 48000, "Ss_25-Profile"),
+            };
+            var sides = FacadeDetail.Sides(sec, "Section-A");
+            var left = sides.First(s => s.Side < 0); var right = sides.First(s => s.Side > 0);
+            T.Check(T.Near(left.Face, 1000, 5) && T.Near(right.Face, 18000, 5), "each side's wall face is its commonest outer line");
+            var lb = FacadeDetail.Bands(left);
+            T.Check(lb.Count == 1 && T.Near(lb[0].Z0, 47000, 10) && T.Near(lb[0].Z1, 47300, 10) && T.Near(lb[0].MaxProjection, 300, 1), "the cornice: its heights and full projection");
+            T.Check(lb[0].Profile.Any(q => T.Near(q.p, 150, 1)), "the cornice's step is kept in its profile");
+            var rb = FacadeDetail.Bands(right);
+            T.Check(rb.Count == 1 && T.Near(rb[0].MaxProjection, 200, 1) && T.Near(rb[0].Z0, 44500, 10), "the string course on the other side");
+            var hz = new List<(double z, double u0, double u1)> { (47000, 0, 6000), (47300, 0, 6000), (47150, 6500, 9800) };
+            FacadeDetail.Extent(lb[0], hz, 10000);
+            T.Check(lb[0].Runs.Count == 2 && T.Near(lb[0].Runs[0].u1, 6000, 1) && T.Near(lb[0].Cover, 0.93, 0.01), "its runs along the facade where the elevation draws it");
+            T.Check(FacadeDetail.Agreement(lb, hz, 10000) == 1 && FacadeDetail.Agreement(rb, hz, 10000) == 0, "the side whose bands the elevation draws wins");
+
             // a sheet with two elevations 6 m apart: two parts
             var sheet = new List<DwgLine> { L(1000, 30000, 1000, 32000), L(2000, 30000, 2000, 32000), L(4000, 30000, 4000, 32000), L(20000, 30000, 20000, 33000), L(21000, 30000, 21000, 33000) };
             var parts = ElevationFit.SheetParts(sheet);

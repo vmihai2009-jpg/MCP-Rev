@@ -1,4 +1,4 @@
-// The survey core's tests from the mcp-servers-for-revit patch (62), run against BG MCP's copy of the core.
+﻿// The survey core's tests from the mcp-servers-for-revit patch (62), run against BG MCP's copy of the core.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,7 +38,7 @@ namespace SurveyCoreTests
 
         static int Main()
         {
-            MoreTests.Run(); CleanerTests(); SnapTests(); LoopTests(); WallTests(); TopoTests(); RuleTests(); PlannerTests(); SuggestTests(); StressTests();
+            MoreTests.Run(); DetailTests.Run(); CleanerTests(); SnapTests(); LoopTests(); WallTests(); TopoTests(); RuleTests(); PlannerTests(); SuggestTests(); StressTests();
             Console.WriteLine();
             Console.WriteLine("passed " + T.Pass + ", failed " + T.Fail);
             return T.Fail == 0 ? 0 : 1;

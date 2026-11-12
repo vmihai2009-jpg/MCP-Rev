@@ -39,7 +39,9 @@ namespace BarrGazetas.RevitMcp
         public static string Root(string addins) => Path.Combine(addins, "BGMCP");
 
         public static Version Running => Short(typeof(Updater).Assembly.GetName().Version);
-        public static string RunningFolder => Path.GetDirectoryName(typeof(Updater).Assembly.Location);
+        /// <summary>Set under BGMCP.Loader, which loads the core from bytes (so the assembly has no Location).</summary>
+        public static string HostedFolder;
+        public static string RunningFolder => HostedFolder ?? Path.GetDirectoryName(typeof(Updater).Assembly.Location);
 
         public static Version Short(Version v) => v == null ? new Version(0, 0, 0) : new Version(v.Major, v.Minor, Math.Max(0, v.Build));
 
@@ -73,7 +75,7 @@ namespace BarrGazetas.RevitMcp
         /// Checks the zip before anything changes: it must hold BGMCP.Revit.dll, and the version inside must be the
         /// one its name says. Throws with a message meant to be read; on any problem the manifest is untouched.
         /// </summary>
-        public static string Install(string zip, string addins, string runningFolder, out Version version)
+        public static string Install(string zip, string addins, string runningFolder, out Version version, bool writeManifest = true)
         {
             if (!File.Exists(zip)) throw new InvalidOperationException($"There is no file {zip}.");
             string temp = Path.Combine(Path.GetTempPath(), "BGMCP-update-" + Guid.NewGuid().ToString("N"));
@@ -113,7 +115,8 @@ namespace BarrGazetas.RevitMcp
                 }
                 Directory.Move(staging, target);
 
-                WriteManifest(addins, $@"BGMCP\{version.ToString(3)}\{DllName}");
+                // under the loader the manifest stays on the loader, which picks the newest version folder
+                if (writeManifest) WriteManifest(addins, $@"BGMCP\{version.ToString(3)}\{DllName}");
                 return target;
             }
             finally { TryDelete(temp); }
