@@ -46,8 +46,8 @@ _A living plan. Last updated: 2026-11-12 (first version, after the first Revit r
 | Openings (size) | 188 over | 0 | heads from elevations; type creation fails | W0, A2 | *Fix model-build errors* |
 | Missing openings | 101 | 0 | elevation-only windows; type creation | W0, A2 | same |
 | Window design | concept panes only | real sash/casement families per type | no tool reads a window's design | W1-W4 | *Window families from DWG* (to open) |
-| Slabs | one flat slab per floor | stepped where spots step; 7th slab -1.9 m | no stepped slab tool | (in thread) | *Model stepped slabs* |
-| Stairs | 2 flights missing (7th) | all | - | (in thread) | *Model stepped slabs* |
+| Slabs | one flat slab per floor | stepped where spots step; 7th slab -1.9 m | needs its first Revit run | `survey_floor_steps` (1.14.0, pull request) | *Model stepped slabs* |
+| Stairs | 2 flights "missing" (7th) were a survey_stairs matching bug | all | stairs are checked, not built | fixed in 1.14.0 | *Model stepped slabs* |
 | Ceilings | none placed (room lookup bug) | per section | room lookup | org side is fixing | org side |
 | Roofs | 181 DirectShape pieces | roofs scored per section | not yet scored | V3 | *Extend 1:1 scoring to 3D* (done: `survey_section`) |
 | Facade bands (cornices, string courses) | `facade_details` exists, untested | 1:1 on section profile | not run yet | F0 | *Capture neoclassical facade detail* |
@@ -173,7 +173,7 @@ The rules this plan builds towards:
 | Workstream | Owns backlog ids | Status |
 |---|---|---|
 | Fix model-build errors | A1, W0 (and the reversed-wall, door-cut, ceiling-sketch errors) | running |
-| Model stepped slabs from spot heights | stepped slabs, 7th floor slab, missing stairs | running |
+| Model stepped slabs from spot heights | stepped slabs, 7th floor slab, missing stairs | pull request open (1.14.0), waiting for a Revit run |
 | Capture neoclassical facade detail from DWG | F0-F7 | running |
 | Write MCP usage guide for work Claude | P3 (COORDINATION.md guide) | running |
 | Extend 1:1 scoring to 3D | V3 (done, merged 1.11.0) | waiting for a Revit run |
