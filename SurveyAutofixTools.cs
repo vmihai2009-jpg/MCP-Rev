@@ -63,7 +63,7 @@ namespace BarrGazetas.RevitMcp
                             {
                                 var input = FidelityInputFor(doc, level, plans[level.Id.Value], datumMm); // walls may have moved
                                 FixOpenings(doc, level, input, log);
-                                PlaceMissing(doc, level, elevMissing.Where(m => m.Level == level.Name).ToList(), log);
+                                PlaceMissing(doc, level, input, elevMissing.Where(m => m.Level == level.Name).ToList(), log);
                                 FillRhythmGaps(app, doc, level, input, log, tick: !dry);
                             }
                             var after = Fidelity.Measure(FidelityInputFor(doc, level, plans[level.Id.Value], datumMm), gate);
@@ -78,6 +78,7 @@ namespace BarrGazetas.RevitMcp
                                 levelDevMm = after.score.LevelCheck.DevMm,
                                 stillFailing = SurveyConfig.ToJson(after.issues.Take(maxIssues).ToList()), stillFailingTotal = after.issues.Count,
                                 problems = log.Problems.Count > 0 ? log.Problems.Take(15).ToList() : null,
+                                forReview = log.Unconfirmed.Count > 0 ? log.Unconfirmed.Take(15).ToList() : null, forReviewTotal = log.Unconfirmed.Count,
                                 undo = dry ? "dry run: nothing kept" : log.Changed > 0 ? "one undo step in Revit for this floor" : "nothing changed",
                             });
                         }
@@ -213,10 +214,18 @@ namespace BarrGazetas.RevitMcp
             };
         }
 
+        private static double DistToSeg(Pt p, Pt a, Pt b)
+        {
+            double dx = b.X - a.X, dy = b.Y - a.Y, l2 = dx * dx + dy * dy;
+            double t = l2 < 1e-9 ? 0 : Math.Max(0, Math.Min(1, ((p.X - a.X) * dx + (p.Y - a.Y) * dy) / l2));
+            return p.Dist2D(new Pt(a.X + dx * t, a.Y + dy * t));
+        }
+
         private sealed class FloorFixLog
         {
             public int WallsFitted, WallsFailed, Reshaped, Placed, GapsFilled, OpeningsFailed;
             public List<string> Problems = new List<string>();
+            public List<string> Unconfirmed = new List<string>();
             public int Changed => WallsFitted + Reshaped + Placed + GapsFilled;
         }
 
@@ -283,11 +292,28 @@ namespace BarrGazetas.RevitMcp
             }
         }
 
-        private static void PlaceMissing(Document doc, Level level, List<ElevMissing> missing, FloorFixLog log)
+        private static void PlaceMissing(Document doc, Level level, FidelityInput input, List<ElevMissing> missing, FloorFixLog log)
         {
             foreach (var m in missing)
             {
                 if (m.Sill == null || m.Head == null || m.W < 300) continue;
+                // the plan must agree: an opening in a wall there, both reveals within 150 mm of the elevation's.
+                // Width and centre then come from the plan (it cuts through the opening), heights from the labels or the elevation.
+                var at = new Pt(m.X, m.Y);
+                var host = input.Walls.Select(w => (w, d: DistToSeg(at, w.A, w.B))).Where(x => x.d <= x.w.ThicknessMm / 2 + 400).OrderBy(x => x.d).Select(x => x.w).FirstOrDefault();
+                var probe = new FidInsert { At = at, W = m.W, HostWallId = host?.Id ?? 0 };
+                var jambs = host == null ? null : Fidelity.PlanJambs(host, probe, input.WallFaces);
+                if (jambs == null || Math.Abs(jambs.Value.left) > 150 || Math.Abs(jambs.Value.right) > 150)
+                {
+                    log.Unconfirmed.Add($"{level.Name}: the elevation draws a {m.W:0} wide window at {m.X:0},{m.Y:0} (sill {m.Sill:0}) but the plan shows no opening there");
+                    continue;
+                }
+                double L = host.A.Dist2D(host.B), ux = (host.B.X - host.A.X) / L, uy = (host.B.Y - host.A.Y) / L;
+                double width = m.W + jambs.Value.right - jambs.Value.left, shift = (jambs.Value.left + jambs.Value.right) / 2;
+                m.X += ux * shift; m.Y += uy * shift; m.W = width;
+                var (ls, lh) = Fidelity.LabelsFor(new Pt(m.X, m.Y), input.Labels);
+                if (ls != null) m.Sill = ls;
+                if (lh != null) m.Head = lh;
                 // not where a window already is (the elevation may have matched another storey's)
                 var here = new XYZ(m.X / Mm, m.Y / Mm, level.Elevation);
                 bool taken = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Windows).WhereElementIsNotElementType().OfType<FamilyInstance>()
@@ -297,7 +323,8 @@ namespace BarrGazetas.RevitMcp
                 {
                     ["category"] = "Windows", ["x"] = Math.Round(m.X), ["y"] = Math.Round(m.Y), ["level"] = level.Name,
                     ["width_mm"] = Math.Round(m.W), ["height_mm"] = Math.Round(m.Head.Value - m.Sill.Value), ["sill_mm"] = Math.Round(m.Sill.Value),
-                    ["comments"] = "MCP|autofix|from the elevation",
+                    ["wall_id"] = host.Id,
+                    ["comments"] = "MCP|autofix|elevation + plan reveals" + (ls != null ? " + labels" : ""),
                 };
                 try { BuildTools.Tx.Run(doc, "MCP: place window from the elevation", () => BuildTools.PlaceInsertHere(doc, item)); log.Placed++; }
                 catch (Exception ex) { log.OpeningsFailed++; log.Problems.Add($"window at {m.X:0},{m.Y:0}: {McpServer.Unwrap(ex).Message}"); }
