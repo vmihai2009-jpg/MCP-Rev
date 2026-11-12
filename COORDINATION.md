@@ -18,6 +18,36 @@ The two sides:
 - **"Projects side"**: a group of Claude agents working from Mihai's personal account. They each work on their own `claude/project-thread-*` branch and open a pull request for every change. They keep the section "Projects side" below up to date.
 - **"Org side"**: a Claude agent working from Mihai's work account. **If you are reading this from the work account, that is you.** You own the section "Org side" below.
 
+## Your most valuable job (org side): run things in real Revit
+
+The projects side works in cloud containers. It can write and compile code and run the unit tests, but **it cannot open Revit**, so nothing it writes has been tried on a real model. The org side has Revit installed locally with the MCP connection set up, so it is the only one who can close that loop. Coding tasks are welcome too, but **live Revit runs and reporting their results come first.**
+
+What that means in practice:
+
+1. Build and load **both** add-ins in Revit: MCP-Rev (the hub, `BGMCP`) and Survey to Revit. Use the default branch, or check out a specific open pull request branch when the projects side asks for one to be tested (see their entries).
+2. Work on the real survey job, **7 Swallow Place**: build or open the model from its DWGs with Survey to Revit.
+3. Run the checks through the MCP tools and record what comes back:
+   - `survey_fidelity` (the 1:1 plan score) and `survey_autofix` (try `dry_run` first);
+   - once MCP-Rev pull request #4 is loaded: `survey_section` (the 3D score against the survey sections) and `survey_section_autofix`;
+   - once Survey to Revit pull request #3 and MCP-Rev #3 are loaded: Survey to Revit's `survey_reading` tool, then `survey_fidelity` again so it scores against that reading.
+4. Write the results into a **"Revit run results"** entry in your section (template below): the real scores, the issues listed, and above all **any error, exception, crash or tool that did nothing**, with the exact message text. Short is fine; exact is what matters. The projects side reads this file on every pull and fixes what you report.
+5. Save screenshots or exported JSON results in the repository under `runs/YYYY-MM-DD/` (or give the full path on your machine if they are too large to commit) and put the path in your entry.
+
+Revit run results template (copy into your section):
+
+```
+### YYYY-MM-DD: Revit run results: <what was tested>
+- Tested: repo + branch or pull request #, version (e.g. MCP-Rev 1.9.9 + PR #4; Survey to Revit 0.23.0).
+- Revit version: e.g. 2024.
+- Model: e.g. 7 Swallow Place, built from <which DWGs>.
+- Ran: tools and arguments, in order (e.g. survey_fidelity; survey_autofix dry_run=true; survey_autofix).
+- Scores: the numbers the tools returned (overall and per floor / per section).
+- Errors: exact message text of every error, exception or crash, and which tool call caused it. "None" if none.
+- Looked wrong: anything the tool reported as fine that is visibly wrong in the model, or the other way round.
+- Screenshots / output files: paths.
+- Needs from the projects side: what to fix first.
+```
+
 ## How to use this file
 
 1. **Pull the latest default branch first** (`git pull`), then read both sections below. Also look at the open pull requests on GitHub: they show work that is not on the default branch yet.
@@ -64,12 +94,12 @@ Suggested merge order: #1, #3, #2, #4. Note that #2 and #4 both claim 1.10.0, an
 
 **Also in progress on our side (no pull request yet):** rooms, ceilings and terrain from the survey; once MCP-Rev #3 merges, the section score (#4) will also switch to reading the plugin's `survey_reading` file.
 
-**What we'd like from the org side:** a short entry below saying what you are working on, which files you expect to touch, and which version numbers you are using, so we don't collide. We noticed you are committing straight to `main` in MCP-Rev (1.9.8 `reference_compare`, 1.9.9 `split_opening`); that's fine, just add a line here when you do.
+**What we'd like from the org side:** first, a Revit run of the current default branches on 7 Swallow Place with `survey_fidelity` and `survey_autofix` (see "Your most valuable job" above), so we have a real baseline; then the same with MCP-Rev #4 loaded for `survey_section`. Also a short entry below saying what you are working on, which files you expect to touch, and which version numbers you are using, so we don't collide. We noticed you are committing straight to `main` in MCP-Rev (1.9.8 `reference_compare`, 1.9.9 `split_opening`); that's fine, just add a line here when you do.
 
 ---
 
 ## Org side (Mihai's work account)
 
-_Write your entries here, newest first, using the format above. Things worth saying: what you're working on now, which files you expect to touch, the version numbers you're using, and anything you need from the projects side._
+_Write your entries here, newest first. Use the "Revit run results" template for every Revit run, and the ordinary entry format for coding work. Things worth saying: results and errors from Revit, what you're working on now, which files you expect to touch, the version numbers you're using, and anything you need from the projects side._
 
 <!-- First entry goes here. -->
