@@ -7,6 +7,8 @@ This file has two parts:
 - **Part 1, the operating guide: how to use the MCP tools to take a survey to a 1:1 Revit model.** It is the source of truth for which tool does what and in what order. It describes MCP-Rev (the hub, `BGMCP`) **1.11.0** and Survey to Revit as on its default branch on 2026-11-12. Whoever changes a tool's behaviour updates this part in the same commit. If a tool answers differently from what is written here, trust the tool's own description (`tools/list`) and say so in your section of Part 2.
 - **Part 2, coordination**: what each agent is working on, Revit run results, and requests between the two sides.
 
+What is being built next, and why, is in `PLAN.md` at the root of MCP-Rev (the road map to 1:1). This file says how to use what exists today.
+
 ---
 
 # Part 1: Operating guide
@@ -216,7 +218,9 @@ Each **issue** has `kind`, `level`, `id` (element), `devMm`, `against` (what it 
 
 **g. Missing walls (252 on the first run).** First check whether they cluster on one layer or floor (`survey_layers only_unassigned`): fixing the layer and rebuilding the floor beats hand-adding. Otherwise `survey_wall` with the face lines from the issue.
 
-**h. Stairs.** `survey_stairs` reports every flight and the ones missing (two on the 7th floor). There is no stair-building tool yet: report the numbers (count, going, riser, width) for a person.
+**h. Many `wall_face` issues at about 50 mm.** On the first run 459 of 794 wall-face misses were 50-59 mm. The likely cause is one systematic error: where the plan draws only one face of a wall, Survey to Revit centres a 100 mm wall on that line, so neither face lands on the drawing. Don't fix these one by one; note the count in your run results (a fix in the plugin is planned, see `PLAN.md`). `survey_autofix` still fits the ones where both faces are drawn.
+
+**i. Stairs.** `survey_stairs` reports every flight and the ones missing (two on the 7th floor). There is no stair-building tool yet: report the numbers (count, going, riser, width) for a person.
 
 ## 1.6 What the tools can't do yet
 
