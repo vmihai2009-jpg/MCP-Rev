@@ -3,7 +3,9 @@
 name: CI
 
 on:
+  # main on every push; other branches through their pull request (avoids running twice)
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
