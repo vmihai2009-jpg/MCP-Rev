@@ -138,6 +138,18 @@ The DWG build, QA and coordinate tools are ported from the survey pipeline writt
 reads the linked DWG in place. `dwg_read` uses ACadSharp (MIT), shipped beside the add-in, the reader Survey to
 Revit uses; the Revit CAD link cannot give text.
 
+### Ground, rooms and one undo step (1.10.0)
+
+| Tool | What it does |
+|---|---|
+| `dwg_terrain`* | The ground from the survey site plan: spot-height labels (each at the cross or point it labels), 3D points and contours at their height, read straight from the DWG; window, floor and drain labels left out; typos (a level metres off the rest) dropped and listed; thinned. A Toposolid through them at survey datum, inside a boundary, with holes for the building. Dry run by default |
+| `create_toposolid`* | A Toposolid through points given (x, y in model mm, z survey datum), optional boundary, holes, replace |
+| `toposolid_subdivide`* | Paths, paving, lawn: an area of the Toposolid with its own material |
+| `place_rooms`* | Rooms where the plan names them: renames the room already there, or places one in the area the walls enclose at that point; numbers; height to the survey ceiling. Corrects what Survey to Revit's build missed |
+| `batch`* | Several tool calls as one undo step (a TransactionGroup); all undone if one fails; dry run; later calls can use earlier results (`$0.floor_id`) |
+
+Ceilings are `survey_ceilings` (1.9.1); rooms and ceilings in the base build come from Survey to Revit's `survey_build`.
+
 Tools from other add-ins appear with their own prefix, for example `survey_build` and `survey_review` from Survey to Revit.
 
 ### One reading of the survey: Survey to Revit's
