@@ -1,7 +1,7 @@
 // 1.9.17: windows that look like the survey's elevations. Survey to Revit places one plain-pane family everywhere;
 // the elevation draws each window's glass panes (sliding sashes, pairs of them, arched heads). window_look reads
 // those panes (Survey/WindowPattern.cs, Revit-free) and builds one window family per look from the Metric Window
-// template: an opening cut to the drawn outline, a frame with the panes cut out of it, and glass in them, set back
+// template: the template's own opening (Width/Height; arched windows cut to the drawn outline), a frame with the panes cut out of it, and glass in them, set back
 // from the wall face by the reveal. Works from any survey that draws its elevations' panes on a window layer.
 using System;
 using System.Collections.Generic;
@@ -24,7 +24,7 @@ namespace BarrGazetas.RevitMcp
                 Write = true,
                 Description = "Windows that look like the survey's elevations: for every window an elevation draws (elevation-index.json), its glass " +
                               "panes and outline (sashes, glazing bars, arched heads) are read from the elevation's window layer, and one window " +
-                              "family per look is built (opening cut to the outline, frame with the panes cut out, glass, set back by reveal_mm from " +
+                              "family per look is built (the template's opening sized to it, arched heads cut to the drawn outline; frame with the panes cut out, glass, set back by reveal_mm from " +
                               "the wall face) and swapped onto those windows. Windows whose size differs from the elevation by more than " +
                               "size_tolerance_mm are left (survey_autofix openings first). dry_run (default true) lists the looks. One undo step.",
                 InputSchema = Schema(
@@ -183,15 +183,17 @@ namespace BarrGazetas.RevitMcp
                         return ca;
                     }
 
-                    // the opening: cut to the outline (the template's rectangle kept, sized, if Revit will not take the profile)
+                    // the opening: the template's own, driven by Width/Height, for a rectangular window; only an arched
+                    // window needs its own cut to the drawn outline (the template's rectangle kept if Revit refuses it)
                     bool cut = false;
-                    try
-                    {
-                        fdoc.FamilyCreate.NewOpening(wall, Loop(p.Outline, 0));
-                        cut = true;
-                        if (open != null) fdoc.Delete(open.Id);
-                    }
-                    catch { /* the template's opening stays */ }
+                    if (p.Arched || open == null)
+                        try
+                        {
+                            fdoc.FamilyCreate.NewOpening(wall, Loop(p.Outline, 0));
+                            cut = true;
+                            if (open != null) fdoc.Delete(open.Id);
+                        }
+                        catch { /* the template's opening stays */ }
 
                     var fm = fdoc.FamilyManager;
                     if (fm.CurrentType == null) fm.NewType($"{Math.Round(p.Width)}x{Math.Round(p.Height)}");

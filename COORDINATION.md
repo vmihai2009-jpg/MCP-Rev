@@ -106,7 +106,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 | `survey_section_autofix` | Wall/parapet tops, slab tops, roofs moved up/down, where the sections are certain. |
 | `dwg_wall_fit` + `dwg_wall_fit_apply` | The wall half of autofix, one floor, with the list to choose from (`review` ones by id). |
 | `split_opening` | A window S2R merged across several sashes and piers, split at the piers (`apply: true`). |
-| `window_look` | Windows that look like the elevations: each window an indexed elevation draws gets a family built from that drawing (opening cut to the drawn outline, arched heads included; frame with the drawn panes cut out; glass), one family per look to 5 mm, swapped onto the window. Run after `survey_autofix` openings (it skips windows whose size is more than `size_tolerance_mm` off the elevation). Dry run by default. |
+| `window_look` | Windows that look like the elevations: each window an indexed elevation draws gets a family built from that drawing (the template's own opening sized to it, arched heads cut to the drawn outline; frame with the drawn panes cut out; glass), one family per look to 5 mm, swapped onto the window. Run after `survey_autofix` openings (it skips windows whose size is more than `size_tolerance_mm` off the elevation). Dry run by default. |
 | `survey_floor_levels apply`, `survey_ceilings apply / create_missing`, `window_detail apply`, `plan_columns build`, `roof_from_survey build` | Apply what those checks found. |
 
 **Model by hand (all one undo step; give numbers read from the DWG)**
