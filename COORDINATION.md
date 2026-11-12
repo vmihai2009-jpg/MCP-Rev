@@ -24,6 +24,14 @@ What is being built next, and why, is in `PLAN.md` at the root of MCP-Rev (the r
 - **Reports folder.** Scores and indexes are written to `BGMCP reports\<model title>\` next to the .rvt (else `%LocalAppData%\BarrGazetas\MCP\reports\`). `facades.json`, `elevation-index.json` and `section-index.json` there are what the later tools read, so do the "key" step (1.4, step 3) before scoring.
 - Work on a copy of the project. `save_model` after each floor. Ask before deleting, rebuilding or `confirm: true` on a build.
 
+**How to be right and fast** (from `PLAN.md` section 6):
+
+1. **Tools do the geometry; you decide.** Don't compute coordinates yourself from long lists of lines: use the tool that fits, reads or places (`survey_autofix`, `dwg_wall_fit`, `facade_details`, `split_opening`...). Your job is choosing, checking and judging pictures.
+2. **Score first and last.** Every step starts and ends with `survey_fidelity` or `survey_section`. No score, no work.
+3. **Fix causes, not items.** If dozens of issues share one pattern (same deviation, same layer, same floor), fix the cause (a layer rule, a floor rebuild) or report it; never dozens of hand edits.
+4. **Model one, repeat many.** Work out one window type or one facade motif properly, then place it everywhere it repeats.
+5. **Look, then measure.** For anything visual, `check_view` + `view_image` (and `survey_section image: true`) before and after.
+
 ## 1.2 Tool catalogue
 
 Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's. Each tool's full arguments are in its MCP description.
