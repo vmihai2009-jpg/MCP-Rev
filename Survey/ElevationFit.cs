@@ -30,8 +30,110 @@ namespace BarrGazetas.RevitMcp.Survey
         public double SheetX(double along) => (along - Offset) / Dir;
     }
 
+    /// <summary>
+    /// One window as an elevation draws it, sheet units: the frame (window layer: sill and head as the survey's
+    /// S/H labels measure them) and, where drawn, the masonry opening round it (reveal lines on the wall layer).
+    /// </summary>
+    public class ElevOpening
+    {
+        public double Left, Right, Bottom, Top;
+        public bool HasReveal;
+        public double RevealLeft, RevealRight, RevealBottom, RevealTop;
+        /// <summary>Width of the opening: the masonry opening where drawn, else the frame.</summary>
+        public double OpeningLeft => HasReveal ? RevealLeft : Left;
+        public double OpeningRight => HasReveal ? RevealRight : Right;
+    }
+
+    /// <summary>A model window or door on a facade: along the facade line (centre and width), its level's height, sill and head (mm above the level).</summary>
+    public class FacadeInsert
+    {
+        public long Id;
+        public string Category, Level;
+        public double U, W, LevelZ;
+        public double? Sill, Head;
+    }
+
+    /// <summary>A model insert with the opening the elevation draws for it, all in model mm (heights above the insert's level).</summary>
+    public class ElevMatch
+    {
+        public FacadeInsert Insert;
+        /// <summary>The opening's ends along the facade (masonry opening where drawn, else frame).</summary>
+        public double U0, U1;
+        public double Sill, Head;
+        public bool FromReveal;
+        public double Width => Math.Abs(U1 - U0);
+    }
+
+    /// <summary>An opening the elevation draws with no model insert at that place and storey.</summary>
+    public class ElevMissing
+    {
+        public double U, W, Z0, Z1;
+        public string Level;
+        public double? Sill, Head;
+    }
+
     public static class ElevationFit
     {
+        /// <summary>
+        /// Matches a facade's model inserts to the openings its elevation draws (on each insert's own storey), and
+        /// lists the drawn openings no insert covers. modelZ maps a sheet y to a model height; along maps sheet x.
+        /// storeys: the levels (name, model mm) a missing opening is put on.
+        /// </summary>
+        public static (List<ElevMatch> matched, List<FacadeInsert> notDrawn, List<ElevMissing> missing) MatchFacade(
+            IList<DwgLine> windowLines, IList<DwgLine> revealLines, IList<FacadeInsert> inserts, HeightFit heights, AlongFit along,
+            Func<double, double> modelZ, double facadeLength, IList<(string name, double z)> storeys)
+        {
+            var matched = new List<ElevMatch>();
+            var notDrawn = new List<FacadeInsert>();
+            foreach (var m in inserts.OrderBy(m => m.U))
+            {
+                double x0 = along.SheetX(m.U - m.W / 2) / heights.A, x1 = along.SheetX(m.U + m.W / 2) / heights.A;
+                double wantLo = m.LevelZ + (m.Sill ?? 600), wantHi = m.LevelZ + (m.Head ?? (m.Sill ?? 600) + 1800);
+                ElevOpening op = null; double bestScore = double.MinValue;
+                foreach (var o in Openings(windowLines, x0, x1, revealLines))
+                {
+                    double zb = modelZ(o.Bottom), zt = modelZ(o.Top);
+                    double overlap = Math.Min(zt, wantHi) - Math.Max(zb, wantLo);
+                    double score = overlap > 0 ? overlap : -Math.Abs((zb + zt) / 2 - (wantLo + wantHi) / 2);
+                    if (score > bestScore) { bestScore = score; op = o; }
+                }
+                if (op == null || bestScore < -1500) { notDrawn.Add(m); continue; }
+                double u0 = along.Along(op.OpeningLeft * heights.A), u1 = along.Along(op.OpeningRight * heights.A);
+                matched.Add(new ElevMatch
+                {
+                    Insert = m, U0 = Math.Min(u0, u1), U1 = Math.Max(u0, u1), FromReveal = op.HasReveal,
+                    Sill = modelZ(op.Bottom) - m.LevelZ, Head = modelZ(op.Top) - m.LevelZ,
+                });
+            }
+
+            var missing = new List<ElevMissing>();
+            var jambs = Jambs(windowLines);
+            var seen = new List<(double lo, double hi, double z0, double z1)>();
+            for (int i = 0; i + 1 < jambs.Count; i++)
+            {
+                double w = (jambs[i + 1] - jambs[i]) * heights.A;
+                if (w < 400 || w > 4000) continue;
+                double a0 = along.Along(jambs[i] * heights.A), a1 = along.Along(jambs[i + 1] * heights.A), lo = Math.Min(a0, a1), hi = Math.Max(a0, a1);
+                if (lo < -200 || hi > facadeLength + 200) continue;
+                foreach (var op in Openings(windowLines, jambs[i], jambs[i + 1], revealLines))
+                {
+                    double zs = modelZ(op.Bottom), zh = modelZ(op.Top);
+                    if (zh - zs < 300) continue;
+                    if (inserts.Any(m => m.U + m.W / 2 > lo + 50 && m.U - m.W / 2 < hi - 50
+                                         && Math.Min(m.LevelZ + (m.Head ?? (m.Sill ?? 600) + 1800), zh) - Math.Max(m.LevelZ + (m.Sill ?? 600), zs) > 0)) continue;
+                    if (seen.Any(s => s.hi > lo + 50 && s.lo < hi - 50 && Math.Min(s.z1, zh) - Math.Max(s.z0, zs) > 0)) continue;
+                    seen.Add((lo, hi, zs, zh));
+                    var lv = storeys.Where(s => s.z <= zs + 50).OrderByDescending(s => s.z).Select(s => ((string, double)?)s).FirstOrDefault();
+                    missing.Add(new ElevMissing
+                    {
+                        U = (lo + hi) / 2, W = hi - lo, Z0 = zs, Z1 = zh, Level = lv?.Item1,
+                        Sill = lv == null ? (double?)null : zs - lv.Value.Item2, Head = lv == null ? (double?)null : zh - lv.Value.Item2,
+                    });
+                }
+            }
+            return (matched, notDrawn, missing);
+        }
+
         private static readonly Regex Level = new Regex(@"^\s*\+?(-?\d{1,3}\.\d{2,3})\s*(m)?\s*$", RegexOptions.CultureInvariant);
 
         /// <summary>A level mark's value in mm above datum ("48.97", "+26.47", "48.97m"), or null.</summary>
@@ -68,6 +170,19 @@ namespace BarrGazetas.RevitMcp.Survey
             var fit = new HeightFit();
             if (pairs.Count == 0) { fit.A = 1; fit.B = 0; fit.Note = "No level marks with their lines in that part of the sheet: assumed drawn 1:1 to datum."; return fit; }
             if (pairs.Count == 1) { fit.A = 1; fit.B = pairs[0].z - pairs[0].y; }
+            else if (OneToOne(pairs, out double b, out var inliers))
+            {
+                // drawn 1:1 (survey elevations are): only the offset is fitted, and marks paired with the wrong line
+                // (a mark beside another mark's triangle) are left out instead of tilting the scale
+                fit.A = 1; fit.B = b;
+                int dropped = pairs.Count - inliers.Count;
+                pairs = inliers;
+                fit.Marks = pairs.Count;
+                fit.WorstMm = Math.Round(pairs.Max(p => Math.Abs(fit.Height(p.y) - p.z)), 1);
+                fit.Note = $"{pairs.Count} level marks agree the sheet is drawn 1:1 (offset {b:0} mm); worst off by {fit.WorstMm:0.#} mm" +
+                           (dropped > 0 ? $"; {dropped} marks paired with the wrong line were left out." : ".");
+                return fit;
+            }
             else
             {
                 double my = pairs.Average(p => p.y), mz = pairs.Average(p => p.z);
@@ -88,6 +203,16 @@ namespace BarrGazetas.RevitMcp.Survey
             fit.WorstMm = Math.Round(pairs.Max(p => Math.Abs(fit.Height(p.y) - p.z)), 1);
             fit.Note = $"{pairs.Count} level marks; scale {fit.A:0.0000}; worst mark off by {fit.WorstMm:0.#} mm.";
             return fit;
+        }
+
+        /// <summary>True when most marks (60%+) agree, within 30 mm, on a 1:1 scale: then b is their mean offset.</summary>
+        private static bool OneToOne(List<(double y, double z)> pairs, out double b, out List<(double y, double z)> inliers)
+        {
+            var offs = pairs.Select(p => p.z - p.y).OrderBy(v => v).ToList();
+            double med = offs[offs.Count / 2];
+            inliers = pairs.Where(p => Math.Abs(p.z - p.y - med) <= 30).ToList();
+            b = inliers.Count > 0 ? inliers.Average(p => p.z - p.y) : med;
+            return inliers.Count >= Math.Max(2, pairs.Count * 0.6);
         }
 
         /// <summary>
@@ -155,21 +280,25 @@ namespace BarrGazetas.RevitMcp.Survey
         /// lines at least 300 tall) there are grouped where their heights overlap, so a column of windows stacked
         /// floor above floor gives one opening each. Left/right are the outermost jambs of each, bottom/top their ends.
         /// </summary>
-        public static List<(double left, double right, double bottom, double top)> Openings(IEnumerable<DwgLine> windowLines, double x0, double x1)
+        public static List<ElevOpening> Openings(IEnumerable<DwgLine> windowLines, double x0, double x1, IEnumerable<DwgLine> revealLines = null)
         {
             double lo = Math.Min(x0, x1), hi = Math.Max(x0, x1), pad = Math.Max(50, (hi - lo) * 0.15);
             var lines = windowLines as IList<DwgLine> ?? windowLines.ToList();
+            var reveals = revealLines == null ? new List<(double x, double y0, double y1)>()
+                : revealLines.Where(l => Math.Abs(l.A.X - l.B.X) < 2 && Math.Abs(l.A.Y - l.B.Y) >= 300 && l.A.X >= lo - pad - 250 && l.A.X <= hi + pad + 250)
+                             .Select(l => (x: (l.A.X + l.B.X) / 2, y0: Math.Min(l.A.Y, l.B.Y), y1: Math.Max(l.A.Y, l.B.Y))).ToList();
             var jambs = lines.Where(l => Math.Abs(l.A.X - l.B.X) < 2 && Math.Abs(l.A.Y - l.B.Y) >= 300
                                                && l.A.X >= lo - pad && l.A.X <= hi + pad)
                                    .Select(l => (x: (l.A.X + l.B.X) / 2, y0: Math.Min(l.A.Y, l.B.Y), y1: Math.Max(l.A.Y, l.B.Y)))
                                    .OrderBy(j => j.y0).ToList();
-            var result = new List<(double, double, double, double)>();
+            var result = new List<ElevOpening>();
             int i = 0;
             while (i < jambs.Count)
             {
                 double b = jambs[i].y0, t = jambs[i].y1, l = jambs[i].x, r = jambs[i].x;
                 int j = i + 1;
-                for (; j < jambs.Count && jambs[j].y0 <= t + 50; j++)
+                // a frame drawn in pieces (sashes, a meeting rail, a transom) is one opening: gaps up to 150 mm close
+                for (; j < jambs.Count && jambs[j].y0 <= t + 150; j++)
                 { t = Math.Max(t, jambs[j].y1); l = Math.Min(l, jambs[j].x); r = Math.Max(r, jambs[j].x); }
                 if (r - l >= (hi - lo) * 0.5) // a single jamb line is not an opening
                 {
@@ -179,7 +308,20 @@ namespace BarrGazetas.RevitMcp.Survey
                                                   && Math.Min(x.A.X, x.B.X) <= l + pad && Math.Max(x.A.X, x.B.X) >= r - pad).ToList();
                     double bb = across.Where(x => x.A.Y >= b - 200 && x.A.Y <= b + 200).Select(x => x.A.Y).DefaultIfEmpty(b).Min();
                     double tt = across.Where(x => x.A.Y >= t - 200 && x.A.Y <= t + 200).Select(x => x.A.Y).DefaultIfEmpty(t).Max();
-                    result.Add((l, r, Math.Min(b, bb), Math.Max(t, tt)));
+                    var o = new ElevOpening { Left = l, Right = r, Bottom = Math.Min(b, bb), Top = Math.Max(t, tt) };
+                    // the masonry opening round the frame (the reveal lines on the wall layer, up to 200 mm outside
+                    // the frame and alongside most of it): the outermost each side
+                    double fb = o.Bottom, ft = o.Top;
+                    bool Beside((double x, double y0, double y1) v) => Math.Min(v.y1, ft) - Math.Max(v.y0, fb) >= (ft - fb) * 0.5;
+                    var left = reveals.Where(v => v.x >= l - 200 && v.x <= l + 10 && Beside(v)).ToList();
+                    var right = reveals.Where(v => v.x <= r + 200 && v.x >= r - 10 && Beside(v)).ToList();
+                    if (left.Count > 0 && right.Count > 0)
+                    {
+                        o.HasReveal = true;
+                        o.RevealLeft = left.Min(v => v.x); o.RevealRight = right.Max(v => v.x);
+                        o.RevealBottom = left.Concat(right).Min(v => v.y0); o.RevealTop = left.Concat(right).Max(v => v.y1);
+                    }
+                    result.Add(o);
                 }
                 i = j;
             }

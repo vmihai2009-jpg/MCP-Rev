@@ -13,7 +13,7 @@ namespace BarrGazetas.RevitMcp
     /// mcp-servers-for-revit survey pipeline (config-driven DWG build, QA against the DWG, coordinates), plus the DWG
     /// wall fit the Swallow Place session ran by hand, and reading DWG text (heights, labels) straight from the file.
     /// </summary>
-    internal static class SurveyTools
+    internal static partial class SurveyTools
     {
         private const double Mm = CadLink.MmPerFoot;
 
@@ -496,76 +496,44 @@ namespace BarrGazetas.RevitMcp
                             if (w <= 0) continue;
                             model.Add((fi, u, w, LenOf(fi, BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM), LenOf(fi, BuiltInParameter.INSTANCE_HEAD_HEIGHT_PARAM), doc.GetElement(fi.LevelId) as Level));
                         }
-                    var modelJambs = model.SelectMany(m => new[] { m.u - m.w / 2, m.u + m.w / 2 }).ToList();
+                    var inserts = model.Select(m => new FacadeInsert
+                    {
+                        Id = m.fi.Id.Value, Category = m.fi.Category?.Name, Level = m.level?.Name, U = m.u, W = m.w,
+                        LevelZ = (m.level?.Elevation ?? 0) * Mm, Sill = m.sill, Head = m.head,
+                    }).ToList();
+                    var modelJambs = inserts.SelectMany(m => new[] { m.U - m.W / 2, m.U + m.W / 2 }).ToList();
                     int? dirGiven = Args.Dbl(a, "along_direction") is double dg ? (dg < 0 ? -1 : 1) : (int?)null;
                     var along = ElevationFit.Along(ElevationFit.Jambs(winLines), modelJambs, heights.A, 60, dirGiven);
 
                     int limit = Math.Clamp(Args.Int(a, "limit", 200), 1, 2000);
-                    var windows = new List<object>();
-                    var covered = new List<(double lo, double hi)>();
-                    foreach (var m in model.OrderBy(m => m.u))
-                    {
-                        double x0 = along.SheetX(m.u - m.w / 2) / heights.A, x1 = along.SheetX(m.u + m.w / 2) / heights.A;
-                        double levelMm = (m.level?.Elevation ?? 0) * Mm;
-                        // the opening on this window's own storey: most overlap with where the model has it
-                        double wantLo = levelMm + (m.sill ?? 600), wantHi = levelMm + (m.head ?? (m.sill ?? 600) + 1800);
-                        (double, double, double, double)? op = null; double bestScore = double.MinValue;
-                        foreach (var o in ElevationFit.Openings(winLines, x0, x1))
-                        {
-                            double zb = ModelZ(o.bottom), zt = ModelZ(o.top);
-                            double overlap = Math.Min(zt, wantHi) - Math.Max(zb, wantLo);
-                            double score = overlap > 0 ? overlap : -Math.Abs((zb + zt) / 2 - (wantLo + wantHi) / 2);
-                            if (score > bestScore) { bestScore = score; op = o; }
-                        }
-                        if (op != null && bestScore < -1500) op = null; // nothing drawn near this storey
-                        if (op == null) { windows.Add(new { id = m.fi.Id.Value, category = m.fi.Category?.Name, level = m.level?.Name, alongMm = Math.Round(m.u), widthMm = Math.Round(m.w), sillMm = Rd(m.sill), headMm = Rd(m.head), elevation = "nothing drawn there" }); continue; }
-                        var (l, r, bot, top) = op.Value;
-                        double ew = Math.Abs(along.Along(r * heights.A) - along.Along(l * heights.A));
-                        double es = ModelZ(bot) - levelMm, eh = ModelZ(top) - levelMm;
-                        covered.Add((Math.Min(along.Along(l * heights.A), along.Along(r * heights.A)), Math.Max(along.Along(l * heights.A), along.Along(r * heights.A))));
-                        windows.Add(new
-                        {
-                            id = m.fi.Id.Value, category = m.fi.Category?.Name, level = m.level?.Name, alongMm = Math.Round(m.u),
-                            widthMm = Math.Round(m.w), elevationWidthMm = Math.Round(ew),
-                            sillMm = Rd(m.sill), elevationSillMm = Math.Round(es),
-                            headMm = Rd(m.head), elevationHeadMm = Math.Round(eh),
-                            differs = Math.Abs(ew - m.w) > 75 || (m.sill is double s && Math.Abs(es - s) > 75) || (m.head is double h && Math.Abs(eh - h) > 75),
-                        });
-                    }
-
-                    // openings the elevation draws where the model has none: neighbouring jambs 400-4000 apart with a sill and head between
-                    var missing = new List<object>();
-                    var jambs = ElevationFit.Jambs(winLines);
                     // storeys: the levels that hold walls (leaves out spare levels such as a template's "Level 1")
                     var wallLevels = new HashSet<long>(new FilteredElementCollector(doc).OfClass(typeof(Wall)).Select(e => e.LevelId.Value));
                     var storeys = levels.Where(lv => wallLevels.Contains(lv.Id.Value)).ToList();
                     if (storeys.Count == 0) storeys = levels;
-                    for (int i = 0; i + 1 < jambs.Count && missing.Count < limit; i++)
+                    var revealLines = lines.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "*Wall*" })).ToList();
+                    var (matched, notDrawn, missingOps) = ElevationFit.MatchFacade(winLines, revealLines, inserts, heights, along, ModelZ, fl,
+                        storeys.Select(s => (s.Name, s.Elevation * Mm)).ToList());
+                    var windows = new List<object>();
+                    foreach (var e in matched)
                     {
-                        double w = (jambs[i + 1] - jambs[i]) * heights.A;
-                        if (w < 400 || w > 4000) continue;
-                        double u0 = along.Along(jambs[i] * heights.A), u1 = along.Along(jambs[i + 1] * heights.A), lo = Math.Min(u0, u1), hi = Math.Max(u0, u1);
-                        if (lo < -200 || hi > fl + 200) continue;
-                        foreach (var op in ElevationFit.Openings(winLines, jambs[i], jambs[i + 1]))
+                        var m = e.Insert;
+                        windows.Add(new
                         {
-                        double zs = ModelZ(op.bottom), zh = ModelZ(op.top);
-                        if (zh - zs < 300 || missing.Count >= limit) continue;
-                        // a model window at this place and storey covers it
-                        if (model.Any(m =>
-                        {
-                            double lv = (m.level?.Elevation ?? 0) * Mm, s = lv + (m.sill ?? 600), h = lv + (m.head ?? (m.sill ?? 600) + 1800);
-                            return m.u + m.w / 2 > lo + 50 && m.u - m.w / 2 < hi - 50 && Math.Min(h, zh) - Math.Max(s, zs) > 0;
-                        })) continue;
-                        var level = storeys.Where(lv => lv.Elevation * Mm <= zs + 50).OrderByDescending(lv => lv.Elevation).FirstOrDefault();
-                        double uc = (lo + hi) / 2;
-                        missing.Add(new
-                        {
-                            alongMm = Math.Round(uc), widthMm = Math.Round(hi - lo), level = level?.Name,
-                            sillMm = level == null ? (double?)null : Math.Round(zs - level.Elevation * Mm), headMm = level == null ? (double?)null : Math.Round(zh - level.Elevation * Mm),
-                            at = new[] { Math.Round(fa.X + ux * uc), Math.Round(fa.Y + uy * uc) },
+                            id = m.Id, category = m.Category, level = m.Level, alongMm = Math.Round(m.U),
+                            widthMm = Math.Round(m.W), elevationWidthMm = Math.Round(e.Width), widthFrom = e.FromReveal ? "masonry opening" : "frame",
+                            jambOffsetMm = Math.Round(Math.Max(Math.Abs(e.U0 - (m.U - m.W / 2)), Math.Abs(e.U1 - (m.U + m.W / 2)))),
+                            sillMm = Rd(m.Sill), elevationSillMm = Math.Round(e.Sill),
+                            headMm = Rd(m.Head), elevationHeadMm = Math.Round(e.Head),
+                            differs = Math.Abs(e.Width - m.W) > 30 || (m.Sill is double s && Math.Abs(e.Sill - s) > 30) || (m.Head is double h && Math.Abs(e.Head - h) > 30),
                         });
-                        }
                     }
+                    foreach (var m in notDrawn)
+                        windows.Add(new { id = m.Id, category = m.Category, level = m.Level, alongMm = Math.Round(m.U), widthMm = Math.Round(m.W), sillMm = Rd(m.Sill), headMm = Rd(m.Head), elevation = "nothing drawn there" });
+                    var missing = missingOps.Take(limit).Select(x => new
+                    {
+                        alongMm = Math.Round(x.U), widthMm = Math.Round(x.W), level = x.Level, sillMm = Rd(x.Sill), headMm = Rd(x.Head),
+                        at = new[] { Math.Round(fa.X + ux * x.U), Math.Round(fa.Y + uy * x.U) },
+                    }).ToList();
 
                     object outLines = null; int lineTotal = 0;
                     if (Args.Bool(a, "include_lines") == true)
@@ -620,6 +588,7 @@ namespace BarrGazetas.RevitMcp
 
         private static (Pt a, Pt b) FacadeLine(Document doc, JsonObject a)
         {
+            if (Args.Str(a, "facade") is string fid) return SavedFacade(doc, fid);
             var line = Args.Numbers(a, "facade_line");
             if (line.Count == 4) return (new Pt(line[0], line[1]), new Pt(line[2], line[3]));
             var ids = Args.Numbers(a, "wall_ids");

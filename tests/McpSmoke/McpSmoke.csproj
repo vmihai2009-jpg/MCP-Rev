@@ -17,6 +17,12 @@
     <Compile Include="..\..\Settings.cs" Link="Hub\Settings.cs" />
     <Compile Include="..\..\Providers.cs" Link="Hub\Providers.cs" />
     <Compile Include="..\..\Updater.cs" Link="Hub\Updater.cs" />
+    <!-- settings carry survey_fidelity's gate -->
+    <Compile Include="..\..\Survey\**\*.cs" Link="Survey\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ACadSharp" Version="3.8.0" />
   </ItemGroup>
 
 </Project>

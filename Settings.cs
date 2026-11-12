@@ -24,6 +24,8 @@ namespace BarrGazetas.RevitMcp
         public string UpdatesFolder { get; set; }
         /// <summary>Show "Update ready" on the ribbon when a newer zip is waiting there.</summary>
         public bool CheckAtStartup { get; set; } = true;
+        /// <summary>survey_fidelity's pass gate (mm and %); edit settings.json to tune it.</summary>
+        public Survey.FidelityGate FidelityGate { get; set; } = new Survey.FidelityGate();
 
         [System.Text.Json.Serialization.JsonIgnore]
         public string Updates => string.IsNullOrWhiteSpace(UpdatesFolder) ? Updater.DefaultUpdates : UpdatesFolder;

@@ -19,6 +19,100 @@ namespace SurveyCoreTests
             DwgTests();
             Console.WriteLine("Elevation fit");
             ElevationTests();
+            Console.WriteLine("Fidelity (the 1:1 score)");
+            FidelityTests();
+            Console.WriteLine("Facades");
+            FacadeTests();
+        }
+
+        // a 10 x 6 m room of 200 mm walls, drawn as each wall's two faces; and the model of it
+        static readonly double[][] Room = { new double[] { 0, 0, 10000, 0 }, new double[] { 10000, 0, 10000, 6000 }, new double[] { 10000, 6000, 0, 6000 }, new double[] { 0, 6000, 0, 0 } };
+
+        static List<Seg> RoomFaces()
+        {
+            var segs = new List<Seg>();
+            foreach (var c in Room)
+            {
+                double L = Math.Sqrt((c[2] - c[0]) * (c[2] - c[0]) + (c[3] - c[1]) * (c[3] - c[1])), nx = -(c[3] - c[1]) / L, ny = (c[2] - c[0]) / L;
+                foreach (int s in new[] { -1, 1 })
+                    segs.Add(new Seg(new Pt(c[0] + nx * 100 * s, c[1] + ny * 100 * s), new Pt(c[2] + nx * 100 * s, c[3] + ny * 100 * s), 0));
+            }
+            return segs;
+        }
+
+        static List<FitWall> RoomWalls(double shiftFirstMm = 0, bool dropLast = false)
+        {
+            var walls = new List<FitWall>();
+            for (int i = 0; i < Room.Length - (dropLast ? 1 : 0); i++)
+            {
+                var c = Room[i];
+                double dy = i == 0 ? shiftFirstMm : 0;
+                walls.Add(new FitWall { Id = 100 + i, A = new Pt(c[0], c[1] + dy), B = new Pt(c[2], c[3] + dy), ThicknessMm = 200, Type = "Concept Wall 200mm" });
+            }
+            return walls;
+        }
+
+        static FidelityInput RoomInput(List<FitWall> walls) => new FidelityInput
+        {
+            Level = "Ground Floor", LevelZ = 0, DatumMm = 26470, Walls = walls, WallFaces = RoomFaces(),
+            SpotHeights = new List<(Pt, double)> { (new Pt(3000, 3000), 26470), (new Pt(6000, 3000), 26470) },
+        };
+
+        static void FacadeTests()
+        {
+            // the 10 x 6 m room on two floors, plus an internal wall across it; angle 0 (model north is grid north)
+            var walls = new List<FacadeWall>();
+            foreach (var (lv, z) in new[] { ("Ground", 0.0), ("First", 3000.0) })
+            {
+                for (int i = 0; i < Room.Length; i++)
+                    walls.Add(new FacadeWall { Id = (z > 0 ? 200 : 100) + i, Level = lv, A = new Pt(Room[i][0], Room[i][1]), B = new Pt(Room[i][2], Room[i][3]), ThicknessMm = 200, BaseZ = z, TopZ = z + 3000 });
+                walls.Add(new FacadeWall { Id = (z > 0 ? 290 : 190), Level = lv, A = new Pt(5000, 0), B = new Pt(5000, 6000), ThicknessMm = 100, BaseZ = z, TopZ = z + 3000 });
+            }
+            var runs = Facades.Runs(walls);
+            T.Check(runs.Count == 4 && runs.All(r => r.WallIds.Count == 2 && r.Levels.Count == 2), "four facades, each the same wall on both floors; the internal wall is not one");
+            var north = runs[0];
+            T.Check(north.Id == "F1" && T.Near(Facades.Bearing(north.OutX, north.OutY, 0), 0, 0.1) && Facades.Compass(0) == "north", "F1 faces north (ids go clockwise from north)");
+            T.Check(T.Near(north.A.X, 10000, 1) && T.Near(north.B.X, 0, 1) && T.Near(north.A.Y, 6100, 1) && north.TopZ == 6000, "the line is the outer face, left to right as seen from outside");
+            T.Check(runs[1].Id == "F2" && T.Near(Facades.Bearing(runs[1].OutX, runs[1].OutY, 0), 90, 0.1), "F2 faces east");
+            // Swallow Place: project base point "angle to true north" 347.374 = model north turned 12.626 anticlockwise
+            T.Check(T.Near(Facades.Bearing(0, 1, 12.626 * Math.PI / 180), 347.374, 0.01), "the project angle turns model north to grid (347.374 at Swallow Place)");
+            var street = Facades.StreetNear(north, new[] { new DwgText { Value = "SWALLOW PLACE", At = new Pt(5000, 12000) }, new DwgText { Value = "REGENT STREET", At = new Pt(20000, 3000) } });
+            T.Check(street == "Swallow Place", "the street text outside a facade names it");
+        }
+
+        static void FidelityTests()
+        {
+            var gate = new FidelityGate();
+            T.Check(Fidelity.Label("S 0.94") == ('S', 940.0) && Fidelity.Label("H 3.27") == ('H', 3270.0) && Fidelity.Label("S X.XX") == null, "S/H labels read in mm; placeholders ignored");
+
+            var (perfect, pi) = Fidelity.Measure(RoomInput(RoomWalls()), gate);
+            T.Check(perfect.Pass && T.Near(perfect.Walls.WithinTolPct, 100) && perfect.Walls.MaxMm == 0 && perfect.Walls.Missing == 0 && pi.Count == 0, "a perfect model scores 100% and passes");
+            T.Check(perfect.Walls.ThicknessChecked == 4 && perfect.Walls.ThicknessOver == 0 && perfect.LevelCheck.Checked && perfect.LevelCheck.DevMm == 0, "thickness and level measured and right");
+
+            var (moved, mi) = Fidelity.Measure(RoomInput(RoomWalls(shiftFirstMm: 15)), gate);
+            T.Check(!moved.Pass && moved.FailedOn.Contains("walls") && T.Near(moved.Walls.MaxMm, 15, 1), "a wall moved 15 mm fails, max deviation 15 mm");
+            T.Check(mi.Count(i => i.Kind == "wall_face") == 1 && mi.First(i => i.Kind == "wall_face").Id == 100, "the moved wall is the issue, by id");
+
+            var (gone, gi) = Fidelity.Measure(RoomInput(RoomWalls(dropLast: true)), gate);
+            var miss = gi.FirstOrDefault(i => i.Kind == "wall_missing");
+            T.Check(!gone.Pass && gone.Walls.Missing == 1 && miss != null && T.Near(miss.DevMm, 6000, 250), "a missing wall is listed with its length");
+
+            // a window 1000 wide at 5000 on the first wall: plan jambs 20 mm off on the right; its sill label says 0.90 against the model's 940
+            var input = RoomInput(RoomWalls());
+            input.Inserts.Add(new FidInsert { Id = 7, Category = "Windows", HostWallId = 100, At = new Pt(5000, 0), W = 1000, Sill = 940, Head = 2400 });
+            input.OpeningLines.Add(new Seg(new Pt(4500, -100), new Pt(4500, 100), 0));
+            input.OpeningLines.Add(new Seg(new Pt(5520, -100), new Pt(5520, 100), 0));
+            input.Labels.Add(new DwgText { Value = "S 0.90", At = new Pt(5000, 500) });
+            var (win, wi) = Fidelity.Measure(input, gate);
+            var op = wi.FirstOrDefault(i => i.Kind == "opening");
+            T.Check(win.Openings.PlanChecked == 1 && win.Openings.PlanOver == 0 && win.Openings.LabelOver == 1 && op != null && op.Id == 7 && T.Near(op.DevMm, 40, 1), "a window's sill 40 mm off its label fails; its plan jambs (20 mm) pass");
+
+            var (lvl, _) = Fidelity.Measure(new FidelityInput { Level = "L", LevelZ = 0, DatumMm = 26470, Walls = RoomWalls(), WallFaces = RoomFaces(),
+                SpotHeights = new List<(Pt, double)> { (new Pt(1, 1), 26420), (new Pt(2, 2), 26420), (new Pt(3, 3), 26900) } }, gate);
+            T.Check(lvl.LevelCheck.DevMm == -50 && lvl.FailedOn.Contains("level"), "a level 50 mm above its spot heights fails");
+
+            var html = Fidelity.Html(new FidelityResult { Model = "t", When = "now", Gate = gate, Floors = new List<FloorScore> { moved }, Issues = mi });
+            T.Check(html.Contains("<table") && html.Contains("fail: walls"), "the report page lists the floors and issues");
         }
 
         static DwgLine L(double x1, double y1, double x2, double y2, string layer = "Ss_25_30_95-Window") => new DwgLine { A = new Pt(x1, y1), B = new Pt(x2, y2), Layer = layer };
@@ -73,7 +167,22 @@ namespace SurveyCoreTests
             foreach (var (s, hd) in new[] { (27400.0, 29400.0), (31400.0, 33600.0), (35400.0, 37000.0) })
             { col.Add(L(1000, s, 1000, hd)); col.Add(L(2000, s, 2000, hd)); col.Add(L(1000, s, 2000, s)); col.Add(L(1000, hd, 2000, hd)); col.Add(L(950, s - 60, 2050, s - 60)); }
             var ops = ElevationFit.Openings(col, 1000, 2000);
-            T.Check(ops.Count == 3 && T.Near(ops[1].bottom, 31340, 1) && T.Near(ops[1].top, 33600, 1) && T.Near(ops[1].right - ops[1].left, 1000, 1), "stacked windows: one opening per floor, with its own sill and head");
+            T.Check(ops.Count == 3 && T.Near(ops[1].Bottom, 31340, 1) && T.Near(ops[1].Top, 33600, 1) && T.Near(ops[1].Right - ops[1].Left, 1000, 1), "stacked windows: one opening per floor, with its own sill and head");
+
+            // Plowman Craven draws the frame (window layer) in two sashes with a 60 mm meeting-rail gap, and the
+            // masonry opening (wall layer) 65 mm outside it: one opening, its width from the masonry
+            var sash = new List<DwgLine> { L(66001, 37672, 66001, 39273), L(66861, 37672, 66861, 39273), L(66001, 39333, 66001, 40092), L(66861, 39333, 66861, 40092),
+                                           L(66001, 37672, 66861, 37672), L(66001, 40092, 66861, 40092) };
+            var masonry = new List<DwgLine> { L(65936, 37642, 65936, 40156, "EF_25-Wall"), L(65971, 37642, 65971, 40122, "EF_25-Wall"), L(66926, 37642, 66926, 40156, "EF_25-Wall"), L(66003, 36759, 66003, 37394, "EF_25-Wall") };
+            var one = ElevationFit.Openings(sash, 65950, 66950, masonry);
+            T.Check(one.Count == 1 && T.Near(one[0].Bottom, 37672, 1) && T.Near(one[0].Top, 40092, 1), "a frame in two sashes is one opening; sill and head from the frame");
+            T.Check(one[0].HasReveal && T.Near(one[0].OpeningRight - one[0].OpeningLeft, 990, 1), "width from the masonry opening round the frame");
+
+            // a 1:1 sheet with one mark paired to the wrong line does not tilt the scale
+            var lv = new List<DwgLine> { L(0, 27400, 4000, 27400, "Zz_60_45-Level"), L(0, 31140, 4000, 31140, "Zz_60_45-Level"), L(0, 35370, 4000, 35370, "Zz_60_45-Level"), L(0, 41000, 4000, 41000, "Zz_60_45-Level"), L(6000, 48500, 9000, 48500, "Zz_60_45-Level") };
+            var lm = new[] { Tx("27.40", 500, 27625), Tx("31.14", 500, 31365), Tx("35.37", 500, 35595), Tx("41.00", 500, 41225), Tx("48.97", 7000, 48725) };
+            var robust = ElevationFit.Heights(lm, lv, 0, 10000);
+            T.Check(robust.A == 1 && robust.Marks == 4 && T.Near(robust.Height(35370), 35370, 1), "1:1 sheet: a wrong pairing is left out, scale stays 1");
         }
 
         static void ConfigTests()
