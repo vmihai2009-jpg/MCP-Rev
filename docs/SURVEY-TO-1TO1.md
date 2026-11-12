@@ -25,10 +25,13 @@ The operating guide for every tool is Part 1 of `COORDINATION.md`. This file is 
 5. **Look, then measure.** `check_view` + `view_image` (facade elevation and a 3D box) before and after each step;
    compare with the survey elevation rendered from the DWG.
 
-6. **Editable, not frozen.** What the team will work on must be native, editable Revit: profiles as Profile families
-   on wall sweeps, roofs as roofs, windows/columns/surrounds as loadable families with parameters. DirectShapes
-   (`facade_relief`, `as: shapes`) are only for carved ornament with no profile (cartouches, volutes) and for
-   checking. (Mihai: "none of these elements are editable, I thought they would be profiles".)
+6. **Everything you create must be editable** (Mihai, twice). Native Revit only: Profile families on wall sweeps,
+   roofs as roofs, windows/surrounds/pilasters as loadable families (plain extrusions or sweeps you can open and
+   edit, a Material parameter), types for sizes. **No DirectShapes in a model handed over.** Since 1.14.6 the facade
+   tools are editable by default: `facade_relief` = a surround family per window design + a family per storey,
+   `facade_profile` = profile families + wall sweeps + an extrusion roof for the mansard, `facade_columns` = a family
+   per pilaster/pier. `as: shapes` exists only for checking. Older tools still making DirectShapes (`roof_from_survey`,
+   `model_sweep`, `model_extrusion`, `facade_details`): don't use them on a model to hand over until converted.
 
 ## Order of work
 

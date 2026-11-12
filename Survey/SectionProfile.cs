@@ -94,6 +94,40 @@ namespace BarrGazetas.RevitMcp.Survey
             return bins.Where(kv => kv.Value >= best * 0.5).Max(kv => kv.Key) * 20.0;
         }
 
+        /// <summary>The outer line of the profile between two heights (out, z), every step, simplified to tol: the mansard's slope.</summary>
+        public static List<Pt> OuterLine(double[] env, double z0, double step, double from, double to, double tol = 10)
+        {
+            var pts = new List<Pt>();
+            for (int i = 0; i < env.Length; i++)
+            {
+                double z = z0 + i * step;
+                if (z < from || z > to || double.IsNaN(env[i])) continue;
+                pts.Add(new Pt(env[i], z));
+            }
+            if (pts.Count < 2) return pts;
+            var keep = new bool[pts.Count]; keep[0] = keep[^1] = true;
+            void DP(int a, int b)
+            {
+                if (b <= a + 1) return;
+                double best = -1; int idx = -1;
+                for (int i = a + 1; i < b; i++) { double d = SurveyDetail.PtSeg(pts[i], new Seg(pts[a], pts[b], 0)); if (d > best) { best = d; idx = i; } }
+                if (best > tol) { keep[idx] = true; DP(a, idx); DP(idx, b); }
+            }
+            DP(0, pts.Count - 1);
+            var outp = pts.Where((p, i) => keep[i]).ToList();
+            // a roof's sketch can't double back or stand vertical: keep the line going up and in (or level), dropping
+            // points that would step out again or sit straight above the last
+            var clean = new List<Pt> { outp[0] };
+            foreach (var p in outp.Skip(1))
+            {
+                var l = clean[^1];
+                if (p.Y - l.Y < 20 || p.X > l.X - 5) continue;
+                clean.Add(p);
+            }
+            if (clean.Count < 2 && outp.Count >= 2) clean.Add(new Pt(Math.Min(outp[^1].X, outp[0].X - 10), Math.Max(outp[^1].Y, outp[0].Y + 20)));
+            return clean;
+        }
+
         /// <summary>Douglas-Peucker on a closed ring.</summary>
         public static List<Pt> Simplify(List<Pt> ring, double tol)
         {

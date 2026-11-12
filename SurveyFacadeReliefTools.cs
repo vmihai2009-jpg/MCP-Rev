@@ -24,7 +24,9 @@ namespace BarrGazetas.RevitMcp
                 Description = "Round columns on a facade, as a hand model builds them (tapered fluted shaft, revolved base and capital), from the " +
                               "survey: each column's axis and radius from the storey plans (an arc in front of the facade line), its silhouette " +
                               "from the facade's elevation (a round thing's outline is its profile): base and capital revolved from it, the shaft " +
-                              "a blend between fluted sections at its bottom and top radii (flutes 24 by default). facade_relief leaves out the " +
+                              "a blend between fluted sections (flutes 24 by default). What the plan draws in front of the facade (pilasters with their flutes, piers) " +
+                              "becomes an editable Generic Model family each (the plan outline extruded, Shaft Base / Shaft Height parameters); round columns are " +
+                              "listed but not built until their family builder exists (no DirectShapes). facade_relief leaves out the " +
                               "faces these replace. Replaces this facade's earlier columns. dry_run (default true) lists them. One undo step.",
                 InputSchema = Schema(
                     ("facade", S("string", "Facade id (F29...)"), true),
@@ -51,45 +53,43 @@ namespace BarrGazetas.RevitMcp
                     if (!dry && (cols.Count > 0 || pieces.Count > 0))
                     {
                         string tag = $"MCP|facade_columns|{fid}";
+                        // editable: each plan piece becomes a Generic Model family (its plan outline extruded, Shaft Base and
+                        // Shaft Height parameters), placed on the level below it and turned to the facade
+                        int outSign = Math.Abs(nx + fr.Uy) + Math.Abs(ny - fr.Ux) < 1e-6 ? 1 : -1;
+                        var levels = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(l => l.Elevation).ToList();
+                        string folder = Path.Combine(ReportsFolder(doc), "detail-families");
+                        var toPlace = new List<(string name, string path, double u, Level level)>();
+                        foreach (var (ring, u0, u1, z0, z1, lv) in pieces)
+                        {
+                            var level = levels.LastOrDefault(l => l.Elevation * Mm <= z0 + 50) ?? levels.First();
+                            double lz = level.Elevation * Mm, uo = (u0 + u1) / 2;
+                            string name = $"BG Pilaster {fid} {uo:0} {z0:0}";
+                            try { toPlace.Add((name, DetailFamilyBuilder.BuildVertical(app, ring.Select(q => new Pt(q.X - uo, q.Y)).ToList(), z0 - lz, z1 - lz, outSign, Path.Combine(folder, name + ".rfa")), uo, level)); }
+                            catch (Exception ex) { failed++; problems.Add($"{name}: {McpServer.Unwrap(ex).Message}"); }
+                        }
+                        // round columns (revolved base/capital, fluted shaft) need a family builder of their own: not built rather than frozen
+                        if (cols.Count > 0) problems.Add($"{cols.Count} round column(s) found but not built: the round column family builder is still to do (DirectShapes are not editable).");
                         revit = BuildTools.Tx.Run(doc, $"MCP: facade columns {fid}", () =>
                         {
-                            var old = new FilteredElementCollector(doc).OfClass(typeof(DirectShape)).Cast<DirectShape>()
-                                .Where(d => (d.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "").StartsWith(tag)).Select(d => d.Id).ToList();
+                            var old = new FilteredElementCollector(doc).WhereElementIsNotElementType()
+                                .Where(e => (e is DirectShape || e is FamilyInstance) && (e.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "").StartsWith(tag)).Select(e => e.Id).ToList();
                             if (old.Count > 0) doc.Delete(old);
-                            foreach (var c in cols)
+                            double ang = Math.Atan2(fr.Uy, fr.Ux);
+                            foreach (var p in toPlace)
                             {
-                                var (zb, zt) = ColumnEnds(c);
-                                var axis = new XYZ((fr.A.X + fr.Ux * c.U + nx * c.V) / Mm, (fr.A.Y + fr.Uy * c.U + ny * c.V) / Mm, 0);
-                                var solids = new List<GeometryObject>();
-                                // base and capital: the silhouette revolved about the axis (capital capped at 1.3 R: the volutes stay relief)
-                                foreach (var (z0, z1, cap) in new[] { (zb, c.ShaftZ0, 1.6), (c.ShaftZ1, zt, 1.3) })
-                                {
-                                    if (z1 - z0 < 30) continue;
-                                    try { solids.Add(Revolved(c, axis, z0, z1, cap * c.Radius)); }
-                                    catch (Exception ex) { problems.Add($"column at {c.U:0}: {(z0 == zb ? "base" : "capital")}: {McpServer.Unwrap(ex).Message}"); }
-                                }
-                                // shaft: a blend between fluted sections (the taper from the silhouette)
-                                try { solids.Add(Shaft(axis, c.ShaftZ0, c.ShaftZ1, c.ShaftR0, c.ShaftR1, flutes)); }
-                                catch (Exception ex) { problems.Add($"column at {c.U:0}: shaft: {McpServer.Unwrap(ex).Message}"); }
-                                if (solids.Count == 0) { failed++; continue; }
-                                ids.Add(Shape(doc, BuiltInCategory.OST_Columns, solids, $"Column {fid} {c.U:0}", $"{tag}|{c.U:0}"));
-                                made++;
-                            }
-                            // plan pieces: the plan's own section (pilaster flutes, piers, nibs) extruded between the heights the elevation draws its edges
-                            var pieceSolids = new List<GeometryObject>();
-                            foreach (var (ring, u0, u1, z0, z1, lv) in pieces)
                                 try
                                 {
-                                    var pts = new List<Pt>(); foreach (var q in ring) if (pts.Count == 0 || q.Dist2D(pts[^1]) >= 2) pts.Add(q);
-                                    while (pts.Count > 3 && pts[^1].Dist2D(pts[0]) < 2) pts.RemoveAt(pts.Count - 1);
-                                    XYZ W(Pt q) => new XYZ((fr.A.X + fr.Ux * q.X + nx * q.Y) / Mm, (fr.A.Y + fr.Uy * q.X + ny * q.Y) / Mm, z0 / Mm);
-                                    var loop = new CurveLoop();
-                                    for (int i = 0; i < pts.Count; i++) loop.Append(Line.CreateBound(W(pts[i]), W(pts[(i + 1) % pts.Count])));
-                                    pieceSolids.Add(GeometryCreationUtilities.CreateExtrusionGeometry(new List<CurveLoop> { loop }, XYZ.BasisZ, (z1 - z0) / Mm));
-                                    made++;
+                                    if (!doc.LoadFamily(p.path, new Overwrite(), out Family fam)) fam = new FilteredElementCollector(doc).OfClass(typeof(Family)).Cast<Family>().First(x => x.Name == p.name);
+                                    var sym = fam.GetFamilySymbolIds().Select(id => doc.GetElement(id)).OfType<FamilySymbol>().First();
+                                    if (!sym.IsActive) sym.Activate();
+                                    var at = new XYZ((fr.A.X + fr.Ux * p.u) / Mm, (fr.A.Y + fr.Uy * p.u) / Mm, 0);
+                                    var fi = doc.Create.NewFamilyInstance(at, sym, p.level, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                    if (Math.Abs(ang) > 1e-9) ElementTransformUtils.RotateElement(doc, fi.Id, Line.CreateBound(at, at + XYZ.BasisZ), ang);
+                                    fi.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.Set($"{tag}|{p.name}");
+                                    ids.Add(fi.Id.Value); made++;
                                 }
-                                catch (Exception ex) { failed++; problems.Add($"piece {u0:0}-{u1:0}: {McpServer.Unwrap(ex).Message}"); }
-                            if (pieceSolids.Count > 0) ids.Add(Shape(doc, BuiltInCategory.OST_GenericModel, pieceSolids, $"Facade pilasters and piers {fid}", $"{tag}|pieces"));
+                                catch (Exception ex) { failed++; problems.Add($"{p.name}: {McpServer.Unwrap(ex).Message}"); }
+                            }
                         });
                     }
                     return new { facade = fid, columns = list, planPieces = pieces.Count, candidates = pieceLog, pieceList = pieces.Take(40).Select(x => new { along = new[] { Math.Round(x.u0), Math.Round(x.u1) }, outMm = Math.Round(x.ring.Max(p => p.Y)), z = new[] { Math.Round(x.z0), Math.Round(x.z1) }, points = x.ring.Count, x.level }).ToList(), made, failed, problems = problems.Count > 0 ? problems : null, shapes = ids, revit,
@@ -104,7 +104,8 @@ namespace BarrGazetas.RevitMcp
                 Description = "A facade's cornices, bands, balustrade base, parapet and mansard from the survey section that crosses it " +
                               "(section-index.json): the section's outermost line at every 10 mm of height, placed with the section's own " +
                               "fit and level marks, swept along the facade. Below the facade's wall top, what stands proud of the wall face; " +
-                              "from the wall top up, the outline with a roof_mm skin (the mansard, Roofs category). Replaces this facade's " +
+                              "from the wall top up, the mansard. Editable by default: each continuous band a Profile family + native wall sweeps, the mansard a native " +
+                              "extrusion roof (Basic Roof type BG Mansard Roof, the section's outer line as its sketch, a straight slope if Revit refuses it). Replaces this facade's " +
                               "earlier profile. dry_run (default true) returns the profile. One undo step.",
                 InputSchema = Schema(
                     ("facade", S("string", "Facade id (F29...)"), true),
@@ -211,7 +212,7 @@ namespace BarrGazetas.RevitMcp
 
                     var ids = new List<long>(); List<string> revit = null; int made = 0, failed = 0;
                     bool asSweeps = !string.Equals(Args.Str(a, "as"), "shapes", StringComparison.OrdinalIgnoreCase);
-                    var sweepLog = new List<object>();
+                    var sweepLog = new List<object>(); List<double[]> mansardLine = null;
                     if (!dry && placed.Count > 0)
                     {
                         string tag = $"MCP|facade_profile|{fid}";
@@ -223,7 +224,7 @@ namespace BarrGazetas.RevitMcp
                             var along = new XYZ(ux, uy, 0); var nrm = new XYZ(nx, ny, 0);
                             XYZ P(Pt q) => new XYZ(fa.X / Mm, fa.Y / Mm, 0) + nrm * (q.X / Mm) + XYZ.BasisZ * (q.Y / Mm);
                             var wallSolids = new List<GeometryObject>(); var roofSolids = new List<GeometryObject>();
-                            foreach (var (r, runs, roof) in placed.Where(x => !asSweeps || x.roof))
+                            foreach (var (r, runs, roof) in placed.Where(x => !asSweeps))
                                 foreach (var (ra, rb) in runs)
                                     try
                                     {
@@ -241,12 +242,56 @@ namespace BarrGazetas.RevitMcp
                         // local pieces at the section's bay (pediments, balconies) stay relief until they have their own families
                         bool Continuous((List<Pt> r, List<(double a, double b)> runs, bool roof) x) { double cover = x.runs.Sum(q => q.b - q.a) / fl, h = x.r.Max(p => p.Y) - x.r.Min(p => p.Y); return cover >= 0.9 || cover >= 0.5 && h <= 1000; }
                         if (asSweeps) revit.AddRange(BuildSweeps(app, doc, fid, placed.Where(x => !x.roof && Continuous(x)).Select(x => (x.r, x.runs)).ToList(), fa, ux, uy, nx, ny, sweepLog, ref made, ref failed));
+                        // the mansard: a native extrusion roof along the facade, its sketch the section's outer line
+                        if (asSweeps && placed.Any(x => x.roof))
+                        {
+                            var rr = placed.Where(x => x.roof).OrderByDescending(x => x.r.Max(p => p.Y) - x.r.Min(p => p.Y)).First().r;
+                            var line = SectionProfile.OuterLine(env, z0, 10, rr.Min(p => p.Y), rr.Max(p => p.Y), 50);
+                            mansardLine = line.Select(p => new[] { Math.Round(p.X), Math.Round(p.Y) }).ToList();
+                            void MakeRoof(List<Pt> line) => revit.AddRange(BuildTools.Tx.Run(doc, $"MCP: mansard {fid}", () =>
+                            {
+                                var old = new FilteredElementCollector(doc).OfClass(typeof(ExtrusionRoof))
+                                    .Where(e => (e.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "") == $"{tag}|mansard").Select(e => e.Id).ToList();
+                                if (old.Count > 0) doc.Delete(old);
+                                // the earlier run's reference plane (its name must be free)
+                                var oldPlanes = new FilteredElementCollector(doc).OfClass(typeof(ReferencePlane)).Where(e => e.Name == $"BG mansard {fid}").Select(e => e.Id).ToList();
+                                if (oldPlanes.Count > 0) doc.Delete(oldPlanes);
+                                var nrm = new XYZ(nx, ny, 0);
+                                XYZ P(Pt q) => new XYZ(fa.X / Mm, fa.Y / Mm, 0) + nrm * (q.X / Mm) + XYZ.BasisZ * (q.Y / Mm);
+                                var view = new FilteredElementCollector(doc).OfClass(typeof(ViewSection)).Cast<View>().FirstOrDefault(v => !v.IsTemplate)
+                                           ?? new FilteredElementCollector(doc).OfClass(typeof(ViewPlan)).Cast<View>().First(v => !v.IsTemplate);
+                                var rp = doc.Create.NewReferencePlane(P(new Pt(0, 0)), P(new Pt(1000, 0)), XYZ.BasisZ, view);
+                                rp.Name = $"BG mansard {fid}";
+                                var profile = new CurveArray();
+                                for (int i = 0; i + 1 < line.Count; i++) profile.Append(Line.CreateBound(P(line[i]), P(line[i + 1])));
+                                // a basic roof (with layers), not a sloped-glazing one
+                                var baseType = new FilteredElementCollector(doc).OfClass(typeof(RoofType)).Cast<RoofType>().FirstOrDefault(x => x.GetCompoundStructure() != null && x.FamilyName.IndexOf("Glazing", StringComparison.OrdinalIgnoreCase) < 0)
+                                    ?? throw new InvalidOperationException("The model has no basic roof type to start from.");
+                                string tn = $"BG Mansard Roof {roofMm:0}";
+                                var rt = new FilteredElementCollector(doc).OfClass(typeof(RoofType)).Cast<RoofType>().FirstOrDefault(x => x.Name == tn) ?? (RoofType)baseType.Duplicate(tn);
+                                try { var cs = rt.GetCompoundStructure(); if (cs != null && cs.LayerCount > 0) { for (int i = 1; i < cs.LayerCount; i++) cs.SetLayerWidth(i, 1 / Mm); cs.SetLayerWidth(0, (roofMm - (cs.LayerCount - 1)) / Mm); rt.SetCompoundStructure(cs); } } catch { }
+                                var level = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().Where(l => l.Elevation * Mm <= line[0].Y + 50).OrderByDescending(l => l.Elevation).First();
+                                var along = new XYZ(ux, uy, 0);
+                                bool fwd = rp.Normal.DotProduct(along) > 0;
+                                var roof = doc.Create.NewExtrusionRoof(profile, rp, level, rt, fwd ? 0 : -fl / Mm, fwd ? fl / Mm : 0);
+                                roof.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.Set($"{tag}|mansard");
+                                ids.Add(roof.Id.Value); made++;
+                            }));
+                            // the survey's outline as the roof's sketch; if Revit won't make it, a straight slope from the eaves to the kerb
+                            try { MakeRoof(line); }
+                            catch (Exception ex) when (line.Count > 2)
+                            {
+                                revit.Add($"Fallback: mansard sketch from the section refused ({McpServer.Unwrap(ex).Message}); built as a straight slope eaves to kerb instead.");
+                                MakeRoof(new List<Pt> { line[0], line[^1] });
+                                mansardLine = new List<double[]> { new[] { Math.Round(line[0].X), Math.Round(line[0].Y) }, new[] { Math.Round(line[^1].X), Math.Round(line[^1].Y) } };
+                            }
+                        }
                     }
                     return new
                     {
                         facade = fid, section = Args.Str(sec, "name"), crossesAtMm = Math.Round(pick.uAlong), wallTopMm = Math.Round(wallTop),
                         heights = heights.Note, lines = prof.Count, wallFaceShiftMm = Math.Round(face), rejected = why.Take(15).ToList(), regions = summary, made, failed, shapes = ids,
-                        sweeps = sweepLog.Count > 0 ? sweepLog : null, revit,
+                        sweeps = sweepLog.Count > 0 ? sweepLog : null, mansardLine, revit,
                         next = dry ? "Check the regions (heights and how far out), then dry_run false." : "check_view facade + view_image; a section view across it shows the profile.",
                     };
                 }
@@ -300,6 +345,7 @@ namespace BarrGazetas.RevitMcp
                     ("max_face_m2", S("number", "Faces bigger than this are the plain wall (default 4)"), false),
                     ("band_mm", S("number", "Depth of a band with nothing on the plan (default 120)"), false),
                     ("columns", S("boolean", "Leave out the faces round columns replace (facade_columns; default true)"), false),
+                    ("as", S("string", "families (default: editable Generic Model families, a surround family per window design and one per storey) or shapes (DirectShapes, for checking only)"), false),
                     ("strip_mm", S("number", "Depth of a tall strip (default 80)"), false),
                     ("dry_run", S("boolean", "Only report (default true)"), false)),
                 Run = (app, a) =>
@@ -429,7 +475,82 @@ namespace BarrGazetas.RevitMcp
                     var bySource = faces.GroupBy(f => f.Source).ToDictionary(g => g.Key, g => new { faces = g.Count(), m2 = Math.Round(g.Sum(f => f.AreaM2), 1), depthMm = new[] { Math.Round(g.Min(f => f.Depth)), Math.Round(g.Max(f => f.Depth)) } });
 
                     int made = 0, failed = 0, onWall = 0; var ids = new List<long>(); List<string> revit = null; int removed = 0;
-                    if (!dry && faces.Count > 0)
+                    bool asShapes = string.Equals(Args.Str(a, "as"), "shapes", StringComparison.OrdinalIgnoreCase);
+                    // each face's depth range out from the facade line: from the model's wall face (outermost over every
+                    // storey it spans) to the plan's front, or the face's own depth beyond the wall
+                    (double v0, double v1) Range(ReliefFace f)
+                    {
+                        double zc = (f.Z0 + f.Z1) / 2;
+                        double wallV = faceProfiles.Where(p => p.z1 > f.Z0 + 50 && p.z0 < f.Z1 - 50).Select(p => p.p.Over(f.U0, f.U1)).DefaultIfEmpty(FaceAt(zc)?.Over(f.U0, f.U1) ?? 0).Max();
+                        return (wallV, f.Source == "plan" ? Math.Max(f.Depth, wallV + 20) : wallV + f.Depth);
+                    }
+                    var familyLog = new List<object>();
+                    if (!dry && faces.Count > 0 && !asShapes)
+                    {
+                        // editable: a family per window's surround (its faces within the surround box) and a family per storey
+                        // for the rest, all plain extrusions with a Material parameter, placed and turned to the facade
+                        string tag = $"MCP|facade_relief|{fid}";
+                        var groups = new List<(string name, double u0, double zLevel, Level level, List<ReliefFace> faces)>();
+                        var left = new List<ReliefFace>(faces);
+                        var levelsByName = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().GroupBy(l => l.Name).ToDictionary(g => g.Key, g => g.First());
+                        Level LevelAt(double z) { var p = profiles.Where(q => z >= q.z0 - 200).OrderByDescending(q => q.z0).FirstOrDefault(); return p.level != null && levelsByName.TryGetValue(p.level, out var lv) ? lv : null; }
+                        foreach (var w in windows.OrderBy(w => w.u0))
+                        {
+                            double bu0 = w.u0 - 700, bu1 = w.u1 + 700, bz0 = w.z0 - 900, bz1 = w.z1 + 1500;
+                            var mine = left.Where(f => f.Source != "plan" && (f.U0 + f.U1) / 2 > bu0 && (f.U0 + f.U1) / 2 < bu1 && (f.Z0 + f.Z1) / 2 > bz0 && (f.Z0 + f.Z1) / 2 < bz1).ToList();
+                            if (mine.Count == 0) continue;
+                            var lv = LevelAt(w.z0); if (lv == null) continue;
+                            foreach (var f in mine) left.Remove(f);
+                            groups.Add(("surround", (w.u0 + w.u1) / 2, lv.Elevation * Mm, lv, mine));
+                        }
+                        foreach (var g in left.GroupBy(f => LevelAt((f.Z0 + f.Z1) / 2)).Where(g => g.Key != null))
+                            groups.Add(($"relief {g.Key.Name}", 0, g.Key.Elevation * Mm, g.Key, g.ToList()));
+                        // outward is +Y in the family when the facade's outside is to the left of its direction
+                        int outSign = Math.Abs(nx + fr.Uy) + Math.Abs(ny - fr.Ux) < 1e-6 ? 1 : -1;
+                        string folder = Path.Combine(ReportsFolder(doc), "detail-families");
+                        var built = new Dictionary<string, string>(); // key -> family name
+                        var plan = new List<(string family, string path, double u0, Level level)>();
+                        foreach (var g in groups)
+                        {
+                            var pieces = g.faces.Select(f => { var (v0, v1) = Range(f); return new DetailFamilyBuilder.Piece { Ring = f.Ring.Select(q => new Pt(q.X - g.u0, q.Y - g.zLevel)).ToList(), V0 = v0, V1 = v1 }; }).ToList();
+                            string key = DetailFamilyBuilder.Key(pieces) + "|" + outSign;
+                            if (!built.TryGetValue(key, out var fname))
+                            {
+                                uint h = 2166136261; foreach (char c in key) { h ^= c; h *= 16777619; }
+                                fname = g.name == "surround" ? $"BG Surround {fid} {h % 0xFFFFFF:x6}" : $"BG Facade {fid} {g.level.Name}";
+                                try { DetailFamilyBuilder.Build(app, pieces, outSign, Path.Combine(folder, fname + ".rfa")); built[key] = fname; }
+                                catch (Exception ex) { failed++; familyLog.Add(new { family = fname, error = McpServer.Unwrap(ex).Message }); continue; }
+                            }
+                            plan.Add((fname, Path.Combine(folder, fname + ".rfa"), g.u0, g.level));
+                        }
+                        revit = BuildTools.Tx.Run(doc, $"MCP: facade detail families {fid}", () =>
+                        {
+                            // the earlier relief of this facade: shapes and placed families
+                            var old = new FilteredElementCollector(doc).WhereElementIsNotElementType()
+                                .Where(e => (e is DirectShape || e is FamilyInstance) && (e.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "").StartsWith(tag)).Select(e => e.Id).ToList();
+                            if (old.Count > 0) { doc.Delete(old); removed = old.Count; }
+                            double ang = Math.Atan2(fr.Uy, fr.Ux);
+                            foreach (var p in plan)
+                            {
+                                try
+                                {
+                                    Family fam = new FilteredElementCollector(doc).OfClass(typeof(Family)).Cast<Family>().FirstOrDefault(x => x.Name == p.family);
+                                    if (fam == null && !doc.LoadFamily(p.path, new Overwrite(), out fam)) throw new InvalidOperationException("did not load");
+                                    var sym = fam.GetFamilySymbolIds().Select(id => doc.GetElement(id)).OfType<FamilySymbol>().First();
+                                    if (!sym.IsActive) sym.Activate();
+                                    // the point's height is taken as the offset above the level: 0 (the family's geometry is drawn from its level)
+                                    var at = new XYZ((fr.A.X + fr.Ux * p.u0) / Mm, (fr.A.Y + fr.Uy * p.u0) / Mm, 0);
+                                    var fi = doc.Create.NewFamilyInstance(at, sym, p.level, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                    if (Math.Abs(ang) > 1e-9) ElementTransformUtils.RotateElement(doc, fi.Id, Line.CreateBound(at, at + XYZ.BasisZ), ang);
+                                    fi.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.Set($"{tag}|{p.family}");
+                                    ids.Add(fi.Id.Value); made++;
+                                }
+                                catch (Exception ex) { failed++; familyLog.Add(new { family = p.family, error = McpServer.Unwrap(ex).Message }); }
+                            }
+                        });
+                        familyLog.Insert(0, new { families = built.Count, instances = plan.Count, surroundGroups = groups.Count(g => g.name == "surround") });
+                    }
+                    if (!dry && faces.Count > 0 && asShapes)
                     {
                         string tag = $"MCP|facade_relief|{fid}";
                         revit = BuildTools.Tx.Run(doc, $"MCP: facade relief {fid}", () =>
@@ -474,7 +595,7 @@ namespace BarrGazetas.RevitMcp
                     {
                         facade = fid, elevation = Args.Str(spec, "name"), lines = segs.Count, faces = faces.Count, bySource,
                         storeysWithPlan = profiles.Select(p => new { p.level, projectsMm = Math.Round(p.p.Depth.Max()) }).ToList(),
-                        windowsLeftOut = windows.Count, aboveWallTop = aboveRoof, leftForColumns = byColumns, leftForSweeps = bySweeps, wallTopMm = Math.Round(wallTop), made, failed, facesOnWallsInFront = onWall, removed, shapes = ids, revit,
+                        windowsLeftOut = windows.Count, aboveWallTop = aboveRoof, leftForColumns = byColumns, leftForSweeps = bySweeps, wallTopMm = Math.Round(wallTop), made, failed, facesOnWallsInFront = onWall, removed, shapes = ids, families = familyLog.Count > 0 ? familyLog : null, revit,
                         next = dry ? "dry_run: false to build it (check_view + view_image to compare with the elevation)." : "check_view facade + view_image, side by side with the elevation.",
                     };
                   }

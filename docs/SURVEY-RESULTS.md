@@ -7,6 +7,7 @@ gave good results. Method: `docs/SURVEY-TO-1TO1.md`. Pictures and JSON: `runs/<d
 
 | Step | Tool + settings | Result | Notes |
 |---|---|---|---|
+| All editable (1.14.6) | `facade_relief` (families), `facade_profile` (sweeps + roof), `facade_columns` (families) on all 6 indexed facades | testmcp: 0 DirectShapes from these tools; 164 surround + 39 storey families, 7 pilaster families, 21 wall sweeps, 2 mansard Basic Roofs | detail families placed at offset 0 on their level (the point's Z is the offset); a roof type must be a basic one (the first RoofType was Sloped Glazing); F29's detailed mansard sketch refused, straight slope used |
 | Editable bands | `facade_profile` F29 (1.14.5, as sweeps) | 4 profile families, 15 native wall sweeps: shopfront cornice 821 mm out, main cornice 861, 5th-floor band 279, balustrade base 52; all start at the facade line | profile set on the type; best-fit side/flip/offset per wall |
 | Pilasters | `facade_columns` F29 (1.14.4) | plan sections found (fluted pilasters 850 wide, 137 proud, flutes r 24); 2 pieces built; most fluted pilasters' heights not confirmed by the elevation (edges broken at bands) | to become loadable families |
 | Phases | `phase_fix dry_run:false`; 1.14.3 PhaseKeeper | 174 elements (118 stair railings, 48 relief shapes, 8 floor steps) moved to Existing; new elements Existing automatically | API-made elements default to the latest phase |
