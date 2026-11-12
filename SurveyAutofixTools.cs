@@ -252,10 +252,18 @@ namespace BarrGazetas.RevitMcp
         /// <summary>Walls fitted to the plan's face lines: the same lines the score measures against (Survey to Revit's reading, or the linked plan).</summary>
         private static void FixWalls(Document doc, Level level, ImportInstance imp, FidelityInput input, FloorFixLog log)
         {
+            int refusedInARow = 0;
             foreach (var p in WallFit.Fit(input.Walls, input.WallFaces, new FitOptions()).Where(p => p.Confidence == "moderate"))
             {
+                // 1.14.7: a floor where Revit keeps refusing wall moves is left for a person instead of retrying wall after wall
+                if (refusedInARow >= MaxRefusedWallsInARow)
+                {
+                    log.Problems.Add($"walls: stopped fitting after {MaxRefusedWallsInARow} walls in a row that Revit refused; fit the rest with dwg_wall_fit_apply a few ids at a time, or stop the joins first (set_wall_joins)");
+                    break;
+                }
                 var wall = doc.GetElement(new ElementId(p.Id)) as Wall;
                 if (wall == null) continue;
+                int failedBefore = log.WallsFailed;
                 try
                 {
                     void typeChange()
@@ -275,8 +283,11 @@ namespace BarrGazetas.RevitMcp
                     if (wall.IsValidObject) log.WallsFitted++; else { log.WallsFailed++; log.Problems.Add($"wall {p.Id}: Revit removed it"); }
                 }
                 catch (Exception ex) { log.WallsFailed++; log.Problems.Add($"wall {p.Id}: {McpServer.Unwrap(ex).Message}"); }
+                refusedInARow = log.WallsFailed > failedBefore ? refusedInARow + 1 : 0;
             }
         }
+
+        private const int MaxRefusedWallsInARow = 4;
 
         /// <summary>
         /// Curved walls re-curved onto the DWG: the centre and radius the DWG faces give (CurvedFit), over the same

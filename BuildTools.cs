@@ -727,7 +727,13 @@ namespace BarrGazetas.RevitMcp
                 public FailureProcessingResult PreprocessFailures(FailuresAccessor fa)
                 {
                     bool resolved = false;
-                    foreach (var m in fa.GetFailureMessages())
+                    var messages = fa.GetFailureMessages();
+                    // 1.14.7: when any error can't be detached, the change is rolled back without resolving the others first.
+                    // Resolving some failures and then rolling back in the same pass ("Can't keep elements joined" detached,
+                    // "Element is reversed" blocking) is the pattern seen just before Revit died in the wall fallback.
+                    bool blocked = messages.Any(m => m.GetSeverity() != FailureSeverity.Warning
+                        && !(m.HasResolutions() && m.HasResolutionOfType(FailureResolutionType.DetachElements)));
+                    foreach (var m in messages)
                     {
                         string text = m.GetDescriptionText();
                         string ids = string.Join(", ", m.GetFailingElementIds().Select(i => i.Value).Take(12));
@@ -738,7 +744,7 @@ namespace BarrGazetas.RevitMcp
                             continue;
                         }
                         // Errors: unjoin/detach is safe (nothing is lost); deleting elements is not done silently.
-                        if (m.HasResolutions() && m.HasResolutionOfType(FailureResolutionType.DetachElements))
+                        if (!blocked && m.HasResolutions() && m.HasResolutionOfType(FailureResolutionType.DetachElements))
                         {
                             m.SetCurrentResolutionType(FailureResolutionType.DetachElements);
                             fa.ResolveFailure(m);
@@ -746,6 +752,7 @@ namespace BarrGazetas.RevitMcp
                             resolved = true;
                             continue;
                         }
+                        if (blocked && m.HasResolutions() && m.HasResolutionOfType(FailureResolutionType.DetachElements)) { Notes.Add($"Not unjoined (the change is rolled back for another reason): {text}"); continue; }
                         Blocking.Add($"\"{text}\"" + (ids.Length > 0 ? $" for elements {ids}." : "."));
                         BlockingTexts.Add(text);
                         FailingIds.AddRange(m.GetFailingElementIds().Select(i => i.Value));

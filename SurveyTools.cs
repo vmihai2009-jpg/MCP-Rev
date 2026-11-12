@@ -287,7 +287,7 @@ namespace BarrGazetas.RevitMcp
                     var opts = FitOptionsFrom(a);
                     var proposals = WallFit.Fit(walls, segs, opts);
                     var missing = Args.Bool(a, "include_missing") == false ? new List<MissingWall>()
-                        : WallFit.Missing(walls, segs, Args.Dbl(a, "min_thickness_mm") ?? 60, Args.Dbl(a, "max_thickness_mm") ?? 1300, Args.Dbl(a, "min_length_mm") ?? 600);
+                        : WallFit.Missing(walls, segs, Args.Dbl(a, "min_thickness_mm") ?? 60, Args.Dbl(a, "max_thickness_mm") ?? Fidelity.MaxWallMm, Args.Dbl(a, "min_length_mm") ?? 600);
                     int limit = Math.Clamp(Args.Int(a, "limit", 60), 1, 500);
                     return new
                     {
@@ -615,7 +615,7 @@ namespace BarrGazetas.RevitMcp
                 ("import_name", S("string", "Or part of the link's name"), false),
                 ("layers", Arr("string", "Wall-face layer globs (default: *wall*, *partition*, *PartGlass*, EF_25*, Ss_25*, *plinth*)"), false),
                 ("min_thickness_mm", S("number", "Walls thinner than this are left alone (default 60)"), false),
-                ("max_thickness_mm", S("number", "Thickest wall the DWG may give (default 1300)"), false),
+                ("max_thickness_mm", S("number", "Thickest wall the DWG may give (default 1300 when fitting, 1000 for missing walls: wider pairs are spaces)"), false),
                 ("min_length_mm", S("number", "Walls shorter than this are left alone (default 600)"), false),
                 ("search_mm", S("number", "How far a DWG face may be from the wall's centre line (default 700)"), false),
                 ("min_cover", S("number", "Share of the wall's length each face must cover (default 0.6)"), false),

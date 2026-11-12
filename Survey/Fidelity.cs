@@ -124,6 +124,8 @@ namespace BarrGazetas.RevitMcp.Survey
         public int ThicknessChecked { get; set; }
         public int ThicknessOver { get; set; }
         public int Missing { get; set; }
+        /// <summary>DWG face pairs with no model wall that are not walls (a line between them, a face already on a model wall, a room between): not counted as missing.</summary>
+        public int PairsNotWalls { get; set; }
         /// <summary>Curved walls looked at (also counted in Checked / Unverified).</summary>
         public int CurvedChecked { get; set; }
     }
@@ -197,6 +199,8 @@ namespace BarrGazetas.RevitMcp.Survey
     public static class Fidelity
     {
         public const double SampleStepMm = 250, EndSkipMm = 100, FaceSearchMm = 300, ParallelDot = 0.998;
+        /// <summary>The thickest wall a face pair can be (Survey to Revit's MaxWallThickness); wider pairs are spaces between walls.</summary>
+        public const double MaxWallMm = 1000;
         private static readonly Regex LabelRx = new Regex(@"^\s*([SH])\s*([0-9]+\.[0-9]+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         /// <summary>"S 0.94" -> ('S', 940); "H 3.27" -> ('H', 3270); placeholders such as "S X.XX" -> null.</summary>
@@ -351,8 +355,12 @@ namespace BarrGazetas.RevitMcp.Survey
             }
 
             // ---- missing walls ----
-            var missing = WallFit.Missing(f.Walls, f.WallFaces, 60, 1300, 600);
+            // face pairs wider than the thickest wall (1 m), with another face line between them, with a face already on a
+            // model wall, or with a room or spot height between them are gaps, steps or chimney breasts, not missing walls
+            var spaces = f.SpotHeights.Select(h => h.at).Concat(f.Rooms.Select(r => r.At)).ToList();
+            var missing = WallFit.Missing(f.Walls, f.WallFaces, 60, MaxWallMm, 600, spaces, out int notWalls);
             s.Walls.Missing = missing.Count;
+            s.Walls.PairsNotWalls = notWalls;
             foreach (var m in missing)
                 issues.Add(new FidIssue
                 {
