@@ -49,14 +49,25 @@ namespace BarrGazetas.RevitMcp
 
                     // elevations once
                     var elevMissing = new List<ElevMissing>();
+                    var elevMatched = new List<ElevMatch>();
                     foreach (var spec in ElevationSpecs(doc, a))
-                        try { elevMissing.AddRange(ElevationOnFacade(doc, spec, source.Roles).missing); } catch { /* reported by survey_fidelity */ }
+                        try { var r = ElevationOnFacade(doc, spec, source.Roles); elevMissing.AddRange(r.missing); elevMatched.AddRange(r.matched); } catch { /* reported by survey_fidelity */ }
+                    // a window on an elevation takes its sill and head from it (outside, frame to frame); the plan's S/H labels
+                    // are measured inside the room and only stand in where no elevation draws the window
+                    var elevById = elevMatched.GroupBy(e => e.Insert.Id).ToDictionary(g => g.Key, g => g.First());
 
                     ImportInstance Plan(Level l) => plans.TryGetValue(l.Id.Value, out var imp) ? imp : null;
+                    FidelityInput Scored(Level l)
+                    {
+                        var inp = FidelityInputFor(doc, l, Plan(l), datumMm, source);
+                        inp.Elevation = elevMatched.Where(e => e.Insert.Level == l.Name && inp.Inserts.Any(i => i.Id == e.Insert.Id)).ToList();
+                        inp.ElevationMissing = elevMissing.Where(m => m.Level == l.Name).ToList();
+                        return inp;
+                    }
                     var results = new List<object>();
                     foreach (var level in floors)
                     {
-                        var before = Fidelity.Measure(FidelityInputFor(doc, level, Plan(level), datumMm, source), gate).score;
+                        var before = Fidelity.Measure(Scored(level), gate).score;
                         if (wanted.Count == 0 && before.Pass) { results.Add(new { level = level.Name, pass = true, note = "already passes: left alone" }); continue; }
                         var log = new FloorFixLog();
                         using (var g = new TransactionGroup(doc, $"MCP: survey autofix {level.Name}"))
@@ -66,12 +77,12 @@ namespace BarrGazetas.RevitMcp
                             if (doOpenings)
                             {
                                 var input = FidelityInputFor(doc, level, Plan(level), datumMm, source); // walls may have moved
-                                FixOpenings(doc, level, input, log);
+                                FixOpenings(doc, level, input, log, elevById);
                                 PlacePlanMissing(doc, level, input, log);
                                 PlaceMissing(doc, level, input, elevMissing.Where(m => m.Level == level.Name).ToList(), log);
                                 FillRhythmGaps(app, doc, level, input, log, tick: !dry);
                             }
-                            var after = Fidelity.Measure(FidelityInputFor(doc, level, Plan(level), datumMm, source), gate);
+                            var after = Fidelity.Measure(Scored(level), gate);
                             if (dry || log.Changed == 0) g.RollBack(); else g.Assimilate();
                             results.Add(new
                             {
@@ -261,7 +272,7 @@ namespace BarrGazetas.RevitMcp
             }
         }
 
-        private static void FixOpenings(Document doc, Level level, FidelityInput input, FloorFixLog log)
+        private static void FixOpenings(Document doc, Level level, FidelityInput input, FloorFixLog log, Dictionary<long, ElevMatch> elevById = null)
         {
             var wallById = input.Walls.ToDictionary(w => w.Id);
             foreach (var ins in input.Inserts.Where(i => i.Category != null && i.Category.IndexOf("Window", StringComparison.OrdinalIgnoreCase) >= 0))
@@ -270,8 +281,16 @@ namespace BarrGazetas.RevitMcp
                 if (fi == null) continue;
                 double? newSill = null, newHeight = null, newWidth = null; XYZ slide = null;
 
-                var (sl, hl) = Fidelity.LabelsFor(ins.At, input);
                 double curSill = ins.Sill ?? 0, curHead = ins.Head ?? 0;
+                double? sl, hl;
+                if (elevById != null && elevById.TryGetValue(ins.Id, out var em))
+                {
+                    // the elevation decides; a change of more than 600 mm is more likely a wrong pairing than a wrong window
+                    bool sane = Math.Abs(em.Sill - curSill) <= 600 && Math.Abs(em.Head - curHead) <= 600 && em.Head - em.Sill >= 300;
+                    if (!sane) { log.Unconfirmed.Add($"{level.Name}: window {ins.Id}: the elevation gives sill {em.Sill:0} head {em.Head:0} against the model's {curSill:0}/{curHead:0}; left for a look"); sl = hl = null; }
+                    else { sl = Math.Round(em.Sill); hl = Math.Round(em.Head); }
+                }
+                else (sl, hl) = Fidelity.LabelsFor(ins.At, input);
                 if (sl is double s && Math.Abs(s - curSill) > 30) newSill = s;
                 if (hl is double h && Math.Abs(h - curHead) > 30 || (newSill != null && hl != null)) newHeight = (hl ?? curHead) - (newSill ?? curSill);
                 if (newHeight != null && newHeight < 300) newHeight = null;
