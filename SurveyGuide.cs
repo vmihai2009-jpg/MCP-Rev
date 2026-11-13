@@ -110,7 +110,7 @@ THINGS IT TELLS YOU RATHER THAN GUESSING
  SELF_INTERSECTING, TOPO_FLAT, TOPO_Z_OUTLIERS, TOPO_THINNED, NO_FAMILY_FOR_POINTS.
 
 LIMITS
- - Arcs and splines become short straight pieces (curved walls are approximated).
+ - Arcs and splines become short straight pieces in the plan reading; curve_check finds curves built as runs of short walls and curve_walls rebuilds them as one curved wall (1.21.0).
  - Walls and floors ignore DWG Z and sit on their level; topography and grids keep real coordinates.
  - Text is not in Revit's CAD link: read spot heights and labels with dwg_read.
  - Elements are tagged in Comments (""DWG-MCP|...""): leave it, or re-runs and QA will not recognise them.
