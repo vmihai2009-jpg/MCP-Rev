@@ -42,8 +42,10 @@ The operating guide for every tool is Part 1 of `COORDINATION.md`. This file is 
    the mansard on the street fronts only, which was also why a whole-building mansard kept failing in Revit.
 
 8. **The MCP side checks and decides; Survey to Revit builds** (Mihai, 2026-11-13: "mcp should analyse against
-   drawings and pictures and take the responsibility to check against survey to revit"). Survey to Revit reads the
-   DWGs and builds deterministically, no judgement. We (hub + Claude) are the checker of record:
+   drawings and pictures and take the responsibility to check against survey to revit"). Survey to Revit is also
+   used on its own, so it makes its own best call everywhere and logs each uncertain one in `build-log.json`
+   (where, how sure, what would settle it). It never skips work for us to pick up. We (hub + Claude) start from
+   that log and are the checker of record on top:
    - analyse its build against every drawing (plans, sections, elevations, roof plan) **and** the photos;
    - decide the ambiguous cases (mansard or set-back attic, is this line a wall, which elevation is which facade,
      which height to trust);
