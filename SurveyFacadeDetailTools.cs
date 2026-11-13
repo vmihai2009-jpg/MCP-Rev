@@ -60,8 +60,8 @@ namespace BarrGazetas.RevitMcp
                             var part = prof.Where(l => Math.Min(l.A.X, l.B.X) >= x0 - 1 && Math.Max(l.A.X, l.B.X) <= x1 + 1).ToList();
                             if (part.Count < 20) continue;
                             // heights: the section's level marks (drawn 1:1 above datum, checked)
-                            var hf = ElevationFit.Heights(file.Texts.Where(t => DwgFile.LayerMatches(t.Layer, new[] { "*Level*" })),
-                                                          file.Lines.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "*Level*" })), x0, x1);
+                            var hf = ElevationFit.Heights(file.Texts.Where(t => ElevationFit.IsLevelText(t, DwgFile.LayerMatches(t.Layer, new[] { "*Level*" }))),
+                                                          file.Lines.Where(l => ElevationFit.IsLevelLine(l, DwgFile.LayerMatches(l.Layer, new[] { "*Level*" }), file.Texts)), x0, x1);
                             var mapped = part.Select(l => new DwgLine { A = new Pt(l.A.X, hf.Height(l.A.Y)), B = new Pt(l.B.X, hf.Height(l.B.Y)), Layer = l.Layer }).ToList();
                             string title = file.Texts.Where(t => t.Value != null && t.Value.TrimStart().StartsWith("Section", StringComparison.OrdinalIgnoreCase) && t.At.X >= x0 - 5000 && t.At.X <= x1 + 5000)
                                 .OrderBy(t => Math.Abs(t.At.X - (x0 + x1) / 2)).Select(t => t.Value.Trim()).FirstOrDefault() ?? $"{Path.GetFileName(p)} x {x0:0}";
@@ -147,8 +147,8 @@ namespace BarrGazetas.RevitMcp
             var file = DwgFile.Read(path);
             var lines = file.Lines.Where(l => InSheet(l.A) && InSheet(l.B)).ToList();
             var winLines = lines.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "*Window*" })).ToList();
-            var heights = ElevationFit.Heights(file.Texts.Where(t => DwgFile.LayerMatches(t.Layer, new[] { "*Level*" }) && t.At.Y >= yMin && t.At.Y <= yMax),
-                                               lines.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "*Level*" })), xMin, xMax);
+            var heights = ElevationFit.Heights(file.Texts.Where(t => ElevationFit.IsLevelText(t, DwgFile.LayerMatches(t.Layer, new[] { "*Level*" })) && t.At.Y >= yMin && t.At.Y <= yMax),
+                                               lines.Where(l => ElevationFit.IsLevelLine(l, DwgFile.LayerMatches(l.Layer, new[] { "*Level*" }), file.Texts)), xMin, xMax);
             var jambs = new List<double>();
             foreach (var cat in new[] { BuiltInCategory.OST_Windows, BuiltInCategory.OST_Doors })
                 foreach (var fi in new FilteredElementCollector(doc).OfCategory(cat).WhereElementIsNotElementType().OfType<FamilyInstance>())

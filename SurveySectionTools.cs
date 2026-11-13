@@ -75,7 +75,7 @@ namespace BarrGazetas.RevitMcp
                     if (Args.Bool(a, "write_report") != false)
                     {
                         string stem = Path.Combine(ReportsFolder(doc), $"section-score-{DateTime.Now:yyyyMMdd-HHmmss}");
-                        File.WriteAllText(stem + ".json", SurveyConfig.ToJson(new { when = DateTime.Now.ToString("yyyy-MM-dd HH:mm"), gate, sections = scores, issues = all }).ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                        File.WriteAllText(stem + ".json", SurveyConfig.ToJson(new { when = DateTime.Now.ToString("yyyy-MM-dd HH:mm"), gate, sections = scores, issues = all }).ToJsonString(new JsonSerializerOptions { WriteIndented = true, TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() }));
                         var pngs = new List<string>();
                         foreach (var (name, png) in images) { string f = $"{stem}-{Safe(name)}.png"; File.WriteAllBytes(f, png); pngs.Add(f); }
                         report = new { json = stem + ".json", pictures = pngs };
@@ -411,7 +411,7 @@ namespace BarrGazetas.RevitMcp
             if (lvl.Count == 0 && role != null) lvl = role.Where(kv => kv.Value == "LevelText").Select(kv => kv.Key).ToList();
             if (lvl.Count == 0) lvl = new List<string> { "*Level*" };
             double sx0 = sec.Min(l => Math.Min(l.A.X, l.B.X)), sx1 = sec.Max(l => Math.Max(l.A.X, l.B.X));
-            var heights = ElevationFit.Heights(file.Texts.Where(t => DwgFile.LayerMatches(t.Layer, lvl) && InSheet(t.At)), inRange.Where(l => DwgFile.LayerMatches(l.Layer, lvl)), sx0, sx1);
+            var heights = ElevationFit.Heights(file.Texts.Where(t => ElevationFit.IsLevelText(t, DwgFile.LayerMatches(t.Layer, lvl)) && InSheet(t.At)), inRange.Where(l => ElevationFit.IsLevelLine(l, DwgFile.LayerMatches(l.Layer, lvl), file.Texts)), sx0, sx1);
             double datumMm = doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero).Elevation * Mm;
 
             // the model on the plane

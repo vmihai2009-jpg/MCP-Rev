@@ -217,7 +217,7 @@ namespace BarrGazetas.RevitMcp
                             ["note"] = "Made by elevation_index: each elevation drawing matched to a facade from facades.json. Edit by hand if a match is wrong.",
                             ["when"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
                             ["elevations"] = new JsonArray(chosen.Select(c => (JsonNode)c.DeepClone()).ToArray()),
-                        }.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+                        }.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true, TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() }));
                     }
                     var unmatchedParts = Enumerable.Range(0, parts.Count).Where(i => !usedParts.Contains(i))
                         .Select(i => $"{parts[i].title ?? "untitled"} ({Path.GetFileName(parts[i].path)} x {parts[i].x0:0}-{parts[i].x1:0}, {parts[i].jambs.Count} jambs)").ToList();

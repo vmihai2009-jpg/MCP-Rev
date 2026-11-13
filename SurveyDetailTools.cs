@@ -1,4 +1,4 @@
-﻿// 1.9.0: the detail tools, after studying how the colleague's Swallow Place model was built by hand (cornices as
+// 1.9.0: the detail tools, after studying how the colleague's Swallow Place model was built by hand (cornices as
 // sweeps along the facades, pilasters/surrounds as placed pieces, parametric sash windows with an inset, dormers,
 // chimneys, flat and pitched roof faces, stairs, ceilings). Each measures against the survey first and changes the
 // model only when asked (apply / build). The measuring is in Survey/SurveyDetail.cs (Revit-free, tested).
@@ -139,8 +139,8 @@ namespace BarrGazetas.RevitMcp
                             if (Intersect(cutSeg, w) is double t) crossings.Add(t * len);
                         var verticals = part.Where(l => Math.Abs(l.A.X - l.B.X) < 2 && Math.Abs(l.A.Y - l.B.Y) > 1500).Select(l => (l.A.X + l.B.X) / 2).Distinct().ToList();
                         var place = SurveyDetail.PlaceSection(crossings, verticals);
-                        var heights = ElevationFit.Heights(file.Texts.Where(t => DwgFile.LayerMatches(t.Layer, new[] { "*Level*" })),
-                                                           file.Lines.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "*Level*" })), x0, x1);
+                        var heights = ElevationFit.Heights(file.Texts.Where(t => ElevationFit.IsLevelText(t, DwgFile.LayerMatches(t.Layer, new[] { "*Level*" }))),
+                                                           file.Lines.Where(l => ElevationFit.IsLevelLine(l, DwgFile.LayerMatches(l.Layer, new[] { "*Level*" }), file.Texts)), x0, x1);
                         var o = new JsonObject
                         {
                             ["name"] = title, ["letter"] = letter, ["path"] = path,
@@ -156,7 +156,7 @@ namespace BarrGazetas.RevitMcp
                     }
                     string folder = ReportsFolder(doc), saved = Path.Combine(folder, "section-index.json");
                     var root = new JsonObject { ["when"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm"), ["plan"] = planPath, ["sections"] = outSections };
-                    File.WriteAllText(saved, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                    File.WriteAllText(saved, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true, TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() }));
                     return new { sections = summary, saved, next = "survey_ceilings; check a section with matched under 4 by hand." };
                 }
             };
@@ -764,7 +764,7 @@ namespace BarrGazetas.RevitMcp
             var file = DwgFile.Read(path);
             var map = CadLink.FileToModel(doc, imp, file, out _);
             if (map == null) return result;
-            foreach (var t in file.Texts.Where(t => DwgFile.LayerMatches(t.Layer, new[] { "*Level*" })))
+            foreach (var t in file.Texts.Where(t => ElevationFit.IsLevelText(t, DwgFile.LayerMatches(t.Layer, new[] { "*Level*" }))))
                 if (ElevationFit.LevelValueMm(t.Value) is double v) result.Add((map(t.At), v));
             return result;
         }
@@ -832,8 +832,8 @@ namespace BarrGazetas.RevitMcp
                 if (place.Dir == 0) continue;
                 var dwg = DwgFile.Read(Args.Str(s, "path"));
                 double x0 = xr[0], x1 = xr[1];
-                var heights = ElevationFit.Heights(dwg.Texts.Where(t => DwgFile.LayerMatches(t.Layer, new[] { "*Level*" })),
-                                                   dwg.Lines.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "*Level*" })), x0, x1);
+                var heights = ElevationFit.Heights(dwg.Texts.Where(t => ElevationFit.IsLevelText(t, DwgFile.LayerMatches(t.Layer, new[] { "*Level*" }))),
+                                                   dwg.Lines.Where(l => ElevationFit.IsLevelLine(l, DwgFile.LayerMatches(l.Layer, new[] { "*Level*" }), dwg.Texts)), x0, x1);
                 var hz = dwg.Lines.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "*Profile*" }) && Math.Abs(l.A.Y - l.B.Y) < 2 && Math.Abs(l.A.X - l.B.X) >= 300
                                               && Math.Min(l.A.X, l.B.X) >= x0 - 1 && Math.Max(l.A.X, l.B.X) <= x1 + 1)
                     .Select(l => (l.A.X, l.B.X, heights.Height(l.A.Y))).ToList();

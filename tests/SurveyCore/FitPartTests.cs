@@ -28,6 +28,25 @@ namespace SurveyCoreTests
             var parts = ElevationFit.Parts(pairs, whole);
             T.Check(parts.Count == 2 && parts[0].Agrees && parts[0].Marks == 5, "fit parts: the main part agrees");
             T.Check(parts.Count == 2 && !parts[1].Agrees && T.Near(parts[1].DiffMm, 450, 1) && parts[1].X0 >= 20000, $"fit parts: the part beside it is 450 mm off ({parts.ElementAtOrDefault(1)?.DiffMm})");
+
+            // 1.36.11 (Mount Row, On Centre Surveys): the only height on the sheet is a datum mark "20.00m A.O.D." on a plain
+            // TEXT layer, its line ~400 mm ABOVE the text and a triangle's apex on the line
+            T.Check(ElevationFit.LevelValueMm("20.00m A.O.D.") == 20000 && ElevationFit.LevelValueMm("+20.00 AOD") == 20000 && ElevationFit.LevelValueMm("20.00 OD") == 20000,
+                    "datum mark: 'A.O.D.' / 'AOD' / 'OD' suffixes read");
+            T.Check(ElevationFit.IsDatumMark("20.00m A.O.D.") && !ElevationFit.IsDatumMark("20.00") && !ElevationFit.IsDatumMark("Flat 20.00"),
+                    "datum mark: only a height that says it is above datum");
+            var dt = new List<DwgText> { new DwgText { At = new Pt(73641, 42773), Value = "20.00m A.O.D.", Layer = "TEXT" }, new DwgText { At = new Pt(70000, 30000), Value = "Note", Layer = "TEXT" } };
+            var all = new List<DwgLine>
+            {
+                new DwgLine { A = new Pt(65175, 43173), B = new Pt(73441, 43173), Layer = "TEXT" },                     // the datum line above the text
+                new DwgLine { A = new Pt(73000, 43173), B = new Pt(72800, 42900), Layer = "TEXT" },                     // the triangle
+                new DwgLine { A = new Pt(60000, 50000), B = new Pt(80000, 50000), Layer = "WALL" },                     // other linework
+            };
+            var lvlTexts = dt.Where(t => ElevationFit.IsLevelText(t, t.Layer.Contains("Level"))).ToList();
+            var lvlLines = all.Where(l => ElevationFit.IsLevelLine(l, l.Layer.Contains("Level"), dt)).ToList();
+            T.Check(lvlTexts.Count == 1 && lvlLines.Count == 2, $"datum mark: picked up off the TEXT layer ({lvlTexts.Count} text, {lvlLines.Count} lines)");
+            var hf = ElevationFit.Heights(lvlTexts, lvlLines, 60000, 80000);
+            T.Check(T.Near(hf.A, 1, 1e-9) && T.Near(hf.B, 20000 - 43173, 1), $"datum mark: line above the text gives B = 20000 - 43173 ({hf.B})");
         }
     }
 }

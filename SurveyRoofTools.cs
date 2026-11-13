@@ -93,6 +93,33 @@ namespace BarrGazetas.RevitMcp
             catch { fitted = 0; return loop; }
         }
 
+        /// <summary>An open chain without its small jogs (ends fixed, arcs kept): line-line corners within tol of the line
+        /// through their neighbours, turning under 12° or spiking over 160°, are dropped. For offsetting a kerb line.</summary>
+        internal static CurveLoop OpenSimplified(List<Curve> run, double tol)
+        {
+            var pts = run.Select(c => c.GetEndPoint(0)).ToList(); pts.Add(run[^1].GetEndPoint(1));
+            var arcAfter = run.Select(c => c is Line ? null : c).ToList(); // piece i runs pts[i] -> pts[i+1]
+            bool changed = true;
+            while (changed)
+            {
+                changed = false;
+                for (int i = 1; i < pts.Count - 1; i++)
+                {
+                    if (arcAfter[i - 1] != null || arcAfter[i] != null) continue;
+                    var a = pts[i - 1]; var b = pts[i + 1]; var v = b - a; double len = v.GetLength(); if (len < 1e-6) continue;
+                    double d = (pts[i] - a).CrossProduct(v).GetLength() / len;
+                    var u1 = pts[i] - a; var u2 = b - pts[i];
+                    double turn = u1.GetLength() < 1e-6 || u2.GetLength() < 1e-6 ? 0 : u1.Normalize().AngleTo(u2.Normalize()) * 180 / Math.PI;
+                    if (d < tol || turn < 12 || turn > 160) { pts.RemoveAt(i); arcAfter.RemoveAt(i); changed = true; i--; }
+                }
+            }
+            var cl = new CurveLoop();
+            for (int i = 0; i < pts.Count - 1; i++)
+                if (arcAfter[i] != null) cl.Append(arcAfter[i]);
+                else if (pts[i].DistanceTo(pts[i + 1]) > 2 / Mm) cl.Append(Line.CreateBound(pts[i], pts[i + 1]));
+            return cl;
+        }
+
         /// <summary>Is the point (plan) inside the closed loop (tessellated, even-odd).</summary>
         internal static bool InsideLoop(CurveLoop loop, XYZ p)
         {
@@ -105,6 +132,122 @@ namespace BarrGazetas.RevitMcp
 
         public static IEnumerable<RevitTool> RoofTools()
         {
+            // floors through a sloped roof (Mihai's screenshot: the roof-plan slab out to the facade, through the mansard band)
+            yield return new RevitTool
+            {
+                Name = "floor_trim_to_roof",
+                Write = true,
+                Description = "Cut floors back to a sloped roof: every floor that runs into the roof's sloped band (or past it, out to the " +
+                              "facade) is rebuilt as an ordinary floor whose edge is the roof's inner (kerb) line, same type, level, offset " +
+                              "and comments, its other edges and openings unchanged. Default roof: the MCP mansard roofs. dry_run (default " +
+                              "true) lists floors and areas before/after. One undo step.",
+                InputSchema = Schema(("roof_id", S("integer", "The sloped roof (default: the MCP mansard roofs)"), false),
+                                     ("outside_mm", S("number", "How far beyond the roof's eaves the cut reaches outward (default 3000)"), false),
+                                     ("above_eaves_mm", S("number", "Only floors above the eaves by this much are cut (default 100; the storey's own slab stays)"), false),
+                                     ("dry_run", S("boolean", "Only report (default true)"), false)),
+                Run = (app, a) =>
+                {
+                    bool dry = Args.Bool(a, "dry_run") != false;
+                    var doc = dry ? Doc(app) : Writable(app);
+                    var roofs = Args.Dbl(a, "roof_id") is double rid ? new List<FootPrintRoof> { doc.GetElement(new ElementId((long)rid)) as FootPrintRoof ?? throw new ArgumentException("Not a footprint roof.") }
+                        : new FilteredElementCollector(doc).OfClass(typeof(FootPrintRoof)).Cast<FootPrintRoof>().Where(r => (r.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "") == "MCP|mansard_roof").ToList();
+                    if (roofs.Count == 0) throw new ArgumentException("No sloped roof to trim to.");
+                    double outside = (Args.Dbl(a, "outside_mm") ?? 3000) / Mm;
+                    var report = new List<object>(); var made = new List<long>(); List<string> revit = null;
+                    // the cutter: the roof's own footprint plus a strip outside its sloped edges, tall enough for any floor near it
+                    Solid Cutter(FootPrintRoof roof, out List<ElementId> floorsHit)
+                    {
+                        var bb = roof.get_BoundingBox(null);
+                        // from just above the eaves: the storey's own floor slab (at or below the eaves) rightly runs out to the facade
+                        double z0 = bb.Min.Z + (Args.Dbl(a, "above_eaves_mm") ?? 100) / Mm, h = (bb.Max.Z - bb.Min.Z) + 3000 / Mm;
+                        var curves = new List<Curve>(); var chain = new List<Curve>();
+                        foreach (ModelCurveArray lp in roof.GetProfiles()) foreach (ModelCurve mc in lp) { curves.Add(mc.GeometryCurve); if (roof.get_DefinesSlope(mc)) chain.Add(mc.GeometryCurve); }
+                        Curve Flat(Curve c) => c.CreateTransformed(Transform.CreateTranslation(new XYZ(0, 0, z0 - c.GetEndPoint(0).Z)));
+                        var band = new CurveLoop(); foreach (var c in curves) band.Append(Flat(c));
+                        var solid = GeometryCreationUtilities.CreateExtrusionGeometry(new List<CurveLoop> { band }, XYZ.BasisZ, h);
+                        // the strip outside the chain: order the chain end to end, offset it away from the band
+                        var ordered = new List<Curve> { Flat(chain[0]) }; var rest = chain.Skip(1).Select(Flat).ToList();
+                        while (rest.Count > 0)
+                        {
+                            var end = ordered[^1].GetEndPoint(1);
+                            var nx = rest.FirstOrDefault(c => c.GetEndPoint(0).DistanceTo(end) < 1e-3);
+                            if (nx == null) break;
+                            ordered.Add(nx); rest.Remove(nx);
+                        }
+                        var open = new CurveLoop(); foreach (var c in ordered) open.Append(c);
+                        foreach (double sgn in new[] { 1.0, -1.0 })
+                            try
+                            {
+                                var off = CurveLoop.CreateViaOffset(open, sgn * outside, XYZ.BasisZ).ToList();
+                                if (InsideLoop(band, off[0].Evaluate(0.5, true))) continue;
+                                var strip = new CurveLoop();
+                                foreach (var c in ordered) strip.Append(c);
+                                strip.Append(Line.CreateBound(ordered[^1].GetEndPoint(1), off[^1].GetEndPoint(1)));
+                                for (int j = off.Count - 1; j >= 0; j--) strip.Append(off[j].CreateReversed());
+                                strip.Append(Line.CreateBound(off[0].GetEndPoint(0), ordered[0].GetEndPoint(0)));
+                                var s2 = GeometryCreationUtilities.CreateExtrusionGeometry(new List<CurveLoop> { strip }, XYZ.BasisZ, h);
+                                solid = BooleanOperationsUtils.ExecuteBooleanOperation(solid, s2, BooleanOperationsType.Union);
+                                break;
+                            }
+                            catch { }
+                        floorsHit = new FilteredElementCollector(doc).OfClass(typeof(Floor)).WherePasses(new ElementIntersectsSolidFilter(solid)).ToElementIds().ToList();
+                        return solid;
+                    }
+                    Solid FloorSolid(Floor f)
+                    {
+                        Solid best = null;
+                        foreach (var o in f.get_Geometry(new Options()) ?? Enumerable.Empty<GeometryObject>()) if (o is Solid s && s.Volume > 0 && (best == null || s.Volume > best.Volume)) best = s;
+                        return best;
+                    }
+                    var work = new List<(Floor f, Solid cut, double before, double after, List<CurveLoop> loops)>();
+                    foreach (var roof in roofs)
+                    {
+                        var cutter = Cutter(roof, out var hit);
+                        foreach (var fid in hit)
+                        {
+                            var f = (Floor)doc.GetElement(fid); var fs = FloorSolid(f); if (fs == null) continue;
+                            Solid rem;
+                            try { rem = BooleanOperationsUtils.ExecuteBooleanOperation(fs, cutter, BooleanOperationsType.Difference); }
+                            catch (Exception ex) { report.Add(new { floor = fid.Value, error = McpServer.Unwrap(ex).Message }); continue; }
+                            // the remaining top faces' loops are the new sketch
+                            var loops = new List<CurveLoop>();
+                            var tops = rem.Faces.OfType<PlanarFace>().Where(pf => pf.FaceNormal.Z > 0.99).ToList();
+                            double topZ = tops.Count == 0 ? 0 : tops.Max(pf => pf.Origin.Z);
+                            foreach (var pf in tops.Where(pf => Math.Abs(pf.Origin.Z - topZ) < 5 / Mm)) loops.AddRange(pf.GetEdgesAsCurveLoops());
+                            work.Add((f, cutter, fs.Volume, rem.Volume, loops));
+                        }
+                    }
+                    double M3(double v) => Math.Round(v * Math.Pow(Mm / 1000, 3), 2);
+                    // read everything for the answer now: the floors are deleted below
+                    var floorReport = work.Select(w => new { floor = w.f.Id.Value, type = doc.GetElement(w.f.GetTypeId())?.Name, level = (doc.GetElement(w.f.LevelId) as Level)?.Name, tag = w.f.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString(),
+                                                             volumeBeforeM3 = M3(w.before), volumeAfterM3 = M3(w.after), sketchLoops = w.loops.Count, changes = w.after < w.before - 1e-6 }).ToList();
+                    if (!dry)
+                        revit = BuildTools.Tx.Run(doc, "MCP: floors trimmed to the roof", () =>
+                        {
+                            foreach (var w in work.Where(w => w.after < w.before - 1e-6 && w.loops.Count > 0))
+                            {
+                                var f = w.f;
+                                double off = f.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM)?.AsDouble() ?? 0;
+                                string com = f.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "";
+                                var lvl = doc.GetElement(f.LevelId) as Level;
+                                // loops flattened to the level, outer loops first (Floor.Create sorts outer/inner itself)
+                                var flat = w.loops.Select(lp => { var cl = new CurveLoop(); foreach (var c in lp) cl.Append(c.CreateTransformed(Transform.CreateTranslation(new XYZ(0, 0, lvl.Elevation - c.GetEndPoint(0).Z)))); return cl; }).ToList();
+                                var nf = Floor.Create(doc, flat, f.GetTypeId(), f.LevelId);
+                                nf.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM)?.Set(off);
+                                nf.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.Set(com + "|trimmed to roof");
+                                doc.Delete(f.Id); made.Add(nf.Id.Value);
+                            }
+                        });
+                    return new
+                    {
+                        roofs = roofs.Select(r => r.Id.Value).ToList(),
+                        floors = floorReport,
+                        errors = report, made, revit,
+                        next = dry ? "dry_run: false to trim them (one undo step); then clash_check." : "clash_check; save_model.",
+                    };
+                }
+            };
+
             // read-only: what clips through what (Mihai: "clipping through walls and stuff, make sure everything is correct")
             yield return new RevitTool
             {
@@ -221,6 +364,7 @@ namespace BarrGazetas.RevitMcp
                     ("diagnose", S("boolean", "When Revit can't slope an outline, find the first edge (longest first) that breaks it and say which"), false),
                     ("street_only", S("boolean", "Default true: a sloped band only along the street facades (eaves to kerb), as site photos show for a mansard on the street fronts; false = the whole outline"), false),
                     ("facades", S("array", "Street facade ids the mansard runs along (default: those with a section in mansard.json)"), false),
+                    ("join_gap_mm", S("number", "Street runs closer than this along the outline (jogs, chamfers) join into one (default 6000)"), false),
                     ("street_tol_mm", S("number", "How far an outline edge may be from a street facade's line (default 2500)"), false),
                     ("show_outlines", S("boolean", "Also list each outline's corner points"), false),
                     ("simplify_mm", S("number", "Drop outline corners straying less than this from their neighbours' line (default 350)"), false),
@@ -261,8 +405,14 @@ namespace BarrGazetas.RevitMcp
                     {
                         try
                         {
-                            var c1 = CurveLoop.CreateViaOffset(lp, -medSet / Mm, XYZ.BasisZ); var c2 = CurveLoop.CreateViaOffset(lp, medSet / Mm, XYZ.BasisZ);
-                            return c1.GetExactLength() < c2.GetExactLength() ? c1 : c2;
+                            // the side whose curves lie inside the outline (the shorter loop is NOT reliable once arcs and jogs are in it)
+                            foreach (double sgn in new[] { -1.0, 1.0 })
+                            {
+                                var c = CurveLoop.CreateViaOffset(lp, sgn * medSet / Mm, XYZ.BasisZ);
+                                var mids = c.Select(x => x.Evaluate(0.5, true)).ToList();
+                                if (mids.Count(m => InsideLoop(lp, m)) >= 0.9 * mids.Count) return c;
+                            }
+                            return null;
                         }
                         catch { return null; }
                     }
@@ -340,6 +490,17 @@ namespace BarrGazetas.RevitMcp
                         for (int pass = 0; pass < 3; pass++)
                             for (int i = 0; i < n; i++)
                                 if (!on[i] && (!(cs[i] is Line) || cs[i].Length * Mm < 1500) && on[(i - 1 + n) % n] && (on[(i + 1) % n] || !(cs[i] is Line))) on[i] = true;
+                        // and any short gap between two street runs (jogs, a corner chamfer, an arc fitted across a step): one run,
+                        // so the mansard turns the corner in one roof instead of stopping and starting
+                        double gapMax = (Args.Dbl(a, "join_gap_mm") ?? 6000) / Mm;
+                        if (on.Any(x => x))
+                            for (int i = 0; i < n; i++)
+                            {
+                                if (on[i] || !on[(i - 1 + n) % n]) continue;
+                                int j = i; double len = 0; bool longPiece = false;
+                                while (!on[j % n] && j - i < n) { len += cs[j % n].Length; longPiece |= cs[j % n].Length > 4000 / Mm; j++; }
+                                if (len <= gapMax && !longPiece && on[j % n]) for (int k = i; k < j; k++) on[k % n] = true;
+                            }
                         if (on.Any(x => x) && !on.All(x => x))
                         {
                             int s0 = Enumerable.Range(0, n).First(i => on[i] && !on[(i - 1 + n) % n]);
@@ -350,7 +511,9 @@ namespace BarrGazetas.RevitMcp
                                 while (run.Count > 0 && run[^1] is Line && run[^1].Length * Mm < 1500) run.RemoveAt(run.Count - 1);
                                 while (run.Count > 0 && run[0] is Line && run[0].Length * Mm < 1500) run.RemoveAt(0);
                                 if (run.Sum(c => c.Length) * Mm < 3000) { run = new List<Curve>(); return; }
-                                var chain = new CurveLoop(); foreach (var c in run) chain.Append(c);
+                                // the kerb line is offset from a SIMPLIFIED copy of the chain: jogs shorter than the slope's run,
+                                // offset by the run, cross themselves ("Invalid footprint" on Swallow Place's 480 mm jogs)
+                                var chain = OpenSimplified(run, Math.Max(simp, bandRun / Mm));
                                 string why = null; CurveLoop band = null;
                                 foreach (double sgn in new[] { 1.0, -1.0 })
                                     try
@@ -409,8 +572,13 @@ namespace BarrGazetas.RevitMcp
                             {
                                 try
                                 {
-                                    var c1 = CurveLoop.CreateViaOffset(lp, -run / Mm, XYZ.BasisZ); var c2 = CurveLoop.CreateViaOffset(lp, run / Mm, XYZ.BasisZ);
-                                    return Simplified(c1.GetExactLength() < c2.GetExactLength() ? c1 : c2, simp);
+                                    foreach (double sgn in new[] { -1.0, 1.0 })
+                                    {
+                                        var c = CurveLoop.CreateViaOffset(lp, sgn * run / Mm, XYZ.BasisZ);
+                                        var mids = c.Select(x => x.Evaluate(0.5, true)).ToList();
+                                        if (mids.Count(m => InsideLoop(lp, m)) >= 0.9 * mids.Count) return Simplified(c, simp);
+                                    }
+                                    return null;
                                 }
                                 catch { return null; }
                             }
@@ -441,6 +609,18 @@ namespace BarrGazetas.RevitMcp
                                             r.get_Parameter(BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM)?.Set((eavesZ - baseLevel.Elevation * Mm) / Mm);
                                             doc.Regenerate();
                                             if (Volume(r) <= 0) throw new InvalidOperationException("no solid");
+                                            // cut off at the kerb: where the kerb line (from the simplified chain) sits further in than the
+                                            // slope's run, the slope would otherwise rise past the kerb
+                                            var cutLv = levels.Where(l => l.Elevation * Mm >= kerbZ - 300).OrderBy(l => l.Elevation).FirstOrDefault();
+                                            if (cutLv != null && Args.Bool(a, "cutoff") != false)
+                                                using (var st2 = new SubTransaction(doc))
+                                                {
+                                                    st2.Start();
+                                                    r.get_Parameter(BuiltInParameter.ROOF_UPTO_LEVEL_PARAM)?.Set(cutLv.Id);
+                                                    r.get_Parameter(BuiltInParameter.ROOF_UPTO_LEVEL_OFFSET_PARAM)?.Set((kerbZ - cutLv.Elevation * Mm) / Mm);
+                                                    doc.Regenerate();
+                                                    if (Volume(r) > 0) st2.Commit(); else st2.RollBack();
+                                                }
                                             r.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.Set(tag);
                                             st.Commit(); ids.Add(r.Id.Value); roof ??= r;
                                             used = $"street bands ({streetIds.Count} facades' lines)";

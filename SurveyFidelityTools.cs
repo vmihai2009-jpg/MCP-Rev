@@ -88,7 +88,7 @@ namespace BarrGazetas.RevitMcp
                         string folder = ReportsFolder(doc);
                         string stem = Path.Combine(folder, $"fidelity-{Safe(Path.GetFileNameWithoutExtension(result.Model))}-{DateTime.Now:yyyyMMdd-HHmmss}");
                         json = stem + ".json"; html = stem + ".html";
-                        File.WriteAllText(json, SurveyConfig.ToJson(result).ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                        File.WriteAllText(json, SurveyConfig.ToJson(result).ToJsonString(new JsonSerializerOptions { WriteIndented = true, TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() }));
                         File.WriteAllText(html, Fidelity.Html(result));
                     }
                     int max = Math.Clamp(Args.Int(a, "max_issues", 20), 0, 200);
@@ -208,7 +208,7 @@ namespace BarrGazetas.RevitMcp
                         ["facades"] = new JsonArray(outRuns.Select(o => (JsonNode)o.DeepClone()).ToArray()),
                     };
                     string file2 = Path.Combine(ReportsFolder(doc), "facades.json");
-                    File.WriteAllText(file2, saved.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                    File.WriteAllText(file2, saved.ToJsonString(new JsonSerializerOptions { WriteIndented = true, TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() }));
                     // the answer: the walls list cut short (the file has them all)
                     foreach (var o in outRuns)
                     {
@@ -311,8 +311,8 @@ namespace BarrGazetas.RevitMcp
             string[] winRole = { "Window" }, wallRole = { "Wall", "CurtainWall" }, levelRole = { "LevelText", "HeightText" };
             var winLines = lines.Where(l => Is(l.Layer, winRole, new[] { "*Window*" })).ToList();
             var reveal = lines.Where(l => Is(l.Layer, wallRole, new[] { "*Wall*" })).ToList();
-            var heights = ElevationFit.Heights(file.Texts.Where(t => Is(t.Layer, levelRole, new[] { "*Level*" }) && t.At.Y >= yMin && t.At.Y <= yMax),
-                                               lines.Where(l => Is(l.Layer, levelRole, new[] { "*Level*" })), xMin, xMax);
+            var heights = ElevationFit.Heights(file.Texts.Where(t => ElevationFit.IsLevelText(t, Is(t.Layer, levelRole, new[] { "*Level*" })) && t.At.Y >= yMin && t.At.Y <= yMax),
+                                               lines.Where(l => ElevationFit.IsLevelLine(l, Is(l.Layer, levelRole, new[] { "*Level*" }), file.Texts)), xMin, xMax);
             double datumMm = doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero).Elevation * Mm;
             double ModelZ(double y) => heights.Height(y) - datumMm;
 

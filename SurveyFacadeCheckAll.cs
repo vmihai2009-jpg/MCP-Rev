@@ -106,7 +106,7 @@ namespace BarrGazetas.RevitMcp
                         issuesTotal = found.Count,
                     };
                     var file = new JsonObject { ["summary"] = JsonNode.Parse(JsonSerializer.Serialize(answer, json)), ["raw"] = raw };
-                    File.WriteAllText(Path.Combine(ReportsFolder(doc), $"facade-check-{fid}.json"), file.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                    File.WriteAllText(Path.Combine(ReportsFolder(doc), $"facade-check-{fid}.json"), file.ToJsonString(new JsonSerializerOptions { WriteIndented = true, TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() }));
                     facades.Add(answer); if (answer.pass) passing++;
                 }
                 return new

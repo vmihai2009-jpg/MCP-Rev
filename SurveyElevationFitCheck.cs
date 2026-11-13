@@ -53,8 +53,8 @@ namespace BarrGazetas.RevitMcp
                             var file = DwgFile.Read(Args.Str(spec, "path"));
                             var role = roles?.Invoke(file.Lines.Select(l => l.Layer).Concat(file.Texts.Select(t => t.Layer)));
                             bool IsLevel(string layer) => role != null && layer != null && role.TryGetValue(layer, out var r) && (r == "LevelText" || r == "HeightText") || DwgFile.LayerMatches(layer, new[] { "*Level*" });
-                            var pairs = ElevationFit.MarkPairs(file.Texts.Where(t => IsLevel(t.Layer) && t.At.Y >= yMin && t.At.Y <= yMax),
-                                fr.Lines.Where(l => IsLevel(l.Layer)), xMin, xMax);
+                            var pairs = ElevationFit.MarkPairs(file.Texts.Where(t => ElevationFit.IsLevelText(t, IsLevel(t.Layer)) && t.At.Y >= yMin && t.At.Y <= yMax),
+                                fr.Lines.Where(l => ElevationFit.IsLevelLine(l, IsLevel(l.Layer), file.Texts)), xMin, xMax);
                             var whole = ElevationFit.FitPairs(pairs.Select(p => (p.y, p.z)).ToList());
                             var parts = ElevationFit.Parts(pairs, whole, gap, dis);
                             bad += parts.Count(p => !p.Agrees);

@@ -60,8 +60,8 @@ namespace BarrGazetas.RevitMcp
                             var file = DwgFile.Read(Args.Str(spec, "path"));
                             var role = roles?.Invoke(file.Lines.Select(l => l.Layer).Concat(file.Texts.Select(t => t.Layer)));
                             bool IsLevel(string layer) => role != null && layer != null && role.TryGetValue(layer, out var r) && (r == "LevelText" || r == "HeightText") || DwgFile.LayerMatches(layer, new[] { "*Level*" });
-                            var pairs = ElevationFit.MarkPairs(file.Texts.Where(t => IsLevel(t.Layer) && t.At.Y >= yMin && t.At.Y <= yMax),
-                                file.Lines.Where(l => IsLevel(l.Layer) && l.A.X >= xMin && l.A.X <= xMax), xMin, xMax);
+                            var pairs = ElevationFit.MarkPairs(file.Texts.Where(t => ElevationFit.IsLevelText(t, IsLevel(t.Layer)) && t.At.Y >= yMin && t.At.Y <= yMax),
+                                file.Lines.Where(l => ElevationFit.IsLevelLine(l, IsLevel(l.Layer), file.Texts) && l.A.X >= xMin && l.A.X <= xMax), xMin, xMax);
                             foreach (var g in pairs.GroupBy(p => LevelOf(p.z)).Where(g => g.Key != null))
                                 if (Conflicts.Commonest(g.Select(p => p.z)) is double v)
                                     values.Add(new ConflictValue { Topic = g.Key, Source = "elevation:" + fid, ValueMm = Math.Round(v), Where = $"{g.Count()} level marks on {Path.GetFileName(Args.Str(spec, "path"))}" });

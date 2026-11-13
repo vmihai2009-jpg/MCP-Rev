@@ -156,8 +156,8 @@ namespace BarrGazetas.RevitMcp
                     var dwg = DwgFile.Read(Args.Str(sec, "path"));
                     bool In(Pt p) => (xr.Count != 2 || p.X >= Math.Min(xr[0], xr[1]) && p.X <= Math.Max(xr[0], xr[1])) && (yr.Count != 2 || p.Y >= Math.Min(yr[0], yr[1]) && p.Y <= Math.Max(yr[0], yr[1]));
                     var lines = dwg.Lines.Where(l => In(l.A) && In(l.B)).ToList();
-                    var heights = ElevationFit.Heights(dwg.Texts.Where(tx => In(tx.At) && DwgFile.LayerMatches(tx.Layer, new[] { "*Level*" })),
-                                                       lines.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "*Level*" })), xr.Count == 2 ? Math.Min(xr[0], xr[1]) : double.MinValue, xr.Count == 2 ? Math.Max(xr[0], xr[1]) : double.MaxValue);
+                    var heights = ElevationFit.Heights(dwg.Texts.Where(tx => In(tx.At) && ElevationFit.IsLevelText(tx, DwgFile.LayerMatches(tx.Layer, new[] { "*Level*" }))),
+                                                       lines.Where(l => ElevationFit.IsLevelLine(l, DwgFile.LayerMatches(l.Layer, new[] { "*Level*" }), dwg.Texts)), xr.Count == 2 ? Math.Min(xr[0], xr[1]) : double.MinValue, xr.Count == 2 ? Math.Max(xr[0], xr[1]) : double.MaxValue);
                     double datumMm = doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero).Elevation * Mm;
                     var prof = lines.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "*Profile*", "*Wall*" }))
                         .Select(l => (new Pt(outSign * (l.A.X - sheetX0), heights.Height(l.A.Y) - datumMm), new Pt(outSign * (l.B.X - sheetX0), heights.Height(l.B.Y) - datumMm)))
@@ -223,7 +223,7 @@ namespace BarrGazetas.RevitMcp
                             var root = File.Exists(mf) ? (JsonNode.Parse(File.ReadAllText(mf)) as JsonObject ?? new JsonObject()) : new JsonObject();
                             root[fid] = new JsonObject { ["eaves"] = new JsonArray(Math.Round(ml[0].X), Math.Round(ml[0].Y)), ["kerb"] = new JsonArray(Math.Round(ml[^1].X), Math.Round(ml[^1].Y)),
                                                          ["section"] = Args.Str(sec, "name"), ["line"] = new JsonArray(ml.Select(p => (JsonNode)new JsonArray(Math.Round(p.X), Math.Round(p.Y))).ToArray()) };
-                            File.WriteAllText(mf, root.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+                            File.WriteAllText(mf, root.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true, TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() }));
                         }
                         catch { }
                     if (!dry && placed.Count > 0)
@@ -956,8 +956,8 @@ namespace BarrGazetas.RevitMcp
             bool Is(string layer, string[] names, string[] globs) => role != null && layer != null && role.TryGetValue(layer, out var r) && names.Contains(r) || DwgFile.LayerMatches(layer, globs);
             string[] winRole = { "Window" }, levelRole = { "LevelText", "HeightText" };
             var winLines = lines.Where(l => Is(l.Layer, winRole, new[] { "*Window*" })).ToList();
-            var heights = ElevationFit.Heights(file.Texts.Where(t => Is(t.Layer, levelRole, new[] { "*Level*" }) && t.At.Y >= yMin && t.At.Y <= yMax),
-                                               lines.Where(l => Is(l.Layer, levelRole, new[] { "*Level*" })), xMin, xMax);
+            var heights = ElevationFit.Heights(file.Texts.Where(t => ElevationFit.IsLevelText(t, Is(t.Layer, levelRole, new[] { "*Level*" })) && t.At.Y >= yMin && t.At.Y <= yMax),
+                                               lines.Where(l => ElevationFit.IsLevelLine(l, Is(l.Layer, levelRole, new[] { "*Level*" }), file.Texts)), xMin, xMax);
             double datumMm = doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero).Elevation * Mm;
             var inserts = new List<double>();
             foreach (var cat in new[] { BuiltInCategory.OST_Windows, BuiltInCategory.OST_Doors })

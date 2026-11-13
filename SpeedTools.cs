@@ -140,7 +140,7 @@ namespace BarrGazetas.RevitMcp
                 }
                 detail["floors"] = detailFloors;
                 string runFile = Path.Combine(reports, $"run-{stamp}.json");
-                File.WriteAllText(runFile, detail.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                File.WriteAllText(runFile, detail.ToJsonString(new JsonSerializerOptions { WriteIndented = true, TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() }));
                 object facadeScores = null;
                 if (Args.Bool(a, "facades") == true)
                     try
@@ -148,7 +148,7 @@ namespace BarrGazetas.RevitMcp
                         var fc = Call("facade_check", new JsonObject { ["facade"] = "all", ["issues"] = 5 });
                         facadeScores = fc;
                         detail["facades"] = fc?.DeepClone();
-                        File.WriteAllText(runFile, detail.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                        File.WriteAllText(runFile, detail.ToJsonString(new JsonSerializerOptions { WriteIndented = true, TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() }));
                     }
                     catch (Exception ex) { warnings.Add("facade_check: " + McpServer.Unwrap(ex).Message); }
                 object saved = null;

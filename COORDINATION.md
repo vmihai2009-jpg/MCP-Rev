@@ -572,6 +572,29 @@ _Write your entries here, newest first. Use the "Revit run results" template for
 
 <!-- First entry goes here. -->
 
+### 2026-11-13 (later): full mansard fixes, floor_trim_to_roof, datum marks on elevations (1.36.5-1.36.11)
+- `floor_trim_to_roof` (new): floors above a sloped roof's eaves that run into or past it are rebuilt as ordinary
+  floors ending at its kerb line (same type, level, offset, comments + "|trimmed to roof"). On testmcp it cut the
+  roof-plan slab 346660 back to the mansard (now 677977); the storey's own slab is left alone (only floors above the
+  eaves are cut).
+- `mansard_roof`: eaves/kerb offsets now pick the side inside the outline (the "shorter loop" rule offset outward on
+  arcs and jogs); street runs join across gaps up to 6 m (`join_gap_mm`); the kerb line is offset from a simplified
+  copy of the chain (jogs shorter than the slope's run crossed themselves: "Invalid footprint"); street bands are
+  cut off at the kerb.
+- **Datum marks (bug from the Mount Row session, On Centre Surveys):** an elevation whose only height is
+  "20.00m A.O.D." on a plain TEXT layer, its line ~400 mm *above* the text, was read as "assumed 1:1 to datum", so
+  every sill and head came out ~4.8 m low. Fixed in `Survey/ElevationFit.cs`: the level pattern takes an
+  A.O.D./AOD/OD suffix; `MarkPairs` also looks for the line just above the text; a datum mark counts on any layer
+  (`IsLevelText`, `IsLevelLine`: its layer's lines count as level lines). All 10 callers updated. Tests in
+  `FitPartTests.cs` (399 pass).
+- JSON writers with `WriteIndented` now set a TypeInfoResolver (the 1.3.0 "must specify a TypeInfoResolver" error).
+  The same bug in Survey to Revit's `SurveyPipeline.cs:173` lost a `survey_build` job's result: listed for them as
+  item W in DWG-Survey-to-Revit-3D `MCP-AUDIT-AND-TOOLS.md`.
+- Files: `SurveyRoofTools.cs`, `Survey/ElevationFit.cs`, `SurveyDetailTools.cs`, `SurveyFacadeDetailTools.cs`,
+  `SurveyFacadeReliefTools.cs`, `SurveyFidelityTools.cs`, `SurveySectionTools.cs`, `SurveyTools.cs`,
+  `SurveyElevationFitCheck.cs`, `SurveyConflictTools.cs`, `SpeedTools.cs`, `SurveyAutofixTools.cs`,
+  `SurveyFacadeCheckAll.cs`, `tests/SurveyCore/FitPartTests.cs`, `BGMCP.csproj`. Version 1.36.11.
+
 ### 2026-11-13: mansard as a native roof (mansard_roof), roof_detail, create_roof fix; roof_solver report (1.36.3)
 - What: `mansard_roof` (new, `SurveyRoofTools.cs`): the mansard as one native footprint roof from the survey sections
   (`facade_profile` now writes `reports/mansard.json` on a dry run too). Default `street_only`: a sloped band along the

@@ -477,8 +477,8 @@ namespace BarrGazetas.RevitMcp
                     var lvlLayers = Args.Strings(a, "level_layers"); if (lvlLayers.Count == 0) lvlLayers = new List<string> { "*Level*" };
                     var lines = file.Lines.Where(l => InSheet(l.A) && InSheet(l.B)).ToList();
                     var winLines = lines.Where(l => DwgFile.LayerMatches(l.Layer, winLayers)).ToList();
-                    var heights = ElevationFit.Heights(file.Texts.Where(t => DwgFile.LayerMatches(t.Layer, lvlLayers) && t.At.Y >= yMin && t.At.Y <= yMax),
-                                                       lines.Where(l => DwgFile.LayerMatches(l.Layer, lvlLayers)), xMin, xMax);
+                    var heights = ElevationFit.Heights(file.Texts.Where(t => ElevationFit.IsLevelText(t, DwgFile.LayerMatches(t.Layer, lvlLayers)) && t.At.Y >= yMin && t.At.Y <= yMax),
+                                                       lines.Where(l => ElevationFit.IsLevelLine(l, DwgFile.LayerMatches(l.Layer, lvlLayers), file.Texts)), xMin, xMax);
                     // heights above datum -> model heights: the shared elevation at the internal origin is the datum's offset
                     double datumMm = doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero).Elevation * Mm;
                     double ModelZ(double sheetY) => heights.Height(sheetY) - datumMm;

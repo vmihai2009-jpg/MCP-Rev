@@ -159,14 +159,32 @@ namespace BarrGazetas.RevitMcp.Survey
             return (matched, notDrawn, missing);
         }
 
-        private static readonly Regex Level = new Regex(@"^\s*\+?(-?\d{1,3}\.\d{2,3})\s*(m)?\s*$", RegexOptions.CultureInvariant);
+        // 1.36.11 (Mount Row, On Centre Surveys): a datum mark may say "20.00m A.O.D." / "20.00 AOD" / "+20.00 OD"
+        private static readonly Regex Level = new Regex(@"^\s*\+?(-?\d{1,3}\.\d{2,3})\s*(m)?\s*(A\.?\s*O\.?\s*D\.?|O\.?\s*D\.?)?\s*$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly Regex Datum = new Regex(@"^\s*\+?-?\d{1,3}\.\d{2,3}\s*(m)?\s*(A\.?\s*O\.?\s*D\.?|O\.?\s*D\.?)\s*$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
-        /// <summary>A level mark's value in mm above datum ("48.97", "+26.47", "48.97m"), or null.</summary>
+        /// <summary>A level mark's value in mm above datum ("48.97", "+26.47", "48.97m", "20.00m A.O.D."), or null.</summary>
         public static double? LevelValueMm(string text)
         {
             var m = Level.Match(text ?? "");
             return m.Success ? double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) * 1000 : (double?)null;
         }
+
+        /// <summary>A height that says itself it is above datum ("20.00m A.O.D."): a level mark on whatever layer it sits
+        /// (some surveyors put the datum mark on a plain TEXT layer, not a level layer).</summary>
+        public static bool IsDatumMark(string text) => Datum.IsMatch(text ?? "");
+
+        /// <summary>A text that is a level mark: on a level layer, or a datum mark on any layer.</summary>
+        public static bool IsLevelText(DwgText t, bool onLevelLayer) => onLevelLayer || IsDatumMark(t.Value);
+
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<object, HashSet<string>> datumLayers = new();
+        /// <summary>The layers that hold datum marks in this set of texts (cached per list): their lines are level lines too
+        /// (the datum mark's line and triangle sit on the same layer as its text).</summary>
+        public static HashSet<string> DatumLayers(IEnumerable<DwgText> texts)
+            => datumLayers.GetValue(texts, k => new HashSet<string>(((IEnumerable<DwgText>)k).Where(t => IsDatumMark(t.Value) && t.Layer != null).Select(t => t.Layer), StringComparer.OrdinalIgnoreCase));
+
+        /// <summary>A line that can mark a level: on a level layer, or on a layer that holds datum marks.</summary>
+        public static bool IsLevelLine(DwgLine l, bool onLevelLayer, IEnumerable<DwgText> allTexts) => onLevelLayer || (l.Layer != null && DatumLayers(allTexts).Contains(l.Layer));
 
         /// <summary>
         /// Sheet y -> height above datum, from the level marks: each mark's value is paired with the level line drawn
@@ -192,6 +210,12 @@ namespace BarrGazetas.RevitMcp.Survey
                 var line = flat.Where(l => l.A.Y <= t.At.Y + 50 && l.A.Y >= t.At.Y - 600
                                            && Math.Min(l.A.X, l.B.X) <= t.At.X + 3000 && Math.Max(l.A.X, l.B.X) >= t.At.X - 3000)
                                .OrderBy(l => t.At.Y - l.A.Y).FirstOrDefault();
+                if (line != null) { pairs.Add((t.At.X, line.A.Y, z)); continue; }
+                // 1.36.11: some surveyors draw the datum line just ABOVE the text (Mount Row: "20.00m A.O.D." with its line
+                // ~400 mm over it and a triangle's apex touching the line)
+                line = flat.Where(l => l.A.Y > t.At.Y + 50 && l.A.Y <= t.At.Y + 800
+                                       && Math.Min(l.A.X, l.B.X) <= t.At.X + 3000 && Math.Max(l.A.X, l.B.X) >= t.At.X - 3000)
+                           .OrderBy(l => l.A.Y - t.At.Y).FirstOrDefault();
                 if (line != null) { pairs.Add((t.At.X, line.A.Y, z)); continue; }
                 // a spot-level symbol (a small triangle pointing at the level) next to the text: its lowest point
                 var ends = all.Where(l => Math.Abs(l.A.X - l.B.X) < 400 && Math.Abs(l.A.Y - l.B.Y) < 400)
