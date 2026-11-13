@@ -39,7 +39,7 @@ namespace SurveyCoreTests
         static int Main()
         {
             SpeedTests.Run(); MoreTests.Run(); DetailTests.Run(); ElevMissingTests.Run(); FacadeMapTests.Run(); FacadeCheckTests.Run(); FacadeCourseTests.Run(); FacadeSupportTests.Run(); CurveTests.Run(); FitPartTests.Run(); FacadeTypeTests.Run(); RegistrationTests.Run(); LineRoleTests.Run();
-            ConflictTests.Run(); ReviewQueueTests.Run(); EditabilityTests.Run(); SlabStepTests.Run(); ReadingTests.Run(); SectionTests.Run(); CleanerTests(); SnapTests(); LoopTests(); WallTests(); TopoTests(); RuleTests(); PlannerTests(); SuggestTests(); StressTests();
+            ConflictTests.Run(); ReviewQueueTests.Run(); EditabilityTests.Run(); OpeningClusterTests.Run(); SlabStepTests.Run(); ReadingTests.Run(); SectionTests.Run(); CleanerTests(); SnapTests(); LoopTests(); WallTests(); TopoTests(); RuleTests(); PlannerTests(); SuggestTests(); StressTests();
             Console.WriteLine();
             Console.WriteLine("passed " + T.Pass + ", failed " + T.Fail);
             return T.Fail == 0 ? 0 : 1;
