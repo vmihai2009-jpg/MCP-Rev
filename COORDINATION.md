@@ -150,6 +150,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 |---|---|
 | `facade_correspondence` | **Does the model look like the elevation, measured** (1.18.0): model edges vs elevation lines on the facade plane. Coverage (gaps), precision (spurious), per element ok / shifted (dU, dZ; `storeyOffset`) / partial / spurious, gaps with boxes, picture. Run after every facade build. |
 | `facade_course_check` | **Are cornices, string courses and window rows at the drawn heights** (1.19.0): each course followed along the facade; stretches off (dZ, ids, `storeyOffset`) or missing; `commonOffsets` = a part of the facade out by the same dZ on several courses (a level or the elevation's height fit, one cause); windows off their drawn sill/head. |
+| `detail_support_check` | **Does every piece of facade detail sit on something** (1.20.0, changes nothing): per solid of each Generic Model, wall sweep, column or railing near the facade, a ray from its back face into the building must reach a wall, roof or floor within `gap_mm` (50). `floating` = hung in front of nothing (a dormer front or roof balustrade on the facade plane); `buried` = front behind the wall face. Lists element ids, pieces, worst gap. |
 | `opening_clear_check` | **Is every window clear** (1.18.0): rays through each opening; what stands in front of the glass (ids, names, share); drawn openings the model lacks or has the wrong size. |
 | `facade_detail_map` | **What a facade's elevation draws, named** (1.17.0): bands, rustication, architraves, sills, hoods, pediments, keystones, consoles, pilasters, quoins, balustrades, modillions, leftovers; repeats grouped into types; how to build each and where its depth comes from. `reference: <name>` says how the human model built each item and how far it projects; `reference: active` shows what our model has built there. `image: true` draws it. Changes nothing. |
 | `facade_details` | Horizontal bands of a facade, 1:1: profile from a section DWG, runs from the elevation, swept along the outer face. `dry_run` (default) lists bands; `only` builds chosen ones. (On 7 Swallow Place F29 it read 1.3-1.5 m "bands": check before building.) |
@@ -345,6 +346,11 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-13 (later): detail_support_check, and facade_relief puts set-back detail on the roof (1.20.0), item 2 of 10
+- `detail_support_check facade: F..` (read-only, any survey): lists detail that floats in front of nothing or is buried in a wall, with element ids. Run it after every facade build next to `facade_correspondence` and `facade_course_check`.
+- `facade_relief` now finds the top of the wall **under each stretch of the facade** (not the facade's highest wall). A face more than 300 mm above its own stretch of wall (dormer front, attic storey, a lower block's roof balustrade) is cast inward onto the roof or set-back wall behind and built there; if nothing is within 6 m behind it, it is left out. The answer gives `setBackOntoRoof` and `aboveOwnWallLeftOut`. **Ask:** rebuild F29's relief, then run `detail_support_check` and `facade_course_check` on it; the top right should no longer float or show a storey offset.
+- Files: `Survey/FacadeRelief.cs`, `SurveyFacadeReliefTools.cs`, `SurveyFacadeCheckTools.cs`, `Hub.cs`, `tests/SurveyCore/FacadeSupportTests.cs`, `BGMCP.csproj`, `PLAN.md`, `docs/FACADE-CHECKS.md`, this file. Version 1.20.0.
 
 ### 2026-11-13 (later): facade_course_check (1.19.0), item 1 of 10
 - What: Mihai asked for 10 tools toward 1:1 (list in PLAN.md "Ten to 1:1"). First: `facade_course_check`, read-only, any survey. Run it after every facade build next to `facade_correspondence`.

@@ -108,7 +108,7 @@ run. They write `facade-check-<F>.json` in the reports folder and, with `image: 
   - image: elevation in grey, matched model edges green, unmatched model edges red, uncovered elevation lines blue.
 - **Target:** coverage ≥ 90% and precision ≥ 90% per facade (PLAN.md goal).
 
-### 2.4 `detail_support_check` (detail in the wrong plane)
+### 2.4 `detail_support_check` (detail in the wrong plane) — built, 1.20.0
 - **In:** facade.
 - **How:** every detail piece (relief family solids, wall sweeps, columns) must sit on something: a short ray from
   its back face inward must hit a wall or roof within 50 mm, and its front must not be behind the wall face (buried).
@@ -126,7 +126,7 @@ nobody has to look at screenshots to know what is wrong.
    and their reveals from the elevation, `FacadeMap` window boxes) and the model's windows, grown by 10 mm. A face is
    dropped if most of it is inside the mask, and **clipped** to outside the mask if it overlaps it; never extruded over
    an opening. Surround faces keep their outer part.
-2. **Set-back detail** (Error B.1): faces above a block's own wall top (per u stretch, not the facade's highest) are
+2. **Set-back detail** (Error B.1; done in 1.20.0, `FacadeRelief.TopProfile`/`AboveOwnWall`): faces above a block's own wall top (per u stretch, not the facade's highest) are
    not placed on the facade plane: they are listed as "roof-level detail" for the dormer/mansard step, which places
    them on the roof surface behind (the plane is found by casting inward to the mansard roof).
 3. **Height fit per drawing part** (Error B.2): `elevation_index` and the relief use the level marks nearest each part
