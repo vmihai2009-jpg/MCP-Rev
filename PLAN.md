@@ -142,7 +142,7 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 11. Cross-view registration: one shared frame for every plan, elevation and section (grids, party-wall edges, level marks); residual per sheet. Plans done 1.28.0 (`registration_check`); elevations by `elevation_fit_check` + the overlay (11b); sections still to add.
 11b. `elevation_overlay` (Mihai 2026-11-13): the right part of the one elevations DWG (from the survey folder Survey to Revit already has) linked into an elevation view of each facade, registered to the facade and heights, cropped to it, where missing. (Fable 5.2's list, approved by Mihai 2026-11-13; 11-18 all transferable.)
 12. Semantic classify: line roles (wall face, hatch, dimension, furniture, overhead) from geometry, not layer names. Done 1.30.0 (`layer_roles_check`, plans).
-13. Survey conflict report: where drawings contradict each other (plan vs elevation widths, section vs spot heights), resolved by a declared precedence rule, each resolution logged.
+13. Survey conflict report: where drawings contradict each other (plan vs elevation widths, section vs spot heights), resolved by a declared precedence rule, each resolution logged. Heights done 1.31.0 (`survey_conflicts`: plan spots vs elevation marks); widths via facade_correspondence; sections still to add.
 14. Provenance and confidence tags on every built element (source DWG entity, view, confidence) and a "review these first" queue.
 15. Editability audit: in-place/DirectShape solids, families without parameters, curves built in segments.
 16. Opening clustering: window_look's one-type-per-window merged into a few parametric types.
