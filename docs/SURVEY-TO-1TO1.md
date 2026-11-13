@@ -41,6 +41,20 @@ The operating guide for every tool is Part 1 of `COORDINATION.md`. This file is 
    copyright). Before building any facade detail, say which photo confirms it. On 7 Swallow Place the photos showed
    the mansard on the street fronts only, which was also why a whole-building mansard kept failing in Revit.
 
+8. **The MCP side checks and decides; Survey to Revit builds** (Mihai, 2026-11-13: "mcp should analyse against
+   drawings and pictures and take the responsibility to check against survey to revit"). Survey to Revit reads the
+   DWGs and builds deterministically, no judgement. We (hub + Claude) are the checker of record:
+   - analyse its build against every drawing (plans, sections, elevations, roof plan) **and** the photos;
+   - decide the ambiguous cases (mansard or set-back attic, is this line a wall, which elevation is which facade,
+     which height to trust);
+   - write each decision with its evidence to `survey-decisions.json` in the survey folder. Survey to Revit obeys it
+     on every rebuild, as it does `layers.txt`; the schema is in DWG-Survey-to-Revit-3D `MCP-AUDIT-AND-TOOLS.md`
+     section 0.
+
+   A fix made only in the model (like deleting the 13 mansard skin walls) is lost on the next `survey_build`. Make
+   it a decision too. Until Survey to Revit reads the file (its item T), write it anyway and note it in
+   COORDINATION.md.
+
 ## Order of work
 
 ### 1. Read and key the drawings
