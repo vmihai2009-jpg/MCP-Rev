@@ -223,6 +223,90 @@ namespace BarrGazetas.RevitMcp
             };
         }
 
+        /// <summary>1.19.0: the model's windows and doors on a facade, as boxes in its frame (u along, z model mm).</summary>
+        private static List<(FamilyInstance fi, double u0, double u1, double z0, double z1)> ModelOpenings(Document doc, ElevFrame fr, double nx, double ny)
+        {
+            var res = new List<(FamilyInstance, double, double, double, double)>();
+            foreach (var cat in new[] { BuiltInCategory.OST_Windows, BuiltInCategory.OST_Doors })
+                foreach (var fi in new FilteredElementCollector(doc).OfCategory(cat).WhereElementIsNotElementType().OfType<FamilyInstance>())
+                {
+                    if (fi.SuperComponent != null || !(fi.Location is LocationPoint lp)) continue;
+                    var p = CadLink.ToMm(lp.Point);
+                    double u = (p.X - fr.A.X) * fr.Ux + (p.Y - fr.A.Y) * fr.Uy, off = (p.X - fr.A.X) * nx + (p.Y - fr.A.Y) * ny;
+                    if (Math.Abs(off) > 800 || u < -500 || u > fr.Length + 500) continue;
+                    double w = WidthOf(fi), lz = (doc.GetElement(fi.LevelId) as Level)?.Elevation * Mm ?? 0;
+                    double sill = LenOf(fi, BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM) ?? 0, head = LenOf(fi, BuiltInParameter.INSTANCE_HEAD_HEIGHT_PARAM) ?? sill;
+                    if (w <= 0 || head - sill <= 0) continue;
+                    res.Add((fi, u - w / 2, u + w / 2, lz + sill, lz + head));
+                }
+            return res;
+        }
+
+        /// <summary>The elevation's lines in the facade frame (u, z model mm), building lines only.</summary>
+        private static List<FacadeEdge> DrawnEdges(ElevFrame fr) =>
+            fr.Lines.Where(l => !DwgFile.LayerMatches(l.Layer, CheckSkip))
+                .Select(l => new FacadeEdge(fr.U(l.A.X), fr.Z(l.A.Y), fr.U(l.B.X), fr.Z(l.B.Y), 0, l.Layer))
+                .Where(e => e.Len >= 5 && Math.Max(e.U0, e.U1) >= -500 && Math.Min(e.U0, e.U1) <= fr.Length + 500).ToList();
+
+        public static IEnumerable<RevitTool> FacadeCourseTools()
+        {
+            yield return new RevitTool
+            {
+                Name = "facade_course_check",
+                Description = "Are the facade's horizontal courses at the elevation's heights: each cornice, string course and plinth the elevation " +
+                              "draws (facade_detail_map's bands) is followed along the facade every 100 mm, and the model's nearest horizontal edge " +
+                              "there (detail families, wall sweeps, windows, roofs; not plain walls) measured against the drawn height. Gives per course " +
+                              "the share carried within tol_mm and every stretch off (dZ, element ids; storeyOffset when about a storey) or missing; " +
+                              "commonOffsets = parts of the facade where several courses are out by the same dZ (the elevation's height fit or a level " +
+                              "is wrong there, not one element); and windows whose sill or head is off the opening the elevation draws. Changes nothing.",
+                InputSchema = Schema(
+                    ("facade", S("string", "Facade id (facade_list / elevation-index.json)"), true),
+                    ("tol_mm", S("number", "Height tolerance (default 20)"), false),
+                    ("list", S("integer", "How many stretches and windows to list (default 25)"), false)),
+                Run = (app, a) =>
+                {
+                    var doc = Doc(app);
+                    string fid = Args.Str(a, "facade") ?? throw new ArgumentException("facade is needed.");
+                    var spec = ElevationSpecs(doc, null).FirstOrDefault(s => string.Equals(Args.Str(s, "facade"), fid, StringComparison.OrdinalIgnoreCase))
+                        ?? throw new ArgumentException($"No elevation for {fid} in elevation-index.json: elevation_index first.");
+                    Func<IEnumerable<string>, Dictionary<string, string>> roles = null;
+                    try { roles = ReadingFor(app, doc, a)?.Roles; } catch { }
+                    var fr = ElevationFrame(doc, spec, roles);
+                    var (nx, ny) = Outward(doc, fr);
+                    double tol = Args.Dbl(a, "tol_mm") ?? 20; int list = Args.Int(a, "list", 25);
+                    var drawn = DrawnEdges(fr);
+                    if (drawn.Count == 0) return new { facade = fid, note = "The elevation has no building lines in its sheet range." };
+                    var map = FacadeMap.Read(drawn.Select(e => new DwgLine { Layer = e.Layer, A = new Pt(e.U0, e.Z0), B = new Pt(e.U1, e.Z1) }), fr.Length);
+                    var courses = map.Items.Where(i => i.Runs != null && i.LineHeights != null)
+                        .SelectMany(i => i.LineHeights.Select(z => (id: i.Id, kind: i.Kind, z, runs: i.Runs.ToList()))).ToList();
+                    double zLo = drawn.Min(e => Math.Min(e.Z0, e.Z1)) - 500, zHi = drawn.Max(e => Math.Max(e.Z0, e.Z1)) + 500;
+                    var (model, labels) = ModelEdges(doc, fr, nx, ny, 3000, 1500, zLo, zHi);
+                    var openings = ModelOpenings(doc, fr, nx, ny);
+                    var res = FacadeCourses.Check(courses, model, map.Windows.Select(w => (w.U0, w.U1, w.Z0, w.Z1)).ToList(),
+                        openings.Select(o => (o.fi.Id.Value, o.u0, o.u1, o.z0, o.z1)).ToList(), tol);
+                    var off = res.Courses.SelectMany(c => c.Stretches.Where(s => s.State != "ok").Select(s => (c, s))).OrderByDescending(x => x.s.U1 - x.s.U0).ToList();
+                    var answer = new
+                    {
+                        facade = fid, tolMm = tol, courses = res.Courses.Count, carried = Math.Round(res.Carried, 3),
+                        perCourse = res.Courses.Select(c => new { item = c.Item, c.Kind, zModelMm = Math.Round(c.Z), carried = Math.Round(c.Carried, 2), lengthM = Math.Round(c.LengthMm / 1000, 1) }).ToList(),
+                        commonOffsets = res.CommonOffsets.Select(x => new { u = new[] { x.u0, x.u1 }, dzMm = x.dz, courses = x.courses, likely = Math.Abs(x.dz) >= 2400 && Math.Abs(x.dz) <= 4800 ? "a storey out: this part sits on the wrong level" : "the elevation's height fit is off here (check its level marks), or this part was built from another drawing" }).ToList(),
+                        stretches = off.Take(list).Select(x => new
+                        {
+                            item = x.c.Item, x.c.Kind, zModelMm = Math.Round(x.c.Z), state = x.s.State, u = new[] { Math.Round(x.s.U0), Math.Round(x.s.U1) },
+                            dzMm = x.s.State == "off" ? Math.Round(x.s.DzMm) : (double?)null, storeyOffset = x.s.StoreyOffset ? true : (bool?)null,
+                            elements = x.s.Elements.Select(id => new { id, label = labels.TryGetValue(id, out var lb) ? lb : null }).ToList(),
+                        }).ToList(),
+                        stretchesTotal = off.Count,
+                        windowsOffTheirDrawnOpening = res.RowsOff.Count,
+                        windows = res.RowsOff.Take(list).Select(w => new { id = w.Element, sillModelMinusDrawn = Math.Round(w.ModelSill - w.DrawnSill), headModelMinusDrawn = Math.Round(w.ModelHead - w.DrawnHead), u = new[] { Math.Round(w.U0), Math.Round(w.U1) } }).ToList(),
+                        next = "commonOffsets first (one cause, many courses). Then each off stretch: move its elements by -dzMm, or rebuild that band (facade_profile). missing: the band isn't modelled there. windows: survey_autofix (openings) or set_insert.",
+                    };
+                    File.WriteAllText(Path.Combine(ReportsFolder(doc), $"facade-courses-{fid}.json"), JsonSerializer.Serialize(answer, JsonOpts));
+                    return answer;
+                }
+            };
+        }
+
         private static bool IsSelf(Document doc, ElementId id, FamilyInstance fi)
         {
             if (id == fi.Id) return true;

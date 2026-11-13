@@ -149,6 +149,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 | Tool | What it's for |
 |---|---|
 | `facade_correspondence` | **Does the model look like the elevation, measured** (1.18.0): model edges vs elevation lines on the facade plane. Coverage (gaps), precision (spurious), per element ok / shifted (dU, dZ; `storeyOffset`) / partial / spurious, gaps with boxes, picture. Run after every facade build. |
+| `facade_course_check` | **Are cornices, string courses and window rows at the drawn heights** (1.19.0): each course followed along the facade; stretches off (dZ, ids, `storeyOffset`) or missing; `commonOffsets` = a part of the facade out by the same dZ on several courses (a level or the elevation's height fit, one cause); windows off their drawn sill/head. |
 | `opening_clear_check` | **Is every window clear** (1.18.0): rays through each opening; what stands in front of the glass (ids, names, share); drawn openings the model lacks or has the wrong size. |
 | `facade_detail_map` | **What a facade's elevation draws, named** (1.17.0): bands, rustication, architraves, sills, hoods, pediments, keystones, consoles, pilasters, quoins, balustrades, modillions, leftovers; repeats grouped into types; how to build each and where its depth comes from. `reference: <name>` says how the human model built each item and how far it projects; `reference: active` shows what our model has built there. `image: true` draws it. Changes nothing. |
 | `facade_details` | Horizontal bands of a facade, 1:1: profile from a section DWG, runs from the elevation, swept along the outer face. `dry_run` (default) lists bands; `only` builds chosen ones. (On 7 Swallow Place F29 it read 1.3-1.5 m "bands": check before building.) |
@@ -344,6 +345,10 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-13 (later): facade_course_check (1.19.0), item 1 of 10
+- What: Mihai asked for 10 tools toward 1:1 (list in PLAN.md "Ten to 1:1"). First: `facade_course_check`, read-only, any survey. Run it after every facade build next to `facade_correspondence`.
+- Files: `Survey/FacadeCourses.cs` (new), `SurveyFacadeCheckTools.cs` (tool + shared helpers), `Hub.cs`, `tests/SurveyCore/FacadeCourseTests.cs`, `BGMCP.csproj`, `PLAN.md`, this file. Version 1.19.0.
 
 ### 2026-11-13 (later): facade_correspondence, opening_clear_check, and facade_relief no longer covers windows (1.18.0)
 - What: two read-only checks and one fix, all general (any survey; layer roles from Survey to Revit, sizes as arguments). `facade_correspondence`: the model's edges near a facade against the elevation's lines (coverage, precision, shifted elements with their move, spurious elements, gaps). `opening_clear_check`: rays through every window and door, naming whatever stands in front of the glass; drawn openings the model lacks or has the wrong size. Fix: `facade_relief` now cuts every face back from the openings the elevation draws (as well as the model's windows): a face mostly inside an opening is left out, one partly over it keeps only the part outside.

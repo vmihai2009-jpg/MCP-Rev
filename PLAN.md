@@ -128,12 +128,24 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 | F6 | `reference_pattern` (done inside `facade_detail_map reference:`, 1.17.0) | For a box on the facade, says how the human model built it: which families or in-place elements, category, level of detail, an element image. Claude copies the approach (and with `reference_copy`, the family itself where the human's family fits the survey). | Hub | P1 |
 | F7 | rustication and coursing | Horizontal joints on the rusticated base from the elevation's joint lines: wall sweeps or reveals at each joint height. | Hub | P2 |
 
+### Ten to 1:1 (2026-11-13, Mihai: "10 tasks/tools it would need, and implement"; all transferable to any survey)
+1. `facade_course_check`: courses and window rows at the drawn heights (C3). Done 1.19.0.
+2. `detail_support_check` + set-back fix in `facade_relief` (C4).
+3. `facade_check`: every facade check in one call, also in `survey_run` (C5).
+4. `facade_shift_fix`: move elements `facade_correspondence` finds shifted (dry run first, PhaseKeeper).
+5. `elevation_fit_check`: level marks per part of each elevation; parts that disagree reported, not used.
+6. DWG reader: polyline bulges, circles, ellipses, splines.
+7. Rustication as Reveal wall sweeps (F7).
+8. `place_by_type`: a family at every item of a `facade_detail_map` type (F5).
+9. `surround_family`: one editable family per surround type from the map (F3/F4).
+10. `fidelity_dashboard`: one 1:1 score over walls, openings, levels, sections, facades, with history.
+
 ### Facade checks (2026-11-13, docs/FACADE-CHECKS.md)
 | # | Tool | What | Where | Priority |
 |---|---|---|---|---|
 | C1 | `facade_correspondence` (done, 1.18.0) | Model edges vs elevation lines on the facade plane: coverage (gaps), precision (spurious), shifted elements with their Δu/Δz, per map item. This is F1 `facade_score`. | Hub | P0 |
 | C2 | `opening_clear_check` + opening mask in `facade_relief` (done, 1.18.0) | Rays through every window: what blocks the glass; drawn openings with no or wrong model window. Relief clipped to outside the drawn openings. | Hub | P0 |
-| C3 | `facade_course_check` | Cornices, string courses, sill/head rows at the elevation's heights, run by run; storey offsets and bad height fits named. | Hub | P1 |
+| C3 | `facade_course_check` (done, 1.19.0) | Cornices, string courses, sill/head rows at the elevation's heights, run by run; storey offsets and bad height fits named. | Hub | P1 |
 | C4 | `detail_support_check` | Detail floating in front of nothing (dormers on the facade plane) or buried in walls. | Hub | P1 |
 | C5 | `facade_check` | Runs C1-C4, one score per facade; ends every facade build step and `survey_run`. | Hub | P1 |
 
