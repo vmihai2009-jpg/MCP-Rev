@@ -147,10 +147,7 @@ namespace BarrGazetas.RevitMcp
                     var (nx, ny) = Outward(doc, fr);
                     int grid = Math.Max(2, Math.Min(20, Args.Int(a, "grid", 6))), list = Args.Int(a, "list", 30);
                     double tol = Args.Dbl(a, "tol_mm") ?? 30;
-                    string vn = Args.Str(a, "view");
-                    var views = new FilteredElementCollector(doc).OfClass(typeof(View3D)).Cast<View3D>().Where(v => !v.IsTemplate).ToList();
-                    var view = (vn != null ? views.FirstOrDefault(v => v.Name == vn) : views.FirstOrDefault(v => v.Name == "{3D}")) ?? views.FirstOrDefault()
-                        ?? throw new InvalidOperationException("No 3D view to cast rays in: open the default 3D view once, then run again.");
+                    var view = Find3DView(doc, Args.Str(a, "view")) ?? throw new InvalidOperationException("No 3D view to cast rays in: open the default 3D view once, then run again.");
                     var ri = new ReferenceIntersector(view) { TargetType = FindReferenceTarget.Element, FindReferencesInRevitLinks = false };
                     var inward = new XYZ(-nx, -ny, 0);
 
@@ -305,6 +302,88 @@ namespace BarrGazetas.RevitMcp
                     return answer;
                 }
             };
+        }
+
+        public static IEnumerable<RevitTool> FacadeSupportTools()
+        {
+            yield return new RevitTool
+            {
+                Name = "detail_support_check",
+                Description = "Does every piece of facade detail sit on something: for each solid of each detail element near a facade (Generic " +
+                              "Models, wall sweeps, columns, railings: our generated families and anyone else's), a ray from just behind its back " +
+                              "face straight into the building must reach a wall, roof or floor within gap_mm. Pieces with more behind them are " +
+                              "floating (e.g. a dormer front or a roof-level balustrade hung on the facade plane in front of a set-back roof); " +
+                              "pieces whose front is behind the wall face are buried (inside the wall, invisible). Lists elements with how many of " +
+                              "their pieces float or are buried and the worst gap. Needs a 3D view. Changes nothing.",
+                InputSchema = Schema(
+                    ("facade", S("string", "Facade id (facade_list / elevation-index.json)"), true),
+                    ("gap_mm", S("number", "Largest gap behind a piece that still counts as resting on the building (default 50)"), false),
+                    ("view", S("string", "3D view name (default {3D})"), false),
+                    ("list", S("integer", "How many elements to list (default 30)"), false)),
+                Run = (app, a) =>
+                {
+                    var doc = Doc(app);
+                    string fid = Args.Str(a, "facade") ?? throw new ArgumentException("facade is needed.");
+                    var spec = ElevationSpecs(doc, null).FirstOrDefault(s => string.Equals(Args.Str(s, "facade"), fid, StringComparison.OrdinalIgnoreCase))
+                        ?? throw new ArgumentException($"No elevation for {fid} in elevation-index.json: elevation_index first.");
+                    var fr = ElevationFrame(doc, spec, null);
+                    var (nx, ny) = Outward(doc, fr);
+                    double gap = Args.Dbl(a, "gap_mm") ?? 50; int list = Args.Int(a, "list", 30);
+                    var view = Find3DView(doc, Args.Str(a, "view")) ?? throw new InvalidOperationException("No 3D view to cast rays in: open the default 3D view once, then run again.");
+                    var host = new ReferenceIntersector(new ElementMulticategoryFilter(new List<BuiltInCategory> { BuiltInCategory.OST_Walls, BuiltInCategory.OST_Roofs, BuiltInCategory.OST_Floors }), FindReferenceTarget.Element, view);
+                    var inward = new XYZ(-nx, -ny, 0);
+                    (double u, double v, double z) Map(XYZ p) { double x = p.X * Mm - fr.A.X, y = p.Y * Mm - fr.A.Y; return (x * fr.Ux + y * fr.Uy, x * nx + y * ny, p.Z * Mm); }
+                    XYZ At(double u, double v, double z) => new XYZ((fr.A.X + fr.Ux * u + nx * v) / Mm, (fr.A.Y + fr.Uy * u + ny * v) / Mm, z / Mm);
+                    var opt = new Options { DetailLevel = ViewDetailLevel.Fine };
+                    var report = new List<(Element e, int pieces, int floating, int buried, double worst)>();
+                    foreach (var cat in new[] { BuiltInCategory.OST_GenericModel, BuiltInCategory.OST_Cornices, BuiltInCategory.OST_Columns, BuiltInCategory.OST_StairsRailing })
+                        foreach (var e in new FilteredElementCollector(doc).OfCategory(cat).WhereElementIsNotElementType())
+                        {
+                            if (e is FamilyInstance fi && fi.SuperComponent != null) continue;
+                            var bb = e.get_BoundingBox(null); if (bb == null) continue;
+                            var cs = new[] { bb.Min, bb.Max, new XYZ(bb.Min.X, bb.Max.Y, bb.Min.Z), new XYZ(bb.Max.X, bb.Min.Y, bb.Max.Z) }.Select(Map).ToList();
+                            if (cs.Max(c => c.u) < -300 || cs.Min(c => c.u) > fr.Length + 300 || cs.Max(c => c.v) < -300 || cs.Min(c => c.v) > 2500) continue;
+                            int pieces = 0, fl = 0, bu = 0; double worst = 0;
+                            foreach (var so in SolidsOf(e.get_Geometry(opt)))
+                            {
+                                var sb = so.GetBoundingBox(); if (sb == null) continue;
+                                var pts = new[] { sb.Min, sb.Max, new XYZ(sb.Min.X, sb.Max.Y, sb.Min.Z), new XYZ(sb.Max.X, sb.Min.Y, sb.Max.Z), new XYZ(sb.Min.X, sb.Min.Y, sb.Max.Z), new XYZ(sb.Max.X, sb.Max.Y, sb.Min.Z) }
+                                    .Select(q => Map(sb.Transform.OfPoint(q))).ToList();
+                                double u = (pts.Min(q => q.u) + pts.Max(q => q.u)) / 2, z = (pts.Min(q => q.z) + pts.Max(q => q.z)) / 2, back = pts.Min(q => q.v), frontV = pts.Max(q => q.v);
+                                if (back > 2500 || frontV < -300) continue;
+                                pieces++;
+                                ReferenceWithContext hb = null, hw = null;
+                                try { hb = host.FindNearest(At(u, back + 1, z), inward); hw = host.FindNearest(At(u, 3000, z), inward); } catch { continue; }
+                                double behindGap = hb == null ? double.PositiveInfinity : hb.Proximity * Mm - 1;
+                                double wallV = hw == null ? double.NegativeInfinity : 3000 - hw.Proximity * Mm;
+                                if (frontV < wallV - 5) { bu++; continue; }
+                                if (behindGap > gap) { fl++; worst = Math.Max(worst, double.IsInfinity(behindGap) ? 99999 : behindGap); }
+                            }
+                            if (pieces > 0 && (fl > 0 || bu > 0)) report.Add((e, pieces, fl, bu, worst));
+                        }
+                    var answer = new
+                    {
+                        facade = fid, gapMm = gap, view = view.Name,
+                        floatingElements = report.Count(r => r.floating > 0), buriedElements = report.Count(r => r.buried > 0),
+                        elements = report.OrderByDescending(r => r.floating + r.buried).Take(list).Select(r => new
+                        {
+                            id = r.e.Id.Value, label = ReferenceTools.Label(doc, r.e), comments = r.e.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString(),
+                            r.pieces, r.floating, r.buried, worstGapMm = r.floating > 0 ? (r.worst >= 99999 ? (double?)null : Math.Round(r.worst)) : null,
+                            nothingBehind = r.floating > 0 && r.worst >= 99999 ? true : (bool?)null,
+                        }).ToList(),
+                        next = "floating relief from facade_relief: rebuild it (1.20.0 puts faces above their own wall onto the roof behind). Others: move them back onto the wall (move_elements) or delete. buried: they add nothing; delete or rebuild with a depth.",
+                    };
+                    File.WriteAllText(Path.Combine(ReportsFolder(doc), $"detail-support-{fid}.json"), JsonSerializer.Serialize(answer, JsonOpts));
+                    return answer;
+                }
+            };
+        }
+
+        /// <summary>A 3D view to cast rays in: the named one, else {3D}, else the first; null if the model has none.</summary>
+        internal static View3D Find3DView(Document doc, string name)
+        {
+            var views = new FilteredElementCollector(doc).OfClass(typeof(View3D)).Cast<View3D>().Where(v => !v.IsTemplate).ToList();
+            return (name != null ? views.FirstOrDefault(v => v.Name == name) : views.FirstOrDefault(v => v.Name == "{3D}")) ?? views.FirstOrDefault();
         }
 
         private static bool IsSelf(Document doc, ElementId id, FamilyInstance fi)

@@ -451,6 +451,34 @@ namespace BarrGazetas.RevitMcp
                         .Select(w => w.get_BoundingBox(null)?.Max.Z * Mm ?? double.MinValue).DefaultIfEmpty(double.MaxValue).Max();
                     // dormers rise up to ~1.8 m above the wall top and are kept; chimney pots and roof edges above that are not
                     int aboveRoof = faces.RemoveAll(f => f.Z0 > wallTop + 1800);
+                    // 1.20.0: a face above its own stretch of wall (a dormer, an attic storey, a lower block's roof-level detail) is
+                    // not on the facade plane: it goes back onto what stands behind it (the roof or the set-back wall), found by a
+                    // ray straight in; with nothing behind it, it is left out
+                    var wallSpans = walls.Select(w =>
+                    {
+                        var c = ((LocationCurve)w.Location).Curve;
+                        var p0 = c.GetEndPoint(0); var p1 = c.GetEndPoint(1); var pm = c.Evaluate(0.5, true);
+                        double U(XYZ q) => (q.X * Mm - fr.A.X) * fr.Ux + (q.Y * Mm - fr.A.Y) * fr.Uy;
+                        double v = (pm.X * Mm - fr.A.X) * nx + (pm.Y * Mm - fr.A.Y) * ny;
+                        return (u0: Math.Min(U(p0), U(p1)), u1: Math.Max(U(p0), U(p1)), v, top: w.get_BoundingBox(null)?.Max.Z * Mm ?? double.MinValue);
+                    }).Where(x => Math.Abs(x.v) < 1500 && x.u1 > -500 && x.u0 < fr.Length + 500).Select(x => (x.u0, x.u1, x.top)).ToList();
+                    var tops = FacadeRelief.TopProfile(wallSpans, fr.Length);
+                    var setBack = new Dictionary<ReliefFace, double>();
+                    int aboveOwnWallLeftOut = 0;
+                    var high = faces.Where(f => FacadeRelief.AboveOwnWall(f, tops)).ToList();
+                    if (high.Count > 0)
+                    {
+                        var v3 = Find3DView(doc, null);
+                        var behind = v3 == null ? null : new ReferenceIntersector(new ElementMulticategoryFilter(new List<BuiltInCategory> { BuiltInCategory.OST_Roofs, BuiltInCategory.OST_Walls, BuiltInCategory.OST_Floors }), FindReferenceTarget.Element, v3);
+                        foreach (var f in high)
+                        {
+                            double uc = (f.U0 + f.U1) / 2, zc = (f.Z0 + f.Z1) / 2;
+                            ReferenceWithContext hit = null;
+                            try { hit = behind?.FindNearest(new XYZ((fr.A.X + fr.Ux * uc + nx * 3000) / Mm, (fr.A.Y + fr.Uy * uc + ny * 3000) / Mm, zc / Mm), new XYZ(-nx, -ny, 0)); } catch { }
+                            if (hit == null || hit.Proximity * Mm > 6000) { faces.Remove(f); aboveOwnWallLeftOut++; }
+                            else setBack[f] = 3000 - hit.Proximity * Mm;
+                        }
+                    }
                     // the bands facade_profile made as wall sweeps (types "BG F.. z"): their long band faces are left out here
                     // (only those: pediments, dentils and consoles in the same heights stay)
                     int bySweeps = 0;
@@ -485,6 +513,7 @@ namespace BarrGazetas.RevitMcp
                     // storey it spans) to the plan's front, or the face's own depth beyond the wall
                     (double v0, double v1) Range(ReliefFace f)
                     {
+                        if (setBack.TryGetValue(f, out var bv)) return (bv, bv + f.Depth);
                         double zc = (f.Z0 + f.Z1) / 2;
                         double wallV = faceProfiles.Where(p => p.z1 > f.Z0 + 50 && p.z0 < f.Z1 - 50).Select(p => p.p.Over(f.U0, f.U1)).DefaultIfEmpty(FaceAt(zc)?.Over(f.U0, f.U1) ?? 0).Max();
                         return (wallV, f.Source == "plan" ? Math.Max(f.Depth, wallV + 20) : wallV + f.Depth);
@@ -600,7 +629,7 @@ namespace BarrGazetas.RevitMcp
                     {
                         facade = fid, elevation = Args.Str(spec, "name"), lines = segs.Count, faces = faces.Count, bySource,
                         storeysWithPlan = profiles.Select(p => new { p.level, projectsMm = Math.Round(p.p.Depth.Max()) }).ToList(),
-                        windowsLeftOut = windows.Count, drawnOpeningsLeftOut = drawnOpenings.Count, aboveWallTop = aboveRoof, leftForColumns = byColumns, leftForSweeps = bySweeps, wallTopMm = Math.Round(wallTop), made, failed, facesOnWallsInFront = onWall, removed, shapes = ids, families = familyLog.Count > 0 ? familyLog : null, revit,
+                        windowsLeftOut = windows.Count, drawnOpeningsLeftOut = drawnOpenings.Count, setBackOntoRoof = setBack.Count, aboveOwnWallLeftOut, aboveWallTop = aboveRoof, leftForColumns = byColumns, leftForSweeps = bySweeps, wallTopMm = Math.Round(wallTop), made, failed, facesOnWallsInFront = onWall, removed, shapes = ids, families = familyLog.Count > 0 ? familyLog : null, revit,
                         next = dry ? "dry_run: false to build it (check_view + view_image to compare with the elevation)." : "check_view facade + view_image, side by side with the elevation.",
                     };
                   }

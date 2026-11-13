@@ -124,6 +124,39 @@ namespace BarrGazetas.RevitMcp.Survey
         }
 
         /// <summary>
+        /// 1.20.0: the top of the walls along the facade, every step mm: the highest wall top over each u (walls given as
+        /// u range and top height). A facade whose blocks have different heights gets each block's own top.
+        /// </summary>
+        public static ProjectionProfile TopProfile(IEnumerable<(double u0, double u1, double top)> walls, double length, double step = 250)
+        {
+            int n = Math.Max(1, (int)Math.Ceiling(length / step) + 1);
+            var d = Enumerable.Repeat(double.MinValue, n).ToArray();
+            foreach (var (a, b, top) in walls)
+                for (int i = Math.Max(0, (int)Math.Floor(Math.Min(a, b) / step)); i <= Math.Min(n - 1, (int)Math.Ceiling(Math.Max(a, b) / step)); i++)
+                    d[i] = Math.Max(d[i], top);
+            // a stretch with no wall takes its neighbours' top (a gap between wall pieces is not a hole in the facade)
+            for (int i = 0; i < n; i++)
+                if (d[i] == double.MinValue)
+                {
+                    double l = double.MinValue, r = double.MinValue;
+                    for (int j = i - 1; j >= 0 && l == double.MinValue; j--) l = d[j];
+                    for (int j = i + 1; j < n && r == double.MinValue; j++) r = d[j];
+                    d[i] = Math.Max(l, r);
+                }
+            return new ProjectionProfile { Start = 0, Step = step, Depth = d };
+        }
+
+        /// <summary>
+        /// 1.20.0: faces standing wholly above their own stretch of wall by more than margin mm (dormers, attic storeys,
+        /// roof-level balustrades of a lower block): not on the facade plane, they belong on the roof behind.
+        /// </summary>
+        public static bool AboveOwnWall(ReliefFace f, ProjectionProfile tops, double margin = 300)
+        {
+            double top = tops.Over(f.U0, f.U1);
+            return top > double.MinValue / 2 && f.Z0 > top + margin;
+        }
+
+        /// <summary>
         /// A face cut back to outside the openings (each grown by 10 mm): left out when more than half of it is inside one,
         /// otherwise the parts left, right, below and above each opening it overlaps; pieces under minMm2 dropped.
         /// </summary>
