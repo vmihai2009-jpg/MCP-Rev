@@ -150,6 +150,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 | Tool | What it's for |
 |---|---|
 | `elevation_fit_check` | **Does one height fit hold along each elevation** (1.24.0, changes nothing): level marks grouped along the drawing; each part's offset against the fit the facade tools use (`offFitMm`, `agrees`), with its u stretch; each mark against the nearest model level. A part that disagrees = detail from it lands at the wrong height: narrow the elevation's `sheet_x_range` and index that part as its own elevation. |
+| `facade_rustication` | **Rusticated base as native reveals** (1.25.0; `apply: false` first). Joint heights from `facade_detail_map`'s rustication; one groove Profile family (`joint_mm` x `depth_mm`, default 20 x 20), one Reveal type `BG <F> rustication`, a reveal per joint per wall the run covers (and curved walls joined to them). Change every joint by editing the type's profile. Re-running replaces them. |
 | `facade_check` | **All facade checks in one call** (1.22.0, changes nothing): `facade_correspondence` + `opening_clear_check` + `facade_course_check` + `detail_support_check` for one facade or `all`. One line per check, one score per facade (the lowest; pass = every check ≥ 0.90), the worst issues across them each with its fix tool. Writes `facade-check-<F>.json` (summary + every check's full answer). `survey_run facades: true` runs it at the end. |
 | `facade_correspondence` | **Does the model look like the elevation, measured** (1.18.0): model edges vs elevation lines on the facade plane. Coverage (gaps), precision (spurious), per element ok / shifted (dU, dZ; `storeyOffset`) / partial / spurious, gaps with boxes, picture. Run after every facade build. |
 | `facade_shift_fix` | **Move shifted facade elements onto the drawing** (1.23.0; `apply: false` first). The elements `facade_correspondence` calls shifted are moved by their `shiftMm` (along, up): windows/doors slide in their wall, wall sweeps change height, Generic Models / columns move. Never walls, floors, roofs; storey-sized moves only with `storey_moves: true` (check `facade_course_check` commonOffsets first); pinned skipped. One undo step. |
@@ -351,6 +352,11 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-13 (later): facade_rustication (1.25.0), item 7 of 10
+- `facade_rustication facade: F..` builds the channelled joints of a rusticated base as native **reveals** (editable: one type, one profile). List first, then `apply: true`. It checks the groove cuts into the wall (takes volume out), flipping the profile if not.
+- **Ask:** on the front facade: `facade_detail_map` to see the rustication item (joints, pitch), `facade_rustication` (list), `apply: true` with `depth_mm` from the reference model's joints if you can measure one, then `facade_check`. Report joints made and any `problems`.
+- Files: `SurveyFacadeRustication.cs` (new), `Survey/FacadeMap.cs` (build hint text only), `Hub.cs`, `BGMCP.csproj`, `PLAN.md`, this file. Version 1.25.0.
 
 ### 2026-11-13 (later): elevation_fit_check (1.24.0), item 6 of 10
 - `elevation_fit_check` (all elevations by default): is one height fit right along the whole drawing? It groups the level marks along the sheet and lists parts off the fit by more than 50 mm, with their stretch along the facade, plus every mark against the nearest model level. This is the check for the "top right at the wrong height" fault when the cause is another drawing or block on the same sheet.

@@ -171,7 +171,7 @@ namespace BarrGazetas.RevitMcp.Survey
                         Id = id("R"), Kind = "rustication", U0 = allSpans.Min(x => x.Item1), U1 = allSpans.Max(x => x.Item2), Z0 = run[0].z, Z1 = run[count - 1].z,
                         Lines = run.Sum(x => x.segs.Count), Count = count, LineHeights = run.Select(x => Math.Round(x.z)).ToList(), Runs = allSpans,
                         Size = { ["pitch"] = Math.Round((run[count - 1].z - run[0].z) / (count - 1)), ["joints"] = count },
-                        Build = "Channelled joints: a wall sweep of type Reveal (a small V or square groove Profile family, about 20 x 20) at each joint height over each run. Editable, follows the wall. Not yet automated: build the reveal type once, then one sweep per joint height.",
+                        Build = "Channelled joints: facade_rustication makes a groove Profile family, one Reveal type and a native reveal at each joint height on each wall the run covers (editable through the type, follows the wall).",
                         Depth = "Joint depth is not on the elevation: a section through the base (facade_profile), the reference model, or 20 mm.",
                     });
                     a = b;
