@@ -283,11 +283,77 @@ namespace BarrGazetas.RevitMcp
         private static List<JsonObject> ElevationSpecs(Document doc, JsonObject a)
         {
             if (a?["elevations"] is JsonArray given) return given.OfType<JsonObject>().ToList();
-            string file = Path.Combine(ReportsFolder(doc), "elevation-index.json");
-            if (!File.Exists(file)) return new List<JsonObject>();
-            var root = JsonNode.Parse(File.ReadAllText(file));
-            var arr = root is JsonArray ja ? ja : root?["elevations"] as JsonArray;
-            return arr?.OfType<JsonObject>().ToList() ?? new List<JsonObject>();
+            // 1.36.13: the hub's own index, then Survey to Revit's (0.33+ writes _prep\elevation-index.json in the survey folder, in
+            // its own schema and facade numbering): its drawings are read too, matched to the hub's facades by line, for the
+            // facades the hub's index doesn't have
+            var specs = new List<JsonObject>();
+            List<JsonObject> Load(string file)
+            {
+                try
+                {
+                    if (!File.Exists(file)) return new List<JsonObject>();
+                    var root = JsonNode.Parse(File.ReadAllText(file));
+                    var arr = root is JsonArray ja ? ja : (root?["elevations"] ?? root?["Elevations"]) as JsonArray;
+                    return arr?.OfType<JsonObject>().Select(e => NormalizeElevation(doc, e)).Where(e => e != null).ToList() ?? new List<JsonObject>();
+                }
+                catch { return new List<JsonObject>(); }
+            }
+            specs.AddRange(Load(Path.Combine(ReportsFolder(doc), "elevation-index.json")));
+            foreach (var dir in CadLink.All(doc).Select(i => { try { return CadLink.FilePath(doc, i); } catch { return null; } }).Where(p => p != null).Select(Path.GetDirectoryName).Distinct())
+                foreach (var s in Load(Path.Combine(dir, "_prep", "elevation-index.json")))
+                {
+                    string f = Args.Str(s, "facade");
+                    if (f != null && specs.Any(x => string.Equals(Args.Str(x, "facade"), f, StringComparison.OrdinalIgnoreCase))) continue;
+                    specs.Add(s);
+                }
+            return specs;
+        }
+
+        /// <summary>An elevation entry in the hub's schema (path, sheet_x_range, sheet_y_range, facade, along_direction): the hub's
+        /// own entries as they are; Survey to Revit's (File, Box = x0 y0 x1 y1, FacadeLine, Mirrored, Score) converted, its facade
+        /// matched to the hub's facades.json by line (parallel, within 1.5 m, overlapping) so the ids agree, the direction
+        /// turned when the two lines run opposite ways. Unmatched or low-score drawings: null.</summary>
+        internal static JsonObject NormalizeElevation(Document doc, JsonObject e)
+        {
+            if (e["path"] != null) return e;
+            JsonNode N(string k) => e[k] ?? e[char.ToLowerInvariant(k[0]) + k.Substring(1)];
+            string file = N("File")?.ToString();
+            var box = N("Box") as JsonArray;
+            if (file == null || box == null || box.Count < 4) return null;
+            double B(int i) => box[i].GetValue<double>();
+            double score = N("Score") is JsonValue sv && sv.TryGetValue<double>(out var sc) ? sc : 1;
+            var fl = N("FacadeLine") as JsonArray;
+            if (fl == null || fl.Count < 4 || score < 0.7) return null;
+            bool mir = N("Mirrored") is JsonValue mv && mv.TryGetValue<bool>(out var m) && m;
+            var o = new JsonObject
+            {
+                ["path"] = file, ["name"] = N("Title")?.ToString(), ["source"] = "Survey to Revit elevation index",
+                ["sheet_x_range"] = new JsonArray(Math.Min(B(0), B(2)), Math.Max(B(0), B(2))),
+                ["sheet_y_range"] = new JsonArray(Math.Min(B(1), B(3)), Math.Max(B(1), B(3))),
+            };
+            var s0 = new Pt(fl[0].GetValue<double>(), fl[1].GetValue<double>()); var s1 = new Pt(fl[2].GetValue<double>(), fl[3].GetValue<double>());
+            double sl = s0.Dist2D(s1); if (sl < 1) return null;
+            double sx = (s1.X - s0.X) / sl, sy = (s1.Y - s0.Y) / sl; var smid = new Pt((s0.X + s1.X) / 2, (s0.Y + s1.Y) / 2);
+            string best = null; bool same = true; double bestD = 1500;
+            try
+            {
+                var froot = JsonNode.Parse(File.ReadAllText(Path.Combine(ReportsFolder(doc), "facades.json")));
+                foreach (var f in froot["facades"].AsArray().OfType<JsonObject>())
+                {
+                    var l = f["line"].AsArray().Select(v => v.GetValue<double>()).ToList();
+                    var a0 = new Pt(l[0], l[1]); var a1 = new Pt(l[2], l[3]); double al = a0.Dist2D(a1); if (al < 1) continue;
+                    double ax = (a1.X - a0.X) / al, ay = (a1.Y - a0.Y) / al, dot = ax * sx + ay * sy;
+                    if (Math.Abs(dot) < 0.98) continue;
+                    double t = (smid.X - a0.X) * ax + (smid.Y - a0.Y) * ay;
+                    if (t < -500 || t > al + 500) continue;
+                    double d = Math.Abs((smid.X - a0.X) * -ay + (smid.Y - a0.Y) * ax);
+                    if (d < bestD) { bestD = d; best = f["id"].GetValue<string>(); same = dot > 0; }
+                }
+            }
+            catch { }
+            if (best != null) { o["facade"] = best; o["along_direction"] = (mir ? -1 : 1) * (same ? 1 : -1); }
+            else { o["facade_line"] = new JsonArray(s0.X, s0.Y, s1.X, s1.Y); o["along_direction"] = mir ? -1 : 1; o["facade"] = null; }
+            return o;
         }
 
         /// <summary>One elevation on its facade: the same measuring as dwg_elevation, for the score.</summary>

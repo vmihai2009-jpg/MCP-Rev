@@ -429,6 +429,7 @@ namespace BarrGazetas.RevitMcp
                     ("min_area_m2", S("number", "Smallest face to make (default 0.3)"), false),
                     ("roof_layers", Arr("string", "Roof line layers (default: by Survey to Revit's layer roles, Roof/Wall on the roof plan)"), false),
                     ("merge_spotless", S("boolean", "Merge faces with no spot height into their neighbour across the seam (default true)"), false),
+                    ("edge_spot_mm", S("number", "A face with no spot inside takes the spots on its edges within this (hips, ridge, eaves; default 400)"), false),
                     ("build", S("boolean", "Make the faces and chimneys (default false)"), false),
                     ("list", S("integer", "Faces to list (default 30)"), false)),
                 Run = (app, a) =>
@@ -447,7 +448,7 @@ namespace BarrGazetas.RevitMcp
                         .Select(t => { var p = map(t.At); return new Pt(p.X, p.Y, ElevationFit.LevelValueMm(t.Value).Value); }).ToList();
                     var faces = RoofFaces(segs, spots, minArea / 3, Args.Bool(a, "merge_spotless") != false, out int seams);
                     mapNote += $"; {rl.Note}; {seams} seam lines between spotless strips dropped";
-                    var bySpot = spots.GroupBy(s => SurveyDetail.FaceAt(faces, s)).Where(g => g.Key >= 0).ToDictionary(g => g.Key, g => g.ToList());
+                    var bySpot = SpotsByFace(faces, spots, Args.Dbl(a, "edge_spot_mm") ?? 400);
                     // each face: a plane through its spots; flat roofs at several levels inside one outline (the plane fits
                     // badly) as terraces; a face with no spot takes the nearest spot within 2 m (an upstand, a light)
                     var rows = new List<(int i, List<Pt> ring, PlaneZ plane, string kind, string how, List<(double z, List<(double x0, double y0, double x1, double y1)> rects)> terraces)>();
@@ -916,7 +917,10 @@ namespace BarrGazetas.RevitMcp
             if (!mergeSpotless || spots.Count == 0) return rings;
             for (int round = 0; round < 4; round++)
             {
+                // a face has heights with a spot inside it, or 3+ on its edges (a hip triangle: two eave corners and its apex);
+                // a roll-seam strip with only the two at its ends is merged
                 var spotted = new HashSet<int>(spots.Select(s => SurveyDetail.FaceAt(rings, s)).Where(i => i >= 0));
+                foreach (var kv in SpotsByFace(rings, spots, 400)) if (kv.Value.Count >= 3) spotted.Add(kv.Key);
                 var keep = new List<Seg>(); int dropped = 0;
                 foreach (var s in segs)
                 {
@@ -933,6 +937,25 @@ namespace BarrGazetas.RevitMcp
                 rings = SurveyDetail.Faces(segs, 10, minArea);
             }
             return rings;
+        }
+
+        /// <summary>1.36.13: each face's spot heights. Spots inside it; and when that gives fewer than 3, the spots on or near its
+        /// edges too (within edgeMm): on a hipped or pitched roof the surveyor levels the eaves, hips and ridge, not the
+        /// middle of a slope, so a hip triangle's points are its two eave corners and its apex. A spot on a shared edge
+        /// counts for both faces.</summary>
+        internal static Dictionary<int, List<Pt>> SpotsByFace(List<List<Pt>> rings, List<Pt> spots, double edgeMm)
+        {
+            var byFace = spots.GroupBy(s => SurveyDetail.FaceAt(rings, s)).Where(g => g.Key >= 0).ToDictionary(g => g.Key, g => g.ToList());
+            for (int i = 0; i < rings.Count; i++)
+            {
+                byFace.TryGetValue(i, out var own); own ??= new List<Pt>();
+                if (own.Count >= 3) continue;
+                var r = rings[i];
+                var near = spots.Where(s => !own.Contains(s) && Enumerable.Range(0, r.Count).Any(k => SurveyDetail.PtSeg(s, new Seg(r[k], r[(k + 1) % r.Count], 0)) <= edgeMm)).ToList();
+                var all = own.Concat(near).ToList();
+                if (all.Count > 0) byFace[i] = all;
+            }
+            return byFace;
         }
 
         private static Func<Pt, Pt> SurveyMap(Document doc, DwgContent file, out string note, Func<string, bool> isWall = null)

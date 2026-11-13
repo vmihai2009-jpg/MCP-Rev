@@ -47,6 +47,12 @@ namespace SurveyCoreTests
             T.Check(lvlTexts.Count == 1 && lvlLines.Count == 2, $"datum mark: picked up off the TEXT layer ({lvlTexts.Count} text, {lvlLines.Count} lines)");
             var hf = ElevationFit.Heights(lvlTexts, lvlLines, 60000, 80000);
             T.Check(T.Near(hf.A, 1, 1e-9) && T.Near(hf.B, 20000 - 43173, 1), $"datum mark: line above the text gives B = 20000 - 43173 ({hf.B})");
+
+            // 1.36.13: missing walls outside the building (the neighbours on the plan) are not counted
+            var hull = Fidelity.Hull(new List<Pt> { new Pt(0, 0), new Pt(10000, 0), new Pt(10000, 8000), new Pt(0, 8000), new Pt(5000, 4000) });
+            T.Check(hull.Count == 4, $"building hull: the 4 corners ({hull.Count})");
+            T.Check(Fidelity.InOrNear(hull, new Pt(5000, 4000), 1000) && Fidelity.InOrNear(hull, new Pt(10800, 4000), 1000) && !Fidelity.InOrNear(hull, new Pt(14000, 4000), 1000),
+                    "building hull: inside and 0.8 m out count, a neighbour 4 m out doesn't");
         }
     }
 }

@@ -938,6 +938,8 @@ namespace BarrGazetas.RevitMcp
             public List<DwgLine> WindowLines;
             public Pt A; public double Ux, Uy, Length;
             public Func<double, double> U, Z;
+            /// <summary>The height fit used (sheet y -> AOD): for reports, so a wrong vertical placement can be traced.</summary>
+            public HeightFit Heights;
         }
 
         internal static ElevFrame ElevationFrame(Document doc, JsonObject spec, Func<IEnumerable<string>, Dictionary<string, string>> roles)
@@ -976,7 +978,7 @@ namespace BarrGazetas.RevitMcp
             {
                 Lines = lines, A = fa, Ux = ux, Uy = uy, Length = fl,
                 WindowLines = lines.Where(l => Is(l.Layer, new[] { "Window", "Door" }, new[] { "*Window*", "*Door*" })).ToList(),
-                U = x => along.Along(x * heights.A), Z = y => heights.Height(y) - datumMm,
+                U = x => along.Along(x * heights.A), Z = y => heights.Height(y) - datumMm, Heights = heights,
             };
         }
     }

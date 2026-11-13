@@ -30,12 +30,16 @@ namespace BarrGazetas.RevitMcp
             InputSchema = Schema(
                 ("facades", Arr("string", "Facade ids (default: every main facade in facades.json)"), false),
                 ("replace", S("boolean", "Link again where the view already has the drawing (default false)"), false),
+                ("in_front", S("boolean", "Draw the survey OVER the model (default true; false = behind it)"), false),
+                ("front_mm", S("number", "How far in front of the facade the drawing sits (default 3000)"), false),
                 ("survey_folder", S("string", "Folder of the survey DWGs (default: the one Survey to Revit reads / the linked plans' folder)"), false),
                 ("source", S("string", "As survey_fidelity"), false)),
             Run = (app, a) =>
             {
                 var doc = Writable(app);
                 bool replace = Args.Bool(a, "replace") == true;
+                // in front of the model by default (Mihai: the survey drawn over the model, for checking); in_front: false = behind
+                double front = Args.Bool(a, "in_front") == false ? 0 : (Args.Dbl(a, "front_mm") ?? 3000);
                 string facadesFile = Path.Combine(ReportsFolder(doc), "facades.json");
                 if (!File.Exists(facadesFile)) throw new ArgumentException("Run facade_list first.");
                 var only = Args.Strings(a, "facades");
@@ -79,14 +83,14 @@ namespace BarrGazetas.RevitMcp
                 {
                     var spec = ElevationSpecs(doc, null).FirstOrDefault(s => string.Equals(Args.Str(s, "facade"), fid, StringComparison.OrdinalIgnoreCase));
                     if (spec == null) { results.Add(new { facade = fid, skipped = "no elevation found for it" }); continue; }
-                    try { results.Add(Overlay(doc, spec, fid, roles, vft, plan, replace)); }
+                    try { results.Add(Overlay(doc, spec, fid, roles, vft, plan, replace, front)); }
                     catch (Exception ex) { results.Add(new { facade = fid, failed = McpServer.Unwrap(ex).Message }); }
                 }
-                return new { facades = results, notes = notes.Count > 0 ? notes : null, next = "Open 'Survey <F>' views: the survey lines sit behind the model. facade_check measures what the eye sees there." };
+                return new { facades = results, notes = notes.Count > 0 ? notes : null, next = "Open 'Survey <F>' views: the survey lines sit in front of the model (in_front: false for behind). facade_check measures what the eye sees there." };
             }
         };
 
-        private static object Overlay(Document doc, JsonObject spec, string fid, Func<IEnumerable<string>, Dictionary<string, string>> roles, ViewFamilyType vft, ViewPlan plan, bool replace)
+        private static object Overlay(Document doc, JsonObject spec, string fid, Func<IEnumerable<string>, Dictionary<string, string>> roles, ViewFamilyType vft, ViewPlan plan, bool replace, double frontMm)
         {
             var fr = ElevationFrame(doc, spec, roles);
             var (nx, ny) = Outward(doc, fr);
@@ -128,6 +132,17 @@ namespace BarrGazetas.RevitMcp
                 if (mirrored || Math.Abs(scale - 1) > 0.002) { doc.Delete(id); linkId = 0; result = mirrored ? "the drawing would read mirrored in this view: not placed" : $"the drawing is at another scale than the model ({scale:0.000}): not placed"; return; }
                 var d = q0 - p0; var vd = view.ViewDirection; d = d - vd.Multiply(d.DotProduct(vd));
                 if (d.GetLength() > 1e-9) ElementTransformUtils.MoveElement(doc, id, d);
+                // 1.36.13: in front of the model (Mihai: the survey lines drawn OVER the model, to check): the drawing's plane
+                // moved out of the facade towards the viewer by front_mm; behind: as before
+                if (frontMm > 0)
+                {
+                    doc.Regenerate();
+                    var at = imp.GetTotalTransform().OfPoint(new XYZ(xs0 / Mm, ys0 / Mm, 0));
+                    var facadePt = new XYZ(fr.A.X / Mm, fr.A.Y / Mm, at.Z);
+                    double now = (at - facadePt).DotProduct(vd);
+                    double move = frontMm / Mm - now;
+                    if (Math.Abs(move) > 1e-6) ElementTransformUtils.MoveElement(doc, id, vd.Multiply(move));
+                }
                 imp.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.Set($"MCP|elevation_overlay|{fid}");
                 // crop to this drawing, with a margin
                 var cb = view.CropBox; var inv = cb.Transform.Inverse;
@@ -137,10 +152,15 @@ namespace BarrGazetas.RevitMcp
                 cb.Max = new XYZ(corners.Max(c => c.X) + m, corners.Max(c => c.Y) + m, cb.Max.Z);
                 view.CropBoxActive = true; view.CropBox = cb;
             });
+            var hf = fr.Heights;
             return new
             {
                 facade = fid, view = vname, viewId = view?.Id.Value, link = linkId == 0 ? (long?)null : linkId, elevation = Args.Str(spec, "name"),
-                placed = linkId != 0, problem = result, notes = txNotes.Count > 0 ? txNotes.Take(3).ToList() : null,
+                placed = linkId != 0, problem = result, inFrontMm = frontMm > 0 ? frontMm : (double?)null, source = Args.Str(spec, "source"),
+                // the vertical placement comes from this fit: a scale off 1 or a wrong offset puts the drawing too high/low
+                heights = hf == null ? null : new { scale = Math.Round(hf.A, 5), offsetMm = Math.Round(hf.B), marks = hf.Marks, note = hf.Note,
+                                                    warning = Math.Abs(hf.A - 1) > 0.005 ? "the level marks give a scale other than 1:1: probably a mark paired with the wrong line; check them (elevation_fit_check) or give sheet_y_range tighter" : null },
+                notes = txNotes.Count > 0 ? txNotes.Take(3).ToList() : null,
             };
         }
 

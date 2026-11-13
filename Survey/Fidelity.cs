@@ -124,6 +124,8 @@ namespace BarrGazetas.RevitMcp.Survey
         public int ThicknessChecked { get; set; }
         public int ThicknessOver { get; set; }
         public int Missing { get; set; }
+        /// <summary>DWG face pairs outside the building (beyond the model's walls' hull + 1 m): the neighbours drawn on the plan, not counted as missing.</summary>
+        public int OutsideBuilding { get; set; }
         /// <summary>DWG face pairs with no model wall that are not walls (a line between them, a face already on a model wall, a room between): not counted as missing.</summary>
         public int PairsNotWalls { get; set; }
         /// <summary>Curved walls looked at (also counted in Checked / Unverified).</summary>
@@ -359,6 +361,17 @@ namespace BarrGazetas.RevitMcp.Survey
             // model wall, or with a room or spot height between them are gaps, steps or chimney breasts, not missing walls
             var spaces = f.SpotHeights.Select(h => h.at).Concat(f.Rooms.Select(r => r.At)).ToList();
             var missing = WallFit.Missing(f.Walls, f.WallFaces, 60, MaxWallMm, 600, spaces, out int notWalls);
+            // 1.36.13 (Mount Row): a survey plan also draws the neighbours' walls; Survey to Revit leaves them out (NeighbourWalls),
+            // so they are not "missing". Only face pairs within the building, the model's own walls' hull + 1 m, count; the
+            // rest are reported as a number (outsideBuilding), never silently
+            int outside = 0;
+            var hull = Hull(f.Walls.SelectMany(w => new[] { w.A, w.B }).ToList());
+            if (hull.Count >= 3)
+            {
+                var kept = missing.Where(m => InOrNear(hull, new Pt((m.Line[0] + m.Line[2]) / 2, (m.Line[1] + m.Line[3]) / 2), 1000)).ToList();
+                outside = missing.Count - kept.Count; missing = kept;
+            }
+            s.Walls.OutsideBuilding = outside;
             s.Walls.Missing = missing.Count;
             s.Walls.PairsNotWalls = notWalls;
             foreach (var m in missing)
@@ -594,6 +607,42 @@ namespace BarrGazetas.RevitMcp.Survey
             double r = cands.OrderBy(c => Math.Abs(c - (u + half))).First() - (u + half);
             if (Math.Abs(l) > 300 || Math.Abs(r) > 300) return null;
             return (l, r);
+        }
+
+        /// <summary>Convex hull (Andrew's monotone chain), anticlockwise.</summary>
+        public static List<Pt> Hull(List<Pt> pts)
+        {
+            var p = pts.Distinct().OrderBy(q => q.X).ThenBy(q => q.Y).ToList();
+            if (p.Count < 3) return p;
+            double Cross(Pt o, Pt a, Pt b) => (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
+            var h = new List<Pt>();
+            foreach (var q in p) { while (h.Count >= 2 && Cross(h[^2], h[^1], q) <= 0) h.RemoveAt(h.Count - 1); h.Add(q); }
+            int lower = h.Count + 1;
+            for (int i = p.Count - 2; i >= 0; i--) { var q = p[i]; while (h.Count >= lower && Cross(h[^2], h[^1], q) <= 0) h.RemoveAt(h.Count - 1); h.Add(q); }
+            h.RemoveAt(h.Count - 1);
+            return h;
+        }
+
+        /// <summary>Inside the anticlockwise convex polygon, or within margin of it.</summary>
+        public static bool InOrNear(List<Pt> hull, Pt q, double margin)
+        {
+            bool inside = true;
+            for (int i = 0; i < hull.Count; i++)
+            {
+                var a = hull[i]; var b = hull[(i + 1) % hull.Count];
+                double cross = (b.X - a.X) * (q.Y - a.Y) - (b.Y - a.Y) * (q.X - a.X);
+                if (cross < 0) { inside = false; break; }
+            }
+            if (inside) return true;
+            for (int i = 0; i < hull.Count; i++)
+            {
+                var a = hull[i]; var b = hull[(i + 1) % hull.Count];
+                double dx = b.X - a.X, dy = b.Y - a.Y, l2 = dx * dx + dy * dy;
+                double t = l2 < 1e-9 ? 0 : Math.Clamp(((q.X - a.X) * dx + (q.Y - a.Y) * dy) / l2, 0, 1);
+                double ex = a.X + t * dx - q.X, ey = a.Y + t * dy - q.Y;
+                if (ex * ex + ey * ey <= margin * margin) return true;
+            }
+            return false;
         }
 
         private static double[] Mid(Pt a, Pt b) => new[] { Math.Round((a.X + b.X) / 2), Math.Round((a.Y + b.Y) / 2) };

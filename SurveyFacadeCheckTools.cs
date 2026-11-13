@@ -403,11 +403,32 @@ namespace BarrGazetas.RevitMcp
             return doc.GetElement(id) is FamilyInstance sub && sub.SuperComponent?.Id == fi.Id;
         }
 
-        /// <summary>The facade's outward normal: away from the middle of the model's walls.</summary>
+        /// <summary>The facade's outward normal. 1.36.13: by the building's own floor slabs first: a probe 1.5 m to each side of
+        /// the facade's middle, the side that lands inside a slab (in plan) is inside. The old rule (away from the middle of
+        /// ALL walls) flipped where the model holds the neighbours' walls too (Mount Row): the view then looked from inside
+        /// and every elevation "would read mirrored". Falls back to the walls' middle when no slab decides.</summary>
         private static (double nx, double ny) Outward(Document doc, ElevFrame fr)
         {
-            var walls = new FilteredElementCollector(doc).OfClass(typeof(Wall)).Cast<Wall>().Where(w => w.Location is LocationCurve).ToList();
             double nx = -fr.Uy, ny = fr.Ux;
+            try
+            {
+                int InsideCount(double sx, double sy)
+                {
+                    int n = 0;
+                    foreach (var t in new[] { 0.25, 0.5, 0.75 })
+                    {
+                        var p = new Pt(fr.A.X + fr.Ux * fr.Length * t + sx * 1500, fr.A.Y + fr.Uy * fr.Length * t + sy * 1500);
+                        var box = new Outline(new XYZ((p.X - 50) / Mm, (p.Y - 50) / Mm, -1e4), new XYZ((p.X + 50) / Mm, (p.Y + 50) / Mm, 1e4));
+                        var probe = GeometryCreationUtilities.CreateExtrusionGeometry(new List<CurveLoop> { CurveLoop.CreateViaThicken(Line.CreateBound(new XYZ((p.X - 50) / Mm, p.Y / Mm, -200), new XYZ((p.X + 50) / Mm, p.Y / Mm, -200)), 100 / Mm, XYZ.BasisZ) }, XYZ.BasisZ, 400);
+                        n += new FilteredElementCollector(doc).OfClass(typeof(Floor)).WherePasses(new BoundingBoxIntersectsFilter(box)).WherePasses(new ElementIntersectsSolidFilter(probe)).GetElementCount();
+                    }
+                    return n;
+                }
+                int plus = InsideCount(nx, ny), minus = InsideCount(-nx, -ny);
+                if (plus != minus) return plus > minus ? (-nx, -ny) : (nx, ny);
+            }
+            catch { }
+            var walls = new FilteredElementCollector(doc).OfClass(typeof(Wall)).Cast<Wall>().Where(w => w.Location is LocationCurve).ToList();
             if (walls.Count == 0) return (nx, ny);
             double cx = walls.Average(w => ((LocationCurve)w.Location).Curve.Evaluate(0.5, true).X) * Mm, cy = walls.Average(w => ((LocationCurve)w.Location).Curve.Evaluate(0.5, true).Y) * Mm;
             var mid = new Pt(fr.A.X + fr.Ux * fr.Length / 2, fr.A.Y + fr.Uy * fr.Length / 2);

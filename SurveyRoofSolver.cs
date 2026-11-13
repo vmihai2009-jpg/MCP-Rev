@@ -32,6 +32,7 @@ namespace BarrGazetas.RevitMcp
                     ("min_area_m2", S("number", "Smallest face (default 0.3)"), false),
                     ("roof_layers", Arr("string", "Roof line layers (default: by Survey to Revit's layer roles, Roof/Wall on the roof plan)"), false),
                     ("merge_spotless", S("boolean", "Merge faces with no spot height into their neighbour across the seam (default true)"), false),
+                    ("edge_spot_mm", S("number", "A face with no spot inside takes the spots on its edges within this (hips, ridge, eaves; default 400)"), false),
                     ("keep_shapes", S("boolean", "Keep roof_from_survey's solids (default false: delete the ones for faces built here)"), false)),
                 Run = (app, a) =>
                 {
@@ -49,7 +50,7 @@ namespace BarrGazetas.RevitMcp
                         .Select(t => { var p = map(t.At); return new Pt(p.X, p.Y, ElevationFit.LevelValueMm(t.Value).Value); }).ToList();
                     var rings = RoofFaces(segs, spots, minArea / 3, Args.Bool(a, "merge_spotless") != false, out int seams);
                     mapNote += $"; {rl.Note}; {seams} seam lines between spotless strips dropped";
-                    var bySpot = spots.GroupBy(s => SurveyDetail.FaceAt(rings, s)).Where(g => g.Key >= 0).ToDictionary(g => g.Key, g => g.ToList());
+                    var bySpot = SpotsByFace(rings, spots, Args.Dbl(a, "edge_spot_mm") ?? 400);
                     var faces = new List<RoofFace>(); var noHeight = 0;
                     for (int i = 0; i < rings.Count; i++)
                     {

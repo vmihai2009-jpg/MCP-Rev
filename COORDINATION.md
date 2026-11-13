@@ -604,6 +604,30 @@ _Write your entries here, newest first. Use the "Revit run results" template for
   seams between a spotless strip and its neighbour are dropped and the faces found again, instead of the strips being
   left out. Files: `SurveyDetailTools.cs` (SurveyRoles, RoofLayers, RoofFaces, SurveyMap, FindRoofPlan),
   `SurveyRoofSolver.cs`, `BGMCP.csproj`. Not yet run on a model.
+- 1.36.13-1.36.14 (Mount Row audit):
+  - **`elevation_overlay`:**
+    - New `in_front` (default true) and `front_mm` (3000): the survey drawn OVER the model.
+    - The outward side of a facade now comes from the building's own floor slabs: probes 1.5 m each side, the side
+      inside a slab is inside. The old rule (away from the middle of all walls) flipped when the model held the
+      neighbours' walls, so every drawing "would read mirrored".
+    - It reports the height fit it used (scale, offset, marks, a warning when not 1:1).
+  - **`ElevationSpecs`:**
+    - Reads Survey to Revit's index format too: `File`, `Box`, `FacadeLine`, `Mirrored`, `Score`.
+    - Falls back to `<survey folder>\_prep\elevation-index.json` for facades the hub's index lacks, matched to
+      facades.json by line, so the ids agree.
+  - **`survey_fidelity`:** missing-wall face pairs beyond the model's walls' hull + 1 m (the neighbours drawn on the
+    plan) are counted as `outsideBuilding`, not `wall_missing`.
+  - **`roof_from_survey` / `roof_solver`:**
+    - A face with no spot inside takes the spots on its edges (`edge_spot_mm`, 400): hipped roofs levelled on eaves,
+      hips and ridge.
+    - `merge_spotless` keeps a face with 3+ edge spots (a hip triangle) and merges thin roll-seam strips.
+  - Files: `SurveyElevationOverlay.cs`, `SurveyFacadeCheckTools.cs` (Outward), `SurveyFacadeReliefTools.cs` (ElevFrame
+    heights), `SurveyFidelityTools.cs` (ElevationSpecs, NormalizeElevation), `Survey/Fidelity.cs` (Hull, InOrNear,
+    OutsideBuilding), `SurveyDetailTools.cs` (SpotsByFace), `SurveyRoofSolver.cs`, `tests/SurveyCore/FitPartTests.cs`
+    (401 pass).
+  - **For Survey to Revit:** its `SharedFiles.Write` puts `elevation-index.json` in the reports root too. If that is
+    the hub's folder, it overwrites the hub's index with the other format. The hub now reads both, but please write
+    yours under another name (e.g. `s2r-elevation-index.json`) or only to `_prep`.
 
 ### 2026-11-13: mansard as a native roof (mansard_roof), roof_detail, create_roof fix; roof_solver report (1.36.3)
 - What: `mansard_roof` (new, `SurveyRoofTools.cs`): the mansard as one native footprint roof from the survey sections
