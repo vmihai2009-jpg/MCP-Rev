@@ -128,6 +128,15 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 | F6 | `reference_pattern` (done inside `facade_detail_map reference:`, 1.17.0) | For a box on the facade, says how the human model built it: which families or in-place elements, category, level of detail, an element image. Claude copies the approach (and with `reference_copy`, the family itself where the human's family fits the survey). | Hub | P1 |
 | F7 | rustication and coursing | Horizontal joints on the rusticated base from the elevation's joint lines: wall sweeps or reveals at each joint height. | Hub | P2 |
 
+### Facade checks (2026-11-13, docs/FACADE-CHECKS.md)
+| # | Tool | What | Where | Priority |
+|---|---|---|---|---|
+| C1 | `facade_correspondence` | Model edges vs elevation lines on the facade plane: coverage (gaps), precision (spurious), shifted elements with their Δu/Δz, per map item. This is F1 `facade_score`. | Hub | P0 |
+| C2 | `opening_clear_check` + opening mask in `facade_relief` | Rays through every window: what blocks the glass; drawn openings with no or wrong model window. Relief clipped to outside the drawn openings. | Hub | P0 |
+| C3 | `facade_course_check` | Cornices, string courses, sill/head rows at the elevation's heights, run by run; storey offsets and bad height fits named. | Hub | P1 |
+| C4 | `detail_support_check` | Detail floating in front of nothing (dormers on the facade plane) or buried in walls. | Hub | P1 |
+| C5 | `facade_check` | Runs C1-C4, one score per facade; ends every facade build step and `survey_run`. | Hub | P1 |
+
 Note on "model in place": the Revit API cannot create in-place families, so tools cannot make them. The equivalent the tools can make is a generated loadable family per detail (F4), which a person opens and edits exactly like an in-place one and which repeats across the facade. Very irregular one-offs (a carved pediment) stay as DirectShapes or are listed for a person.
 
 ### Speed (P)
