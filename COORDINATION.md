@@ -20,7 +20,8 @@ What is being built next, and why, is in `PLAN.md` at the root of MCP-Rev (the r
 3. **One tool for one job.** Which tool for which job is the table in 1.2; the order is 1.3 and 1.5 e. If no tool fits, say so in your entry rather than improvising with `model_sweep` / `model_extrusion` (they make uneditable DirectShapes).
 4. **Every build ends with a check.** After any facade build step, run the check (today `facade_detail_map reference: active` and `view_image`; `facade_check` once it lands, see `docs/FACADE-CHECKS.md`) and put its numbers in your entry. A build without its check numbers is not finished.
 5. **Coding:** you are welcome to fix what you find. Say in an entry which files you're changing before you start, take the next free version number (check open pull requests), and keep the Revit-free part in `Survey/` with a test, as the projects side does. If an ask names a file as the projects side's, leave it to them.
-6. **Done / blocked:** mark each ask in your entry as done (with the files) or blocked (with the exact reason).
+6. **Transferable, always.** Every tool, fix and setting must work on any survey, not just 7 Swallow Place (Mihai's rule). No building-specific layer names, family names or numbers in code: layer roles come from Survey to Revit's rules and the job's `layers.txt`, sizes and tolerances are arguments with defaults. If something only works for this building, say so in your entry and don't merge it as a default.
+7. **Done / blocked:** mark each ask in your entry as done (with the files) or blocked (with the exact reason).
 
 **Current asks (2026-11-13), in order:**
 

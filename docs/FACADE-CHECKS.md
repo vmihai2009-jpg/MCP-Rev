@@ -10,6 +10,18 @@ be matched by the model.** A model edge with no drawn line nearby is wrong (spur
 line with no model edge is a gap. Everything below is a special case of that, made specific enough to name the cause
 and the fix.
 
+## 0. Every check works on any project
+
+Mihai's rule: everything the MCP does must transfer to every survey, not just 7 Swallow Place. So the checks and fixes:
+- read only what any survey has: the model, the facades from `facade_list`, the elevations and sections from the
+  indexes, layer roles from Survey to Revit's layer rules (and the job's `layers.txt`), never hard-coded layer or
+  family names;
+- take tolerances and limits as arguments with defaults stated in mm, and report the values they used;
+- recognise our own generated elements by their Comments tag (`MCP|<tool>|...`), not by family names;
+- are tested on drawn test facades that are not this building, and say in their answer when a facade had too little
+  in its drawings to check (no elevation, no level marks) rather than guessing.
+Swallow Place is the first test case, not the design target.
+
 ## 1. What went wrong in the picture, and why (from the code, 1.14.6-1.17.0)
 
 ### A. Windows blocked by relief panels
