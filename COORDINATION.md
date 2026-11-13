@@ -149,6 +149,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 
 | Tool | What it's for |
 |---|---|
+| `elevation_fit_check` | **Does one height fit hold along each elevation** (1.24.0, changes nothing): level marks grouped along the drawing; each part's offset against the fit the facade tools use (`offFitMm`, `agrees`), with its u stretch; each mark against the nearest model level. A part that disagrees = detail from it lands at the wrong height: narrow the elevation's `sheet_x_range` and index that part as its own elevation. |
 | `facade_check` | **All facade checks in one call** (1.22.0, changes nothing): `facade_correspondence` + `opening_clear_check` + `facade_course_check` + `detail_support_check` for one facade or `all`. One line per check, one score per facade (the lowest; pass = every check ≥ 0.90), the worst issues across them each with its fix tool. Writes `facade-check-<F>.json` (summary + every check's full answer). `survey_run facades: true` runs it at the end. |
 | `facade_correspondence` | **Does the model look like the elevation, measured** (1.18.0): model edges vs elevation lines on the facade plane. Coverage (gaps), precision (spurious), per element ok / shifted (dU, dZ; `storeyOffset`) / partial / spurious, gaps with boxes, picture. Run after every facade build. |
 | `facade_shift_fix` | **Move shifted facade elements onto the drawing** (1.23.0; `apply: false` first). The elements `facade_correspondence` calls shifted are moved by their `shiftMm` (along, up): windows/doors slide in their wall, wall sweeps change height, Generic Models / columns move. Never walls, floors, roofs; storey-sized moves only with `storey_moves: true` (check `facade_course_check` commonOffsets first); pinned skipped. One undo step. |
@@ -350,6 +351,11 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-13 (later): elevation_fit_check (1.24.0), item 6 of 10
+- `elevation_fit_check` (all elevations by default): is one height fit right along the whole drawing? It groups the level marks along the sheet and lists parts off the fit by more than 50 mm, with their stretch along the facade, plus every mark against the nearest model level. This is the check for the "top right at the wrong height" fault when the cause is another drawing or block on the same sheet.
+- **Ask:** run it once (no arguments); save `runs/<date>/elevation-fit-check.json`; for any part with `agrees: false`, say which drawing or block it is (dwg_image of that stretch).
+- Files: `Survey/ElevationFit.cs` (MarkPairs, FitPairs, Parts; Heights unchanged in what it returns), `SurveyElevationFitCheck.cs` (new), `Hub.cs`, `tests/SurveyCore/FitPartTests.cs`, `BGMCP.csproj`, `PLAN.md`, `docs/FACADE-CHECKS.md`, this file. Version 1.24.0.
 
 ### 2026-11-13 (later): facade_shift_fix (1.23.0), item 5 of 10
 - `facade_shift_fix facade: F..` lists the moves (each element facade_correspondence calls shifted, with how much more of it matches after the move); `apply: true` makes them in one undo step. Correction: `facade_correspondence`'s `shiftMm` is the move **to make** (+), not its negative as its `next` text said before.
