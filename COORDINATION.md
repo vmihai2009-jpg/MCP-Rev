@@ -349,6 +349,11 @@ Entry format (copy this):
 
 ## Projects side (Mihai's personal account)
 
+### 2026-11-13 (later): facade bands carry on round curved walls (1.21.1)
+- `facade_relief`'s wall sweeps (the bands from the sections): a curved wall joined to the facade's walls (a rounded corner, a bow) now gets the band too, as **one sweep on the curved wall**, placed the same way as on the straight wall it joins. Before, curved walls were skipped (and the corner stayed bare or came from stepped pieces). Answer: `curvedWalls` per band.
+- **Ask:** after `curve_walls` on the curved corner, rebuild that facade's sweeps (`facade_relief` as before) and check in 3D that the cornice runs round the corner in one piece; `detail_support_check` on both facades either side of it.
+- Files: `SurveyFacadeReliefTools.cs` (BuildSweeps only), `BGMCP.csproj`, this file. Version 1.21.1.
+
 ### 2026-11-13 (later): curves built as curves: curve_check, curve_walls, DWG arcs kept (1.21.0)
 - Why: Mihai's screenshot of a curved corner: the wall and the cornice/detail on it were built as a staircase of short straight pieces. His rule: "it fragments lines for a reason, it should also use curves etc. its work should always be easy to be corrected by a human." So: **a curve in the survey is one curved element in the model**, never a run of short ones.
 - `DwgFile` now keeps true curves (`Arcs`: ARC, CIRCLE, bulged LWPOLYLINE/POLYLINE pieces, which before were read as straight chords) and reads ellipses, splines and heavy polylines (before: left out). `CurveChains` (any 2D frame) fits one arc to a chain of short lines that stays on a circle (T-junctions and corners end it; zigzags and straight runs are not curves).
