@@ -89,19 +89,25 @@ namespace BarrGazetas.RevitMcp.Survey
         /// plan's projection (planAt: the profile of a storey whose plan cut height the face crosses, or null), else by shape. Faces inside a window
         /// (the glass) or bigger than MaxFaceM2 (the plain wall) are left out.
         /// </summary>
+        /// <param name="windows">The openings: the model's windows and (1.18.0) the openings the elevation draws. Nothing is
+        /// built over them: a face mostly inside one is left out (it is the glass), a face partly over one is cut back
+        /// to outside it (a surround keeps its outer part).</param>
         public static List<ReliefFace> Build(IList<Seg> segs, IList<(double u0, double u1, double z0, double z1)> windows,
                                              Func<double, double, ProjectionProfile> planAt, ReliefOptions o = null)
         {
             o ??= new ReliefOptions();
-            var faces = SurveyDetail.Faces(segs, o.TolMm, o.MinFaceMm2);
+            var raw = SurveyDetail.Faces(segs, o.TolMm, o.MinFaceMm2);
+            var faces = new List<List<Pt>>();
+            foreach (var ring in raw)
+            {
+                if (Math.Abs(GeoMath.SignedArea(ring)) / 1e6 > o.MaxFaceM2) continue;   // the plain wall, before cutting
+                faces.AddRange(OutsideOpenings(ring, windows, o.MinFaceMm2));
+            }
             var result = new List<ReliefFace>();
             foreach (var ring in faces)
             {
                 GeoMath.BoundingBox(ring, out var mn, out var mx);
                 double area = Math.Abs(GeoMath.SignedArea(ring)) / 1e6;
-                if (area > o.MaxFaceM2) continue;
-                double cu = (mn.X + mx.X) / 2, cz = (mn.Y + mx.Y) / 2;
-                if (windows.Any(w => cu > w.u0 + 20 && cu < w.u1 - 20 && cz > w.z0 + 20 && cz < w.z1 - 20)) continue;
                 var f = new ReliefFace { Ring = ring, U0 = mn.X, U1 = mx.X, Z0 = mn.Y, Z1 = mx.Y, AreaM2 = area };
                 double w = mx.X - mn.X, h = mx.Y - mn.Y;
                 // the plan only says what stands out at its cut height: a face that crosses it (a column, a pilaster, a pier)
@@ -115,6 +121,59 @@ namespace BarrGazetas.RevitMcp.Survey
                 result.Add(f);
             }
             return result;
+        }
+
+        /// <summary>
+        /// A face cut back to outside the openings (each grown by 10 mm): left out when more than half of it is inside one,
+        /// otherwise the parts left, right, below and above each opening it overlaps; pieces under minMm2 dropped.
+        /// </summary>
+        public static List<List<Pt>> OutsideOpenings(List<Pt> ring, IList<(double u0, double u1, double z0, double z1)> openings, double minMm2 = 1500, double grow = 10)
+        {
+            var pieces = new List<List<Pt>> { ring };
+            if (openings == null) return pieces;
+            foreach (var w in openings)
+            {
+                double u0 = Math.Min(w.u0, w.u1) - grow, u1 = Math.Max(w.u0, w.u1) + grow, z0 = Math.Min(w.z0, w.z1) - grow, z1 = Math.Max(w.z0, w.z1) + grow;
+                var next = new List<List<Pt>>();
+                foreach (var p in pieces)
+                {
+                    GeoMath.BoundingBox(p, out var mn, out var mx);
+                    if (mx.X <= u0 || mn.X >= u1 || mx.Y <= z0 || mn.Y >= z1) { next.Add(p); continue; }
+                    double area = Math.Abs(GeoMath.SignedArea(p));
+                    var inside = Clip(Clip(Clip(Clip(p, 0, u0, +1), 0, u1, -1), 1, z0, +1), 1, z1, -1);
+                    double inA = inside.Count >= 3 ? Math.Abs(GeoMath.SignedArea(inside)) : 0;
+                    if (inA < 1) { next.Add(p); continue; }
+                    if (inA > 0.5 * area) continue;
+                    var left = Clip(p, 0, u0, -1); var right = Clip(p, 0, u1, +1);
+                    var mid = Clip(Clip(p, 0, u0, +1), 0, u1, -1);
+                    var below = Clip(mid, 1, z0, -1); var above = Clip(mid, 1, z1, +1);
+                    foreach (var q in new[] { left, right, below, above })
+                        if (q.Count >= 3 && Math.Abs(GeoMath.SignedArea(q)) >= minMm2) next.Add(q);
+                }
+                pieces = next;
+            }
+            return pieces;
+        }
+
+        /// <summary>Sutherland-Hodgman against one axis-aligned half plane: keep axis (0 = u, 1 = z) value >= at (keep +1) or <= at (keep -1).</summary>
+        private static List<Pt> Clip(List<Pt> poly, int axis, double at, int keep)
+        {
+            var res = new List<Pt>();
+            if (poly.Count < 3) return res;
+            double V(Pt p) => (axis == 0 ? p.X : p.Y) - at;
+            bool In(Pt p) => keep > 0 ? V(p) >= 0 : V(p) <= 0;
+            for (int i = 0; i < poly.Count; i++)
+            {
+                Pt a = poly[i], b = poly[(i + 1) % poly.Count];
+                bool ia = In(a), ib = In(b);
+                if (ia) res.Add(a);
+                if (ia != ib)
+                {
+                    double t = V(a) / (V(a) - V(b));
+                    res.Add(new Pt(a.X + (b.X - a.X) * t, a.Y + (b.Y - a.Y) * t));
+                }
+            }
+            return res;
         }
     }
 }

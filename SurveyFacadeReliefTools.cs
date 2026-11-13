@@ -440,7 +440,12 @@ namespace BarrGazetas.RevitMcp
                         windows.Add((u - w / 2, u + w / 2, lz + sill, lz + head));
                     }
 
-                    stage = "faces"; var faces = FacadeRelief.Build(segs, windows, PlanAt, o);
+                    // 1.18.0: and the openings the elevation draws, so a window the model lacks, or has narrower, still gets no stone over it
+                    var drawnOpenings = FacadeMap.Openings(fr.WindowLines.Select(l => new DwgLine { Layer = l.Layer, A = new Pt(fr.U(l.A.X), fr.Z(l.A.Y)), B = new Pt(fr.U(l.B.X), fr.Z(l.B.Y)) }))
+                        .Select(b => (b.U0, b.U1, b.Z0, b.Z1)).ToList();
+                    var openings = windows.Concat(drawnOpenings).ToList();
+
+                    stage = "faces"; var faces = FacadeRelief.Build(segs, openings, PlanAt, o);
                     // above the facade's walls the roof slopes back (mansard, chimneys): those lines are not on the facade plane;
                     double wallTop = walls.Where(w => { var c = ((LocationCurve)w.Location).Curve.Evaluate(0.5, true); double v = (c.X * Mm - fr.A.X) * nx + (c.Y * Mm - fr.A.Y) * ny, uu = (c.X * Mm - fr.A.X) * fr.Ux + (c.Y * Mm - fr.A.Y) * fr.Uy; return Math.Abs(v) < 1500 && uu > -500 && uu < fr.Length + 500; })
                         .Select(w => w.get_BoundingBox(null)?.Max.Z * Mm ?? double.MinValue).DefaultIfEmpty(double.MaxValue).Max();
@@ -595,7 +600,7 @@ namespace BarrGazetas.RevitMcp
                     {
                         facade = fid, elevation = Args.Str(spec, "name"), lines = segs.Count, faces = faces.Count, bySource,
                         storeysWithPlan = profiles.Select(p => new { p.level, projectsMm = Math.Round(p.p.Depth.Max()) }).ToList(),
-                        windowsLeftOut = windows.Count, aboveWallTop = aboveRoof, leftForColumns = byColumns, leftForSweeps = bySweeps, wallTopMm = Math.Round(wallTop), made, failed, facesOnWallsInFront = onWall, removed, shapes = ids, families = familyLog.Count > 0 ? familyLog : null, revit,
+                        windowsLeftOut = windows.Count, drawnOpeningsLeftOut = drawnOpenings.Count, aboveWallTop = aboveRoof, leftForColumns = byColumns, leftForSweeps = bySweeps, wallTopMm = Math.Round(wallTop), made, failed, facesOnWallsInFront = onWall, removed, shapes = ids, families = familyLog.Count > 0 ? familyLog : null, revit,
                         next = dry ? "dry_run: false to build it (check_view + view_image to compare with the elevation)." : "check_view facade + view_image, side by side with the elevation.",
                     };
                   }
@@ -849,6 +854,8 @@ namespace BarrGazetas.RevitMcp
         internal class ElevFrame
         {
             public List<DwgLine> Lines;
+            /// <summary>The elevation's window and door lines (by Survey to Revit's layer roles, else the layer name).</summary>
+            public List<DwgLine> WindowLines;
             public Pt A; public double Ux, Uy, Length;
             public Func<double, double> U, Z;
         }
@@ -888,6 +895,7 @@ namespace BarrGazetas.RevitMcp
             return new ElevFrame
             {
                 Lines = lines, A = fa, Ux = ux, Uy = uy, Length = fl,
+                WindowLines = lines.Where(l => Is(l.Layer, new[] { "Window", "Door" }, new[] { "*Window*", "*Door*" })).ToList(),
                 U = x => along.Along(x * heights.A), Z = y => heights.Height(y) - datumMm,
             };
         }

@@ -68,7 +68,7 @@ All four answer in the same shape: per facade, a score, then issues with `kind`,
 relate to (`facade_detail_map` ids), the offset in mm (u along, z height, v depth), and a `fix` line naming the tool to
 run. They write `facade-check-<F>.json` in the reports folder and, with `image: true`, one overlay picture.
 
-### 2.1 `opening_clear_check` (Error A)
+### 2.1 `opening_clear_check` (Error A) — built, 1.18.0
 - **In:** facade (or all), tolerance (default 10 mm), image.
 - **How:** for every window and door on the facade, the clear opening (the family's width x height at its sill, in the
   glass plane). Cast a grid of rays (default 8 x 8) from 2 m outside straight in (Revit `ReferenceIntersector` in a 3D
@@ -92,7 +92,7 @@ run. They write `facade-check-<F>.json` in the reports folder and, with `image: 
   that part). Windows in one drawn row whose sill or head differs from the row by more than tolerance, when the
   elevation draws them level, are listed too.
 
-### 2.3 `facade_correspondence` (both, and everything else: PLAN.md F1 `facade_score`)
+### 2.3 `facade_correspondence` (both, and everything else: PLAN.md F1 `facade_score`) — built, 1.18.0
 - **In:** facade, tolerance (default 20 mm), image.
 - **How:** the model's visible edges near the facade (solids of walls, windows, doors, Generic Models, wall sweeps,
   columns, roofs within 1.5 m in front of and 3 m behind the facade line) projected onto the facade plane in the same
@@ -122,7 +122,7 @@ nobody has to look at screenshots to know what is wrong.
 
 ## 3. Fixes to the building tools these checks call for
 
-1. **Opening mask in `facade_relief`** (Error A): the mask is the union of the drawn openings (window-layer clusters
+1. **Opening mask in `facade_relief`** (Error A; done in 1.18.0, `FacadeRelief.OutsideOpenings`): the mask is the union of the drawn openings (window-layer clusters
    and their reveals from the elevation, `FacadeMap` window boxes) and the model's windows, grown by 10 mm. A face is
    dropped if most of it is inside the mask, and **clipped** to outside the mask if it overlaps it; never extruded over
    an opening. Surround faces keep their outer part.

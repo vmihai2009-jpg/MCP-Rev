@@ -112,6 +112,10 @@ namespace BarrGazetas.RevitMcp.Survey
 
         // ---------- windows ----------
 
+        /// <summary>The openings an elevation draws: its window-layer lines (already in facade u/z) grouped where they touch.</summary>
+        public static List<FacadeWindowBox> Openings(IEnumerable<DwgLine> windowLines) =>
+            WindowBoxes(windowLines.Select(l => new Seg { U0 = l.A.X, Z0 = l.A.Y, U1 = l.B.X, Z1 = l.B.Y, Layer = l.Layer ?? "" }).Where(x => x.Len >= 1).ToList());
+
         /// <summary>Window-layer lines grouped where their boxes touch (30 mm); groups 300-8000 wide and 400-8000 tall are openings.</summary>
         private static List<FacadeWindowBox> WindowBoxes(List<Seg> win)
         {
