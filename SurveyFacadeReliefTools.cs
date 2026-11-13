@@ -732,6 +732,14 @@ namespace BarrGazetas.RevitMcp
                 if (old.Count > 0) doc.Delete(old);
                 var baseType = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Cornices).WhereElementIsElementType().Cast<ElementType>().FirstOrDefault()
                     ?? throw new InvalidOperationException("The model has no wall sweep type to start from.");
+                // 1.21.1: curved walls joined to the facade's walls (a rounded corner, a bow): a band that runs to the joint
+                // carries on round the curve as one sweep on the curved wall, never as straight pieces
+                var ends = wallIds.Select(id => doc.GetElement(new ElementId(id)) as Wall).Where(w => w?.Location is LocationCurve)
+                    .SelectMany(w => new[] { 0, 1 }.Select(k => (id: w.Id.Value, p: ((LocationCurve)w.Location).Curve.GetEndPoint(k)))).ToList();
+                var curvedNear = new FilteredElementCollector(doc).OfClass(typeof(Wall)).Cast<Wall>()
+                    .Where(w => w.Location is LocationCurve lc && lc.Curve is Arc && !wallIds.Contains(w.Id.Value) && WallSweep.WallAllowsWallSweep(w))
+                    .Select(w => (w, touching: ends.Where(e => new[] { 0, 1 }.Any(k => { var q = ((LocationCurve)w.Location).Curve.GetEndPoint(k); return Math.Abs(q.X - e.p.X) * Mm < 100 && Math.Abs(q.Y - e.p.Y) * Mm < 100; })).Select(e => e.id).Distinct().ToList()))
+                    .Where(x => x.touching.Count > 0).ToList();
                 var nrm = new XYZ(nx, ny, 0);
                 bool? flip = null;
                 foreach (var f in files)
@@ -747,6 +755,7 @@ namespace BarrGazetas.RevitMcp
                     // the type carries the profile (the one passed with a new sweep is not kept)
                     stype.get_Parameter(BuiltInParameter.WALL_SWEEP_PROFILE_PARAM)?.Set(prof.Id);
                     int onWalls = 0;
+                    var placed = new Dictionary<long, (bool flip, double off, WallSide side)>();
                     foreach (var wid in wallIds)
                     {
                         if (!(doc.GetElement(new ElementId(wid)) is Wall w) || !(w.Location is LocationCurve lc) || !WallSweep.WallAllowsWallSweep(w)) continue;
@@ -806,12 +815,34 @@ namespace BarrGazetas.RevitMcp
                             }
                             if (best == null) throw new InvalidOperationException("no placement of the sweep worked");
                             Make(best.Value.flip, best.Value.off, best.Value.side);
+                            placed[wid] = best.Value;
                             if (bestMiss > 150) notes.Add($"wall {wid}, {tname}: best placement still {bestMiss:0} mm off the section's");
                             onWalls++; madeHere++;
                         }
                         catch (Exception ex) { failedHere++; notes.Add($"wall {wid}, {tname}: {McpServer.Unwrap(ex).Message}"); }
                     }
-                    log.Add(new { profile = f.name, type = tname, heightMm = Math.Round(f.zb), outMm = Math.Round(f.outMm), walls = onWalls });
+                    int onCurves = 0;
+                    foreach (var (cw, touching) in curvedNear)
+                    {
+                        var from = touching.Where(placed.ContainsKey).Select(id => placed[id]).Cast<(bool flip, double off, WallSide side)?>().FirstOrDefault();
+                        if (from == null) continue;
+                        double cb = ((doc.GetElement(cw.get_Parameter(BuiltInParameter.WALL_BASE_CONSTRAINT)?.AsElementId() ?? ElementId.InvalidElementId) as Level)?.Elevation ?? 0) * Mm
+                                    + (cw.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET)?.AsDouble() ?? 0) * Mm;
+                        if (f.zb < cb || f.zb >= (cw.get_BoundingBox(null)?.Max.Z ?? 0) * Mm) continue;
+                        if (new FilteredElementCollector(doc).OfClass(typeof(WallSweep)).Cast<WallSweep>().Any(x => x.GetTypeId() == stype.Id && x.GetHostIds().Contains(cw.Id))) continue;
+                        try
+                        {
+                            var info = new WallSweepInfo(WallSweepType.Sweep, false)
+                            {
+                                ProfileId = prof.Id, Distance = (f.zb - cb) / Mm, DistanceMeasuredFrom = DistanceMeasuredFrom.Base,
+                                WallSide = from.Value.side, WallOffset = from.Value.off / Mm, IsProfileFlipped = from.Value.flip,
+                            };
+                            WallSweep.Create(cw, stype.Id, info);
+                            onCurves++; madeHere++;
+                        }
+                        catch (Exception ex) { failedHere++; notes.Add($"curved wall {cw.Id.Value}, {tname}: {McpServer.Unwrap(ex).Message}"); }
+                    }
+                    log.Add(new { profile = f.name, type = tname, heightMm = Math.Round(f.zb), outMm = Math.Round(f.outMm), walls = onWalls, curvedWalls = onCurves });
                 }
             }));
             made += madeHere; failed += failedHere;
