@@ -18,6 +18,14 @@ namespace BarrGazetas.RevitMcp.Survey
         public double Height(double sheetY) => A * sheetY + B;
     }
 
+    /// <summary>A stretch of an elevation whose level marks were checked together (sheet x, mm as read).</summary>
+    public class FitPart
+    {
+        public double X0, X1, OffsetMm, DiffMm, SpreadMm;
+        public int Marks;
+        public bool Agrees;
+    }
+
     public class AlongFit
     {
         /// <summary>Distance along the facade (mm) = Dir * sheet x + Offset.</summary>
@@ -166,10 +174,17 @@ namespace BarrGazetas.RevitMcp.Survey
         /// is taken as 1:1; with none, the sheet is assumed drawn 1:1 to datum (and the note says so).
         /// </summary>
         public static HeightFit Heights(IEnumerable<DwgText> texts, IEnumerable<DwgLine> levelLines, double xMin, double xMax)
+            => FitPairs(MarkPairs(texts, levelLines, xMin, xMax).Select(p => (p.y, p.z)).ToList());
+
+        /// <summary>
+        /// 1.24.0: each level mark's value with the sheet height it marks, and where along the sheet it is (x): the text paired
+        /// with the level line drawn just under it, or with the lowest point of a small level triangle beside it.
+        /// </summary>
+        public static List<(double x, double y, double z)> MarkPairs(IEnumerable<DwgText> texts, IEnumerable<DwgLine> levelLines, double xMin, double xMax)
         {
             var all = levelLines.ToList();
             var flat = all.Where(l => Math.Abs(l.A.Y - l.B.Y) < 1 && Math.Abs(l.A.X - l.B.X) > 150).ToList();
-            var pairs = new List<(double y, double z)>();
+            var pairs = new List<(double x, double y, double z)>();
             foreach (var t in texts)
             {
                 if (t.At.X < xMin - 2000 || t.At.X > xMax + 2000) continue;
@@ -177,13 +192,19 @@ namespace BarrGazetas.RevitMcp.Survey
                 var line = flat.Where(l => l.A.Y <= t.At.Y + 50 && l.A.Y >= t.At.Y - 600
                                            && Math.Min(l.A.X, l.B.X) <= t.At.X + 3000 && Math.Max(l.A.X, l.B.X) >= t.At.X - 3000)
                                .OrderBy(l => t.At.Y - l.A.Y).FirstOrDefault();
-                if (line != null) { pairs.Add((line.A.Y, z)); continue; }
+                if (line != null) { pairs.Add((t.At.X, line.A.Y, z)); continue; }
                 // a spot-level symbol (a small triangle pointing at the level) next to the text: its lowest point
                 var ends = all.Where(l => Math.Abs(l.A.X - l.B.X) < 400 && Math.Abs(l.A.Y - l.B.Y) < 400)
                               .SelectMany(l => new[] { l.A, l.B })
                               .Where(p => Math.Abs(p.X - t.At.X) <= 1000 && p.Y <= t.At.Y + 50 && p.Y >= t.At.Y - 600).ToList();
-                if (ends.Count >= 3) pairs.Add((ends.Min(p => p.Y), z));
+                if (ends.Count >= 3) pairs.Add((t.At.X, ends.Min(p => p.Y), z));
             }
+            return pairs;
+        }
+
+        /// <summary>The height fit from (sheet y, value) pairs: see Heights.</summary>
+        public static HeightFit FitPairs(List<(double y, double z)> pairs)
+        {
             var fit = new HeightFit();
             if (pairs.Count == 0) { fit.A = 1; fit.B = 0; fit.Note = "No level marks with their lines in that part of the sheet: assumed drawn 1:1 to datum."; return fit; }
             if (pairs.Count == 1) { fit.A = 1; fit.B = pairs[0].z - pairs[0].y; }
@@ -220,6 +241,40 @@ namespace BarrGazetas.RevitMcp.Survey
             fit.WorstMm = Math.Round(pairs.Max(p => Math.Abs(fit.Height(p.y) - p.z)), 1);
             fit.Note = $"{pairs.Count} level marks; scale {fit.A:0.0000}; worst mark off by {fit.WorstMm:0.#} mm.";
             return fit;
+        }
+
+        /// <summary>
+        /// 1.24.0: does one height fit hold along the whole drawing? The level marks are grouped along the sheet (a gap of more
+        /// than gapMm between marks starts a new group: another part of the drawing, another block, another drawing beside
+        /// it). Each group's own offset (sheet drawn 1:1, the median of value minus sheet height) against the fit for the
+        /// whole drawing: a group off by more than disagreeMm is a part where the elevation's heights are not this fit's.
+        /// </summary>
+        public static List<FitPart> Parts(IList<(double x, double y, double z)> pairs, HeightFit whole, double gapMm = 4000, double disagreeMm = 50)
+        {
+            var res = new List<FitPart>();
+            if (pairs.Count == 0) return res;
+            var sorted = pairs.OrderBy(p => p.x).ToList();
+            var groups = new List<List<(double x, double y, double z)>> { new List<(double, double, double)> { sorted[0] } };
+            for (int i = 1; i < sorted.Count; i++)
+            {
+                if (sorted[i].x - sorted[i - 1].x > gapMm) groups.Add(new List<(double, double, double)>());
+                groups[groups.Count - 1].Add(sorted[i]);
+            }
+            foreach (var g in groups)
+            {
+                var off = g.Select(p => p.z - p.y).OrderBy(v => v).ToList();
+                double med = off[off.Count / 2];
+                // against the whole fit, at this group's own marks
+                var dev = g.Select(p => p.z - whole.Height(p.y)).OrderBy(v => v).ToList();
+                double d = dev[dev.Count / 2];
+                res.Add(new FitPart
+                {
+                    X0 = g.Min(p => p.x), X1 = g.Max(p => p.x), Marks = g.Count, OffsetMm = Math.Round(med, 1),
+                    DiffMm = Math.Round(d, 1), SpreadMm = Math.Round(off.Last() - off.First(), 1),
+                    Agrees = Math.Abs(d) <= disagreeMm,
+                });
+            }
+            return res;
         }
 
         /// <summary>

@@ -133,7 +133,7 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 2. `detail_support_check` + set-back fix in `facade_relief` (C4). Done 1.20.0.
 3. `facade_check`: every facade check in one call, also in `survey_run` (C5). Done 1.22.0.
 4. `facade_shift_fix`: move elements `facade_correspondence` finds shifted (dry run first, PhaseKeeper). Done 1.23.0.
-5. `elevation_fit_check`: level marks per part of each elevation; parts that disagree reported, not used.
+5. `elevation_fit_check`: level marks per part of each elevation; parts that disagree reported, not used. Done 1.24.0 (reported; splitting the elevation is still by hand in elevation-index.json).
 6. Curves, not fragments (moved up; Mihai 2026-11-13: "it fragments lines for a reason, it should also use curves... easy to be corrected by a human"): DWG reader keeps arcs, bulges, circles, ellipses, splines; chains of short lines fitted to arcs (`CurveChains`); `curve_check` + `curve_walls` replace staircases of short walls with one curved wall. Done 1.21.0. Bands carry on round curved walls as one sweep (1.21.1). Still to do: relief families on a curved stretch set to the tangent, and arcs in elevations (arches, curved pediments) as arcs.
 7. Rustication as Reveal wall sweeps (F7).
 8. `place_by_type`: a family at every item of a `facade_detail_map` type (F5).

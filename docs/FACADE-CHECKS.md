@@ -129,7 +129,7 @@ nobody has to look at screenshots to know what is wrong.
 2. **Set-back detail** (Error B.1; done in 1.20.0, `FacadeRelief.TopProfile`/`AboveOwnWall`): faces above a block's own wall top (per u stretch, not the facade's highest) are
    not placed on the facade plane: they are listed as "roof-level detail" for the dormer/mansard step, which places
    them on the roof surface behind (the plane is found by casting inward to the mansard roof).
-3. **Height fit per drawing part** (Error B.2): `elevation_index` and the relief use the level marks nearest each part
+3. **Height fit per drawing part** (Error B.2; checked by `elevation_fit_check`, 1.24.0): `elevation_index` and the relief use the level marks nearest each part
    of the drawing; a part whose fit disagrees with the rest by more than 50 mm is reported, not used.
 4. Every write stays in the survey's phase (`PhaseKeeper`), as all write tools do since 1.14.3.
 
