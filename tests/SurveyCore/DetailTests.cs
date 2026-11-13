@@ -21,6 +21,12 @@ namespace SurveyCoreTests
             T.Check(flat.Flat && T.Near(flat.C, 510, 1e-9), "two spots: flat at their mean");
             var line = SurveyDetail.FitPlane(new List<Pt> { new Pt(0, 0, 500), new Pt(1000, 0, 600), new Pt(2000, 0, 700) });
             T.Check(line.Flat, "spots in a line: no slope across them, so flat");
+            // 1.36.15: a shallow lead roof (eaves 44.32, ridge 44.93 over 6 m: ~5.8°) with a neighbouring lower roof's spot
+            // on the shared edge: the plain fit tilts, the robust one leaves that spot out
+            var lead = new List<Pt> { new Pt(0, 0, 44320), new Pt(8000, 0, 44320), new Pt(0, 6000, 44930), new Pt(8000, 6000, 44930), new Pt(4000, 3000, 44625), new Pt(4000, 0, 41200) };
+            var plain = SurveyDetail.FitPlane(lead); var robust = SurveyDetail.FitPlaneRobust(lead);
+            T.Check(plain.RmsMm > 500 && robust.Outliers == 1 && T.Near(robust.SlopeDeg, Math.Atan(610.0 / 6000) * 180 / Math.PI, 0.05) && robust.RmsMm < 1,
+                    $"robust plane: a stray spot left out ({plain.SlopeDeg:0.0}° -> {robust.SlopeDeg:0.0}°, {robust.Outliers} out)");
 
             // faces: a 10 x 6 m rectangle split by a ridge line into two, with a dangling line and a crossing line
             var segs = new List<Seg>

@@ -283,7 +283,8 @@ namespace BarrGazetas.RevitMcp
                 Description = "Stairs against the plan DWGs: each flight on the stair layer (EF_35_10-Stair) read as treads (count, going, width) and matched to " +
                               "the model's stair runs on that floor. Reports differences, flights the model lacks, and the riser height the storey and " +
                               "tread count give. Changes nothing (stairs are fixed by hand or rebuilt from these numbers).",
-                InputSchema = Schema(("levels", Arr("string", "Floors (default all with a plan)"), false)),
+                InputSchema = Schema(("levels", Arr("string", "Floors (default all with a plan)"), false),
+                                     ("stair_layers", Arr("string", "Stair layer patterns (default: Survey to Revit's Stair/Ramp roles, *Stair*, *Step*)"), false)),
                 Run = (app, a) =>
                 {
                     var doc = Doc(app);
@@ -292,7 +293,8 @@ namespace BarrGazetas.RevitMcp
                     var report = new List<object>();
                     foreach (var (level, imp) in PlanFloors(doc, Args.Strings(a, "levels")))
                     {
-                        var segs = CadLink.Segments(CadLink.Read(doc, imp, new ReadStats()), new[] { "*Stair*" });
+                        var read = CadLink.Read(doc, imp, new ReadStats());
+                        var segs = CadLink.Segments(read, StairLayerGlobs(app, doc, imp, read, a));
                         var flights = SurveyDetail.Stairs(segs);
                         int li = levels.FindIndex(l => l.Id == level.Id);
                         double rise = li >= 0 && li + 1 < levels.Count ? (levels[li + 1].Elevation - level.Elevation) * Mm : double.NaN;
@@ -457,7 +459,7 @@ namespace BarrGazetas.RevitMcp
                         var c = new Pt(faces[i].Average(p => p.X), faces[i].Average(p => p.Y));
                         string kind = chimneys.Any(r => GeoMath.PointInPolygon(c, r)) ? "chimney" : lights.Any(r => GeoMath.PointInPolygon(c, r)) ? "rooflight" : "roof";
                         bySpot.TryGetValue(i, out var ss);
-                        var plane = ss != null ? SurveyDetail.FitPlane(ss) : null;
+                        var plane = ss != null ? SurveyDetail.FitPlaneRobust(ss) : null;
                         string how = plane == null ? null : plane.Flat ? "flat" : "sloped";
                         List<(double, List<(double, double, double, double)>)> ter = null;
                         if (plane != null && plane.RmsMm > 40 && kind != "chimney") { ter = SurveyDetail.Terraces(faces[i], ss); how = $"terraces ({ter.Count} levels)"; }
@@ -937,6 +939,23 @@ namespace BarrGazetas.RevitMcp
                 rings = SurveyDetail.Faces(segs, 10, minArea);
             }
             return rings;
+        }
+
+        /// <summary>1.36.15 (rule 6): stair layers for a linked plan: stair_layers if given, else the layers Survey to Revit reads as
+        /// Stair or Ramp, plus *Stair* and *Step* (On Centre draws stairs on STEPS).</summary>
+        internal static List<string> StairLayerGlobs(UIApplication app, Document doc, ImportInstance imp, List<CadEntity> read, JsonObject a)
+        {
+            var given = Args.Strings(a, "stair_layers");
+            if (given.Count > 0) return given;
+            var globs = new List<string> { "*Stair*", "*Step*" };
+            try
+            {
+                string folder = null; try { folder = Path.GetDirectoryName(CadLink.FilePath(doc, imp)); } catch { }
+                var roles = SurveyRoles(app, folder)?.Invoke(read.Select(e => e.Layer).Where(l => l != null).Distinct());
+                if (roles != null) globs.AddRange(roles.Where(kv => kv.Value == "Stair" || kv.Value == "Ramp").Select(kv => kv.Key));
+            }
+            catch { }
+            return globs.Distinct().ToList();
         }
 
         /// <summary>1.36.13: each face's spot heights. Spots inside it; and when that gives fewer than 3, the spots on or near its

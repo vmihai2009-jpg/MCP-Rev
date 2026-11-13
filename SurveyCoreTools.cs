@@ -28,14 +28,14 @@ namespace BarrGazetas.RevitMcp
                 InputSchema = Schema(
                     ("apply", S("boolean", "Cut the openings (default false: preview)"), false),
                     ("margin_mm", S("number", "Grow each well by this (default 0: the drawn flights' box)"), false),
-                    ("stair_layers", Arr("string", "Layer patterns for stairs (default *Stair*)"), false),
+                    ("stair_layers", Arr("string", "Layer patterns for stairs (default *Stair*, *Step*)"), false),
                     ("lift_layers", Arr("string", "Layer patterns for lifts (default *Lift*)"), false)),
                 Run = (app, a) =>
                 {
                     var doc = Doc(app);
                     bool apply = Args.Bool(a, "apply") == true;
                     double margin = Args.Dbl(a, "margin_mm") ?? 0;
-                    var stairL = Args.Strings(a, "stair_layers"); if (stairL.Count == 0) stairL = new List<string> { "*Stair*" };
+                    var stairL = Args.Strings(a, "stair_layers"); if (stairL.Count == 0) stairL = new List<string> { "*Stair*", "*Step*" };
                     var liftL = Args.Strings(a, "lift_layers"); if (liftL.Count == 0) liftL = new List<string> { "*Lift*" };
                     var floorsPlans = PlanFloors(doc, new List<string>()).OrderBy(x => x.level.Elevation).ToList();
                     if (floorsPlans.Count == 0) throw new ArgumentException("No plan DWGs linked in plan views.");

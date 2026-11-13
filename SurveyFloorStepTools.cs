@@ -66,7 +66,7 @@ namespace BarrGazetas.RevitMcp
                         double levelMm = level.Elevation * Mm;
                         var floors = new FilteredElementCollector(doc).OfClass(typeof(Floor)).Cast<Floor>().Where(f => f.LevelId == level.Id).ToList();
                         if (floors.Count == 0 || spots.Count == 0) { report.Add(new { level = level.Name, note = floors.Count == 0 ? "no floor on this level" : "no spot heights on its plan" }); continue; }
-                        var flights = stairMargin < 0 ? new List<StairGroup>() : SurveyDetail.Stairs(CadLink.Segments(CadLink.Read(doc, imp, new ReadStats()), new[] { "*Stair*" }));
+                        var flights = stairMargin < 0 ? new List<StairGroup>() : SurveyDetail.Stairs(CadLink.Segments(CadLink.Read(doc, imp, new ReadStats()), new[] { "*Stair*", "*Step*" }));
                         var walls = WallFaces(doc, level, out var axes);
                         var rooms = regions == "nearest" ? new List<(string, List<List<Pt>>)>() : RoomLoops(doc, level);
                         if (regions == "rooms" && rooms.Count == 0) throw new ArgumentException($"{level.Name} has no placed rooms: regions auto or nearest, or place_rooms first.");

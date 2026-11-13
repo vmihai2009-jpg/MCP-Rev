@@ -973,7 +973,7 @@ namespace BarrGazetas.RevitMcp
                     inserts.Add(u - w / 2); inserts.Add(u + w / 2);
                 }
             int? dir = Args.Dbl(spec, "along_direction") is double dg ? (dg < 0 ? -1 : 1) : 1;
-            var along = ElevationFit.Along(ElevationFit.Jambs(winLines), inserts, heights.A, 60, dir);
+            var along = ElevationFit.Along(ElevationFit.Jambs(winLines), inserts, heights.A, 60, dir, lines.Count > 0 ? lines.Min(l => Math.Min(l.A.X, l.B.X)) : (double?)null, lines.Count > 0 ? lines.Max(l => Math.Max(l.A.X, l.B.X)) : (double?)null, fl);
             return new ElevFrame
             {
                 Lines = lines, A = fa, Ux = ux, Uy = uy, Length = fl,

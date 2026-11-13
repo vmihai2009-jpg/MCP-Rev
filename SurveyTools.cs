@@ -505,7 +505,7 @@ namespace BarrGazetas.RevitMcp
                     }).ToList();
                     var modelJambs = inserts.SelectMany(m => new[] { m.U - m.W / 2, m.U + m.W / 2 }).ToList();
                     int? dirGiven = Args.Dbl(a, "along_direction") is double dg ? (dg < 0 ? -1 : 1) : (int?)null;
-                    var along = ElevationFit.Along(ElevationFit.Jambs(winLines), modelJambs, heights.A, 60, dirGiven);
+                    var along = ElevationFit.Along(ElevationFit.Jambs(winLines), modelJambs, heights.A, 60, dirGiven, lines.Count > 0 ? lines.Min(l => Math.Min(l.A.X, l.B.X)) : (double?)null, lines.Count > 0 ? lines.Max(l => Math.Max(l.A.X, l.B.X)) : (double?)null, fl);
 
                     int limit = Math.Clamp(Args.Int(a, "limit", 200), 1, 2000);
                     // storeys: the levels that hold walls (leaves out spare levels such as a template's "Level 1")

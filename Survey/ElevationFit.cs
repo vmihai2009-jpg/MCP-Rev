@@ -338,12 +338,14 @@ namespace BarrGazetas.RevitMcp.Survey
         /// elevation is seen from outside, so it may run either way along the facade line); the offset with most jambs
         /// within <paramref name="tolMm"/> wins, then is refined to their mean.
         /// </summary>
-        public static AlongFit Along(IList<double> elevationJambs, IList<double> modelJambs, double scale, double tolMm = 60, int? onlyDir = null)
+        public static AlongFit Along(IList<double> elevationJambs, IList<double> modelJambs, double scale, double tolMm = 60, int? onlyDir = null,
+                                     double? sheetX0 = null, double? sheetX1 = null, double? facadeLength = null)
         {
             var fit = new AlongFit { ElevationJambs = elevationJambs.Count, ModelJambs = modelJambs.Count };
             if (elevationJambs.Count == 0 || modelJambs.Count == 0) { fit.Note = "No jambs to match."; return fit; }
             int bestN = 0; double bestOff = 0; int bestDir = 1;
             var bestPerDir = new Dictionary<int, int> { [1] = 0, [-1] = 0 };
+            var cands = new List<(int dir, double off, int n)>();
             foreach (int dir in onlyDir is int d ? new[] { d } : new[] { 1, -1 })
             {
                 var votes = new Dictionary<long, int>();
@@ -360,6 +362,26 @@ namespace BarrGazetas.RevitMcp.Survey
                     int matched = elevationJambs.Count(e => modelJambs.Any(m => Math.Abs(m - (dir * scale * e + off)) <= tolMm));
                     if (matched > bestPerDir[dir]) bestPerDir[dir] = matched;
                     if (matched > bestN) { bestN = matched; bestOff = off; bestDir = dir; }
+                    cands.Add((dir, off, matched));
+                }
+            }
+            // 1.36.15: a regular facade matches almost as well one bay along (only the end jambs are lost): among the offsets within
+            // two jambs of the best, the one that puts the drawing's ends on the facade's ends wins, when it is clearly better
+            // (Mount Row: windows 1-2 bays off along the facade)
+            string endNote = "";
+            if (sheetX0 is double x0 && sheetX1 is double x1 && facadeLength is double fl && fl > 0)
+            {
+                double EndCost(int dir, double off)
+                {
+                    double a = dir * scale * x0 + off, b = dir * scale * x1 + off;
+                    return Math.Abs(Math.Min(a, b) - 0) + Math.Abs(Math.Max(a, b) - fl);
+                }
+                double bestCost = EndCost(bestDir, bestOff);
+                var alt = cands.Where(c => c.n >= bestN - 2 && c.dir == bestDir).OrderBy(c => EndCost(c.dir, c.off)).FirstOrDefault();
+                if (alt.n > 0 && EndCost(alt.dir, alt.off) < bestCost - 500 && Math.Abs(alt.off - bestOff) > 300)
+                {
+                    endNote = $" The drawing's ends sit on the facade's ends {Math.Round((alt.off - bestOff) / 1000.0, 2)} m along from the best jamb match ({alt.n} vs {bestN} jambs): taken.";
+                    bestOff = alt.off; bestN = alt.n;
                 }
             }
             // refine: the mean residual of the matched jambs
@@ -374,7 +396,7 @@ namespace BarrGazetas.RevitMcp.Survey
             fit.Dir = bestDir; fit.Offset = bestOff; fit.Matched = bestN;
             fit.Ambiguous = onlyDir == null && bestPerDir[1] == bestPerDir[-1];
             fit.Note = $"{bestN} of {elevationJambs.Count} elevation jambs land on the model's windows (direction {(bestDir > 0 ? "same as" : "against")} the facade line)." +
-                       (fit.Ambiguous ? " The facade is symmetrical: both directions fit equally, so which way it runs could not be told. Heights are unaffected; give the direction (along_direction) if positions matter." : "");
+                       (fit.Ambiguous ? " The facade is symmetrical: both directions fit equally, so which way it runs could not be told. Heights are unaffected; give the direction (along_direction) if positions matter." : "") + endNote;
             return fit;
         }
 

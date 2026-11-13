@@ -315,7 +315,23 @@ namespace BarrGazetas.RevitMcp
         /// turned when the two lines run opposite ways. Unmatched or low-score drawings: null.</summary>
         internal static JsonObject NormalizeElevation(Document doc, JsonObject e)
         {
-            if (e["path"] != null) return e;
+            if (e["path"] != null)
+            {
+                // 1.36.15: the hub's own entry; if it saved its facade's line, re-match the id by line: facade ids change when the
+                // model is rebuilt (Mount Row: south F4 -> F6), and an id alone would put the drawing on another facade silently
+                if (e["facade_line_saved"] is JsonArray sl && sl.Count == 4)
+                {
+                    var (rid, rsame) = FacadeByLine(doc, new Pt(sl[0].GetValue<double>(), sl[1].GetValue<double>()), new Pt(sl[2].GetValue<double>(), sl[3].GetValue<double>()));
+                    if (rid != null && !string.Equals(rid, Args.Str(e, "facade"), StringComparison.OrdinalIgnoreCase))
+                    {
+                        var c = (JsonObject)e.DeepClone();
+                        c["facade_was"] = Args.Str(e, "facade"); c["facade"] = rid;
+                        if (!rsame && Args.Dbl(e, "along_direction") is double d) c["along_direction"] = -d;
+                        return c;
+                    }
+                }
+                return e;
+            }
             JsonNode N(string k) => e[k] ?? e[char.ToLowerInvariant(k[0]) + k.Substring(1)];
             string file = N("File")?.ToString();
             var box = N("Box") as JsonArray;
@@ -332,7 +348,18 @@ namespace BarrGazetas.RevitMcp
                 ["sheet_y_range"] = new JsonArray(Math.Min(B(1), B(3)), Math.Max(B(1), B(3))),
             };
             var s0 = new Pt(fl[0].GetValue<double>(), fl[1].GetValue<double>()); var s1 = new Pt(fl[2].GetValue<double>(), fl[3].GetValue<double>());
-            double sl = s0.Dist2D(s1); if (sl < 1) return null;
+            if (s0.Dist2D(s1) < 1) return null;
+            var (best, same) = FacadeByLine(doc, s0, s1);
+            if (best != null) { o["facade"] = best; o["along_direction"] = (mir ? -1 : 1) * (same ? 1 : -1); }
+            else { o["facade_line"] = new JsonArray(s0.X, s0.Y, s1.X, s1.Y); o["along_direction"] = mir ? -1 : 1; }
+            return o;
+        }
+
+        /// <summary>The facades.json facade on a given line (parallel within ~11°, the line's middle within 1.5 m of it and
+        /// along it), and whether the two run the same way.</summary>
+        internal static (string id, bool same) FacadeByLine(Document doc, Pt s0, Pt s1)
+        {
+            double sl = s0.Dist2D(s1); if (sl < 1) return (null, true);
             double sx = (s1.X - s0.X) / sl, sy = (s1.Y - s0.Y) / sl; var smid = new Pt((s0.X + s1.X) / 2, (s0.Y + s1.Y) / 2);
             string best = null; bool same = true; double bestD = 1500;
             try
@@ -351,9 +378,7 @@ namespace BarrGazetas.RevitMcp
                 }
             }
             catch { }
-            if (best != null) { o["facade"] = best; o["along_direction"] = (mir ? -1 : 1) * (same ? 1 : -1); }
-            else { o["facade_line"] = new JsonArray(s0.X, s0.Y, s1.X, s1.Y); o["along_direction"] = mir ? -1 : 1; o["facade"] = null; }
-            return o;
+            return (best, same);
         }
 
         /// <summary>One elevation on its facade: the same measuring as dwg_elevation, for the score.</summary>
@@ -401,7 +426,7 @@ namespace BarrGazetas.RevitMcp
                     });
                 }
             int? dir = Args.Dbl(spec, "along_direction") is double dg ? (dg < 0 ? -1 : 1) : (Args.Str(spec, "facade") != null ? 1 : (int?)null);
-            var along = ElevationFit.Along(ElevationFit.Jambs(winLines), inserts.SelectMany(m => new[] { m.U - m.W / 2, m.U + m.W / 2 }).ToList(), heights.A, 60, dir);
+            var along = ElevationFit.Along(ElevationFit.Jambs(winLines), inserts.SelectMany(m => new[] { m.U - m.W / 2, m.U + m.W / 2 }).ToList(), heights.A, 60, dir, lines.Count > 0 ? lines.Min(l => Math.Min(l.A.X, l.B.X)) : (double?)null, lines.Count > 0 ? lines.Max(l => Math.Max(l.A.X, l.B.X)) : (double?)null, fl);
             var levels = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().ToList();
             var wallLevels = new HashSet<long>(new FilteredElementCollector(doc).OfClass(typeof(Wall)).Select(e => e.LevelId.Value));
             var storeys = levels.Where(lv => wallLevels.Contains(lv.Id.Value)).Select(lv => (lv.Name, lv.Elevation * Mm)).ToList();

@@ -58,7 +58,7 @@ namespace BarrGazetas.RevitMcp
                         if (chimneys.Any(r => GeoMath.PointInPolygon(c, r)) || lights.Any(r => GeoMath.PointInPolygon(c, r))) continue;
                         if (Math.Abs(GeoMath.SignedArea(rings[i])) < minArea) continue;
                         if (!bySpot.TryGetValue(i, out var ss)) { noHeight++; continue; }
-                        faces.Add(new RoofFace { Id = i, Ring = rings[i], Plane = SurveyDetail.FitPlane(ss) });
+                        faces.Add(new RoofFace { Id = i, Ring = rings[i], Plane = SurveyDetail.FitPlaneRobust(ss) });
                     }
                     var edges = RoofSolver.Edges(faces);
                     // eaves against the walls under them (wall top, model mm)

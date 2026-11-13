@@ -625,6 +625,19 @@ _Write your entries here, newest first. Use the "Revit run results" template for
     heights), `SurveyFidelityTools.cs` (ElevationSpecs, NormalizeElevation), `Survey/Fidelity.cs` (Hull, InOrNear,
     OutsideBuilding), `SurveyDetailTools.cs` (SpotsByFace), `SurveyRoofSolver.cs`, `tests/SurveyCore/FitPartTests.cs`
     (401 pass).
+- 1.36.15 (Mount Row audit, round 2):
+  - **Facade ids change on rebuild:** `elevation_index` now saves `facade_line_saved` next to `facade`; every reader
+    re-matches by line (`FacadeByLine`), turning `along_direction` if the line now runs the other way. Its y margin
+    stops halfway to a drawing stacked above/below on the same sheet (was a flat 8 m).
+  - **Positions 1-2 bays off:** `ElevationFit.Along` takes the drawing's x extent and the facade length; among offsets
+    within 2 jambs of the best it takes the one that puts the drawing's ends on the facade's ends when that is >0.5 m
+    better (dwg_elevation, survey_fidelity, the facade tools).
+  - **A shallow lead roof at 64.5°:** `SurveyDetail.FitPlaneRobust`, which keeps the plane through 3 spots that the
+    most spots agree with (60 mm) and leaves the rest out (`Outliers`). Used by roof_from_survey and roof_solver.
+  - **survey_stairs 0 flights (stairs on STEPS):** stair layers by Survey to Revit's Stair/Ramp roles + `*Stair*`,
+    `*Step*`; `stair_layers` overrides (survey_cores and floor steps take `*Step*` too).
+  - Still open: `elevation_overlay` places the drawing too high on MRTest although its height fit is right (scale 1):
+    the link placement in the view, to be watched in Revit on testmcp. 402 core tests pass.
   - **For Survey to Revit:** its `SharedFiles.Write` puts `elevation-index.json` in the reports root too. If that is
     the hub's folder, it overwrites the hub's index with the other format. The hub now reads both, but please write
     yours under another name (e.g. `s2r-elevation-index.json`) or only to `_prep`.

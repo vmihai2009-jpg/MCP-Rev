@@ -199,11 +199,23 @@ namespace BarrGazetas.RevitMcp
                         if (usedParts.Contains(c.part) || usedFacades.Contains(c.facade)) continue;
                         usedParts.Add(c.part); usedFacades.Add(c.facade);
                         var p = parts[c.part];
+                        // 1.36.15: the y margin (for level marks beside the drawing) stops halfway to another drawing stacked above or
+                        // below on the same sheet (Mount Row: north and south elevations one over the other; 8 m took in the other)
+                        double padLo = 8000, padHi = 8000;
+                        foreach (var o in parts.Where(o => !o.Equals(p) && o.path == p.path && o.x1 > p.x0 && o.x0 < p.x1))
+                        {
+                            if (o.y1 <= p.y0) padLo = Math.Min(padLo, (p.y0 - o.y1) / 2);
+                            if (o.y0 >= p.y1) padHi = Math.Min(padHi, (o.y0 - p.y1) / 2);
+                        }
+                        double[] fline = null;
+                        try { var (la, lb) = SavedFacade(doc, c.facade); fline = new[] { Math.Round(la.X), Math.Round(la.Y), Math.Round(lb.X), Math.Round(lb.Y) }; } catch { }
                         chosen.Add(new JsonObject
                         {
                             ["name"] = p.title ?? $"{Path.GetFileName(p.path)} x {p.x0:0}-{p.x1:0}", ["facade"] = c.facade,
+                            // the facade's line as well as its id: ids can change when the model is rebuilt; readers re-match by line
+                            ["facade_line_saved"] = fline == null ? null : new JsonArray(fline.Select(v => (JsonNode)v).ToArray()),
                             ["path"] = p.path, ["sheet_x_range"] = new JsonArray(Math.Round(p.x0 - 500), Math.Round(p.x1 + 500)),
-                            ["sheet_y_range"] = new JsonArray(Math.Round(p.y0 - 8000), Math.Round(p.y1 + 8000)),
+                            ["sheet_y_range"] = new JsonArray(Math.Round(p.y0 - padLo), Math.Round(p.y1 + padHi)),
                             ["along_direction"] = c.fit.Dir, ["matched"] = c.fit.Matched, ["elevationJambs"] = p.jambs.Count, ["modelJambs"] = modelJambs[c.facade].jambs.Count,
                             ["ambiguous"] = c.fit.Ambiguous, ["share"] = Math.Round(c.ratio, 2),
                         });

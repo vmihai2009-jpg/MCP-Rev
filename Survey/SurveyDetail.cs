@@ -12,6 +12,8 @@ namespace BarrGazetas.RevitMcp.Survey
     {
         public double A, B, C, RmsMm;
         public int Spots;
+        /// <summary>Spots left out of the fit as not on the plane (FitPlaneRobust).</summary>
+        public int Outliers;
         public bool Flat => Math.Abs(A) < 1e-9 && Math.Abs(B) < 1e-9;
         public double At(double x, double y) => A * x + B * y + C;
         public double SlopeDeg => Math.Atan(Math.Sqrt(A * A + B * B)) * 180 / Math.PI;
@@ -64,6 +66,34 @@ namespace BarrGazetas.RevitMcp.Survey
             p.C = mz - p.A * mx - p.B * my;
             p.RmsMm = Math.Sqrt(spots.Average(s => Math.Pow(s.Z - p.At(s.X, s.Y), 2)));
             return p;
+        }
+
+        /// <summary>
+        /// 1.36.15: a plane that a stray spot can't tilt. With 4+ spots, every plane through three of them is tried; the one
+        /// most spots lie on (within inlierMm) wins, ties to the one closest to all of them (median residual), and the plane
+        /// is fitted again through its inliers. Mount Row: a shallow lead roof whose face took a neighbouring roof's spots on
+        /// a shared edge came out at 64.5° (rms 400 mm) with the plain fit. Fewer than 4 spots: the plain fit.
+        /// </summary>
+        public static PlaneZ FitPlaneRobust(IList<Pt> spots, double inlierMm = 60)
+        {
+            if (spots.Count < 4) return FitPlane(spots);
+            var pts = spots.Take(40).ToList(); int n = pts.Count;
+            List<Pt> best = null; int bestIn = 0; double bestMed = double.MaxValue;
+            for (int i = 0; i < n; i++)
+                for (int j = i + 1; j < n; j++)
+                    for (int k = j + 1; k < n; k++)
+                    {
+                        var p = FitPlane(new[] { pts[i], pts[j], pts[k] });
+                        if (p == null || (p.A == 0 && p.B == 0 && Math.Abs(pts[i].Z - pts[j].Z) + Math.Abs(pts[j].Z - pts[k].Z) > inlierMm)) continue; // collinear triple
+                        var res = pts.Select(s => Math.Abs(s.Z - p.At(s.X, s.Y))).ToList();
+                        int inl = res.Count(r => r <= inlierMm);
+                        var sorted = res.OrderBy(r => r).ToList(); double med = sorted[sorted.Count / 2];
+                        if (inl > bestIn || (inl == bestIn && med < bestMed)) { bestIn = inl; bestMed = med; best = pts.Where((s, m) => res[m] <= inlierMm).ToList(); }
+                    }
+            if (best == null || best.Count < 3) return FitPlane(spots);
+            var fit = FitPlane(best);
+            fit.Spots = spots.Count; fit.Outliers = spots.Count - best.Count;
+            return fit;
         }
 
         // ------------------------------------------------------------------ faces of a line drawing
