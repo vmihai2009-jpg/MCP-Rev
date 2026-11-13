@@ -60,7 +60,7 @@ namespace BarrGazetas.RevitMcp
                             checks.Add(new FacadeCheckLine { Check = "facade_correspondence", Name = "precision", Score = D(corr, "precision") ?? 0, Detail = $"{D(corr, "precision") ?? 0:P0} of the model's detail edges are drawn" }); }
                         else checks.Add(new FacadeCheckLine { Check = "facade_correspondence", Note = corr["note"]?.ToString() });
                         foreach (var e in (corr["shifted"] as JsonArray)?.OfType<JsonObject>() ?? Enumerable.Empty<JsonObject>())
-                            found.Add(new FacadeIssue { Kind = "shifted", Element = e["id"]?.ToString(), What = e.ToJsonString(), Weight = D(e, "lengthMm") ?? 0, Fix = "move it by -shift (facade_shift_fix when it lands; move_elements now)" });
+                            found.Add(new FacadeIssue { Kind = "shifted", Element = e["id"]?.ToString(), What = e.ToJsonString(), Weight = D(e, "lengthMm") ?? 0, Fix = "move it by its shiftMm: facade_shift_fix" });
                         foreach (var e in (corr["spurious"] as JsonArray)?.OfType<JsonObject>() ?? Enumerable.Empty<JsonObject>())
                             found.Add(new FacadeIssue { Kind = "spurious", Element = e["id"]?.ToString(), What = e.ToJsonString(), Weight = 0.5 * (D(e, "lengthMm") ?? 0), Fix = "nothing drawn there: delete it or rebuild that detail" });
                         foreach (var g in (corr["gaps"] as JsonArray)?.OfType<JsonObject>() ?? Enumerable.Empty<JsonObject>())
