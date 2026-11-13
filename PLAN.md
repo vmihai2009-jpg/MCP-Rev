@@ -147,7 +147,7 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 15. Editability audit: in-place/DirectShape solids, families without parameters, curves built in segments. Done 1.33.0 (`editability_audit`).
 16. Opening clustering: window_look's one-type-per-window merged into a few parametric types. Done 1.34.0 (`opening_clusters`).
 17. Stairs and vertical cores from plans and sections, with slab openings cut floor to floor. Done 1.35.0 (`survey_cores`, from plans; stairs themselves still checked by survey_stairs).
-18. Roof solver: ridges, hips, valleys, eaves and pitches from the roof plan, checked against sections, with dormers, chimneys and parapets.
+18. Roof solver: ridges, hips, valleys, eaves and pitches from the roof plan, checked against sections, with dormers, chimneys and parapets. Done 1.36.0 (`roof_solver`: edges, pitches, eaves vs walls, native roofs per face); sections and dormers still to add.
 
 ### Facade checks (2026-11-13, docs/FACADE-CHECKS.md)
 | # | Tool | What | Where | Priority |
