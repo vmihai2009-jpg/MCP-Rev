@@ -144,7 +144,7 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 12. Semantic classify: line roles (wall face, hatch, dimension, furniture, overhead) from geometry, not layer names. Done 1.30.0 (`layer_roles_check`, plans).
 13. Survey conflict report: where drawings contradict each other (plan vs elevation widths, section vs spot heights), resolved by a declared precedence rule, each resolution logged. Heights done 1.31.0 (`survey_conflicts`: plan spots vs elevation marks); widths via facade_correspondence; sections still to add.
 14. Provenance and confidence tags on every built element (source DWG entity, view, confidence) and a "review these first" queue. Done 1.32.0 (`review_queue`: provenance from Comments tags, confidence from the checks' findings).
-15. Editability audit: in-place/DirectShape solids, families without parameters, curves built in segments.
+15. Editability audit: in-place/DirectShape solids, families without parameters, curves built in segments. Done 1.33.0 (`editability_audit`).
 16. Opening clustering: window_look's one-type-per-window merged into a few parametric types.
 17. Stairs and vertical cores from plans and sections, with slab openings cut floor to floor.
 18. Roof solver: ridges, hips, valleys, eaves and pitches from the roof plan, checked against sections, with dormers, chimneys and parapets.
