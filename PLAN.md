@@ -138,7 +138,15 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 7. Rustication as Reveal wall sweeps (F7). Done 1.25.0 (`facade_rustication`).
 8. `place_by_type`: a family at every item of a `facade_detail_map` type (F5). Done 1.26.0 as `facade_types`.
 9. `surround_family`: one editable family per surround type from the map (F3/F4). Done 1.26.0 inside `facade_types` (surround pieces are map types too); detail families now use true arcs where the drawing curves.
-10. `fidelity_dashboard`: one 1:1 score over walls, openings, levels, sections, facades, with history.
+10. `fidelity_dashboard`: one 1:1 score over walls, openings, levels, sections, facades, with history. Done 1.27.0 (walls, openings, levels, facades, curves, heights; sections still to add).
+11. Cross-view registration: one shared frame for every plan, elevation and section (grids, party-wall edges, level marks); residual per sheet. (Fable 5.2's list, approved by Mihai 2026-11-13; 11-18 all transferable.)
+12. Semantic classify: line roles (wall face, hatch, dimension, furniture, overhead) from geometry, not layer names.
+13. Survey conflict report: where drawings contradict each other (plan vs elevation widths, section vs spot heights), resolved by a declared precedence rule, each resolution logged.
+14. Provenance and confidence tags on every built element (source DWG entity, view, confidence) and a "review these first" queue.
+15. Editability audit: in-place/DirectShape solids, families without parameters, curves built in segments.
+16. Opening clustering: window_look's one-type-per-window merged into a few parametric types.
+17. Stairs and vertical cores from plans and sections, with slab openings cut floor to floor.
+18. Roof solver: ridges, hips, valleys, eaves and pitches from the roof plan, checked against sections, with dormers, chimneys and parapets.
 
 ### Facade checks (2026-11-13, docs/FACADE-CHECKS.md)
 | # | Tool | What | Where | Priority |
