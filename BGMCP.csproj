@@ -12,7 +12,7 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <Version>1.18.0</Version>
+    <Version>1.19.0</Version>
     <!-- Version conflicts between Revit's own references: harmless, Revit supplies its copies at run time. -->
     <NoWarn>$(NoWarn);MSB3277</NoWarn>
     <!-- Another Revit folder: dotnet build -p:RevitDir="D:\Revit 2025" -->
