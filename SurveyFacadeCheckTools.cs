@@ -336,6 +336,7 @@ namespace BarrGazetas.RevitMcp
                     XYZ At(double u, double v, double z) => new XYZ((fr.A.X + fr.Ux * u + nx * v) / Mm, (fr.A.Y + fr.Uy * u + ny * v) / Mm, z / Mm);
                     var opt = new Options { DetailLevel = ViewDetailLevel.Fine };
                     var report = new List<(Element e, int pieces, int floating, int buried, double worst)>();
+                    int checkedEls = 0;
                     foreach (var cat in new[] { BuiltInCategory.OST_GenericModel, BuiltInCategory.OST_Cornices, BuiltInCategory.OST_Columns, BuiltInCategory.OST_StairsRailing })
                         foreach (var e in new FilteredElementCollector(doc).OfCategory(cat).WhereElementIsNotElementType())
                         {
@@ -343,7 +344,7 @@ namespace BarrGazetas.RevitMcp
                             var bb = e.get_BoundingBox(null); if (bb == null) continue;
                             var cs = new[] { bb.Min, bb.Max, new XYZ(bb.Min.X, bb.Max.Y, bb.Min.Z), new XYZ(bb.Max.X, bb.Min.Y, bb.Max.Z) }.Select(Map).ToList();
                             if (cs.Max(c => c.u) < -300 || cs.Min(c => c.u) > fr.Length + 300 || cs.Max(c => c.v) < -300 || cs.Min(c => c.v) > 2500) continue;
-                            int pieces = 0, fl = 0, bu = 0; double worst = 0;
+                            int pieces = 0, fl = 0, bu = 0; double worst = 0; checkedEls++;
                             foreach (var so in SolidsOf(e.get_Geometry(opt)))
                             {
                                 var sb = so.GetBoundingBox(); if (sb == null) continue;
@@ -364,7 +365,7 @@ namespace BarrGazetas.RevitMcp
                     var answer = new
                     {
                         facade = fid, gapMm = gap, view = view.Name,
-                        floatingElements = report.Count(r => r.floating > 0), buriedElements = report.Count(r => r.buried > 0),
+                        elementsChecked = checkedEls, floatingElements = report.Count(r => r.floating > 0), buriedElements = report.Count(r => r.buried > 0),
                         elements = report.OrderByDescending(r => r.floating + r.buried).Take(list).Select(r => new
                         {
                             id = r.e.Id.Value, label = ReferenceTools.Label(doc, r.e), comments = r.e.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString(),

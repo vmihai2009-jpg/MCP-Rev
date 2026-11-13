@@ -131,7 +131,7 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 ### Ten to 1:1 (2026-11-13, Mihai: "10 tasks/tools it would need, and implement"; all transferable to any survey)
 1. `facade_course_check`: courses and window rows at the drawn heights (C3). Done 1.19.0.
 2. `detail_support_check` + set-back fix in `facade_relief` (C4). Done 1.20.0.
-3. `facade_check`: every facade check in one call, also in `survey_run` (C5).
+3. `facade_check`: every facade check in one call, also in `survey_run` (C5). Done 1.22.0.
 4. `facade_shift_fix`: move elements `facade_correspondence` finds shifted (dry run first, PhaseKeeper).
 5. `elevation_fit_check`: level marks per part of each elevation; parts that disagree reported, not used.
 6. Curves, not fragments (moved up; Mihai 2026-11-13: "it fragments lines for a reason, it should also use curves... easy to be corrected by a human"): DWG reader keeps arcs, bulges, circles, ellipses, splines; chains of short lines fitted to arcs (`CurveChains`); `curve_check` + `curve_walls` replace staircases of short walls with one curved wall. Done 1.21.0. Bands carry on round curved walls as one sweep (1.21.1). Still to do: relief families on a curved stretch set to the tangent, and arcs in elevations (arches, curved pediments) as arcs.
@@ -147,7 +147,7 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 | C2 | `opening_clear_check` + opening mask in `facade_relief` (done, 1.18.0) | Rays through every window: what blocks the glass; drawn openings with no or wrong model window. Relief clipped to outside the drawn openings. | Hub | P0 |
 | C3 | `facade_course_check` (done, 1.19.0) | Cornices, string courses, sill/head rows at the elevation's heights, run by run; storey offsets and bad height fits named. | Hub | P1 |
 | C4 | `detail_support_check` (done, 1.20.0) | Detail floating in front of nothing (dormers on the facade plane) or buried in walls. | Hub | P1 |
-| C5 | `facade_check` | Runs C1-C4, one score per facade; ends every facade build step and `survey_run`. | Hub | P1 |
+| C5 | `facade_check` (done, 1.22.0) | Runs C1-C4, one score per facade; ends every facade build step and `survey_run`. | Hub | P1 |
 
 Note on "model in place": the Revit API cannot create in-place families, so tools cannot make them. The equivalent the tools can make is a generated loadable family per detail (F4), which a person opens and edits exactly like an in-place one and which repeats across the facade. Very irregular one-offs (a carved pediment) stay as DirectShapes or are listed for a person.
 
