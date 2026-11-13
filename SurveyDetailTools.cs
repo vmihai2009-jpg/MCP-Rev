@@ -11,6 +11,7 @@ using System.Text.Json.Nodes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.DB.Structure;
+using Autodesk.Revit.UI;
 using BarrGazetas.RevitMcp.Survey;
 
 namespace BarrGazetas.RevitMcp
@@ -426,6 +427,8 @@ namespace BarrGazetas.RevitMcp
                     ("path", S("string", "Roof plan DWG (default: the one beside the plans with the most roof lines)"), false),
                     ("thickness_mm", S("number", "Roof build-up under the surveyed surface (default 150)"), false),
                     ("min_area_m2", S("number", "Smallest face to make (default 0.3)"), false),
+                    ("roof_layers", Arr("string", "Roof line layers (default: by Survey to Revit's layer roles, Roof/Wall on the roof plan)"), false),
+                    ("merge_spotless", S("boolean", "Merge faces with no spot height into their neighbour across the seam (default true)"), false),
                     ("build", S("boolean", "Make the faces and chimneys (default false)"), false),
                     ("list", S("integer", "Faces to list (default 30)"), false)),
                 Run = (app, a) =>
@@ -434,15 +437,16 @@ namespace BarrGazetas.RevitMcp
                     double datum = Datum(doc), thick = Args.Dbl(a, "thickness_mm") ?? 150, minArea = (Args.Dbl(a, "min_area_m2") ?? 0.3) * 1e6;
                     string path = Args.Str(a, "path") ?? FindRoofPlan(doc) ?? throw new InvalidOperationException("No roof plan found beside the plans; give path.");
                     var file = DwgFile.Read(path);
-                    var map = SurveyMap(doc, file, out string mapNote);
+                    var rl = RoofLayers(app, file, path, a);
+                    var map = SurveyMap(doc, file, out string mapNote, rl.Wall);
                     Seg M(DwgLine l) => new Seg(map(l.A), map(l.B), 0);
-                    bool On(DwgLine l, params string[] g) => DwgFile.LayerMatches(l.Layer, g);
-                    var segs = file.Lines.Where(l => On(l, "*Roof*", "EF_25*", "*Chimney*", "*Skylight*")).Select(M).ToList();
-                    var chimneys = LoopBuilder.Build(file.Lines.Where(l => On(l, "*Chimney*")).Select(M).ToList(), 10).Loops;
-                    var lights = LoopBuilder.Build(file.Lines.Where(l => On(l, "*Skylight*")).Select(M).ToList(), 10).Loops;
-                    var spots = file.Texts.Where(t => DwgFile.LayerMatches(t.Layer, new[] { "*Level*" }) && ElevationFit.LevelValueMm(t.Value) is double)
+                    var segs = file.Lines.Where(l => l.Layer != null && rl.Roof(l.Layer)).Select(M).ToList();
+                    var chimneys = LoopBuilder.Build(file.Lines.Where(l => l.Layer != null && rl.Chimney(l.Layer)).Select(M).ToList(), 10).Loops;
+                    var lights = LoopBuilder.Build(file.Lines.Where(l => l.Layer != null && rl.Light(l.Layer)).Select(M).ToList(), 10).Loops;
+                    var spots = file.Texts.Where(t => t.Layer != null && rl.Spot(t.Layer) && ElevationFit.LevelValueMm(t.Value) is double)
                         .Select(t => { var p = map(t.At); return new Pt(p.X, p.Y, ElevationFit.LevelValueMm(t.Value).Value); }).ToList();
-                    var faces = SurveyDetail.Faces(segs, 10, minArea / 3);
+                    var faces = RoofFaces(segs, spots, minArea / 3, Args.Bool(a, "merge_spotless") != false, out int seams);
+                    mapNote += $"; {rl.Note}; {seams} seam lines between spotless strips dropped";
                     var bySpot = spots.GroupBy(s => SurveyDetail.FaceAt(faces, s)).Where(g => g.Key >= 0).ToDictionary(g => g.Key, g => g.ToList());
                     // each face: a plane through its spots; flat roofs at several levels inside one outline (the plane fits
                     // badly) as terraces; a face with no spot takes the nearest spot within 2 m (an upstand, a light)
@@ -846,7 +850,92 @@ namespace BarrGazetas.RevitMcp
         /// A survey DWG not linked in the model (drawn in grid coordinates) placed in it: the project's survey position, both
         /// ways round, the one that puts its wall lines on the model's walls wins.
         /// </summary>
-        private static Func<Pt, Pt> SurveyMap(Document doc, DwgContent file, out string note)
+        /// <summary>1.36.12: layer roles from Survey to Revit (its rules + the job's layers.txt), cached per layer; null when it
+        /// isn't loaded. Rule 6: tools pick layers by role, with the old names only as a fallback.</summary>
+        internal static Func<IEnumerable<string>, Dictionary<string, string>> SurveyRoles(UIApplication app, string folder)
+        {
+            var hub = App.Instance?.Hub; if (hub == null) return null;
+            var cache = new Dictionary<string, string>(StringComparer.Ordinal);
+            return layers =>
+            {
+                var ask = layers.Where(l => l != null && !cache.ContainsKey(l)).Distinct().ToList();
+                if (ask.Count > 0)
+                {
+                    try
+                    {
+                        var q = new JsonObject { ["layers"] = new JsonArray(ask.Select(l => (JsonNode)l).ToArray()) };
+                        if (folder != null) q["folder"] = folder;
+                        var roles = JsonNode.Parse(hub.Providers.CallHere(app, "survey_layer_roles", q) ?? "{}")?["roles"] as JsonObject;
+                        foreach (var kv in roles ?? new JsonObject()) cache[kv.Key] = kv.Value?.GetValue<string>();
+                    }
+                    catch { }
+                    foreach (var l in ask) if (!cache.ContainsKey(l)) cache[l] = null;
+                }
+                return cache;
+            };
+        }
+
+        /// <summary>The roof plan's layers by role: roof lines (Roof, and Wall: on a roof plan the wall/building lines are the
+        /// roof's edges, as Survey to Revit reads them), chimneys, rooflights, spot heights. `roof_layers` overrides; without
+        /// Survey to Revit the old Plowman Craven names apply.</summary>
+        internal sealed class RoofLayerSet
+        {
+            public Func<string, bool> Roof, Chimney, Light, Spot, Wall; public string Note;
+        }
+        internal static RoofLayerSet RoofLayers(UIApplication app, DwgContent file, string path, JsonObject a)
+        {
+            var given = Args.Strings(a, "roof_layers");
+            var roleOf = SurveyRoles(app, Path.GetDirectoryName(path))?.Invoke(file.Lines.Select(l => l.Layer).Concat(file.Texts.Select(t => t.Layer)));
+            string R(string layer) => layer != null && roleOf != null && roleOf.TryGetValue(layer, out var r) ? r : null;
+            bool Has(string role) => roleOf != null && roleOf.Values.Any(v => v == role);
+            var set = new RoofLayerSet
+            {
+                Chimney = l => R(l) == "Chimney" || DwgFile.LayerMatches(l, new[] { "*Chimney*" }),
+                Light = l => R(l) == "Rooflight" || DwgFile.LayerMatches(l, new[] { "*Skylight*", "*Rooflight*", "*Roof*light*" }),
+                Spot = l => R(l) == "HeightText" || R(l) == "LevelText" || DwgFile.LayerMatches(l, new[] { "*Level*", "*Spot*", "*Height*" }),
+                Wall = l => R(l) == "Wall" || DwgFile.LayerMatches(l, new[] { "EF_25*", "*Wall*" }),
+            };
+            if (given.Count > 0) { set.Roof = l => DwgFile.LayerMatches(l, given.ToArray()) || set.Chimney(l) || set.Light(l); set.Note = "roof lines from roof_layers"; }
+            else if (Has("Roof") || Has("Wall"))
+            {
+                set.Roof = l => { var r = R(l); return r == "Roof" || r == "Wall" || r == "Chimney" || r == "Rooflight"; };
+                var used = file.Lines.Select(l => l.Layer).Where(l => l != null && set.Roof(l)).Distinct().ToList();
+                set.Note = $"roof lines by Survey to Revit's layer roles (Roof/Wall/Chimney/Rooflight): {string.Join(", ", used.Take(8))}";
+            }
+            else { set.Roof = l => DwgFile.LayerMatches(l, new[] { "*Roof*", "EF_25*", "*Chimney*", "*Skylight*" }); set.Note = "roof lines by the hub's default layer names (Survey to Revit gave no roles: pass roof_layers for another surveyor's names)"; }
+            return set;
+        }
+
+        /// <summary>The roof's faces, with spotless faces merged into a neighbour first: a lead roof's roll seams (or any line
+        /// across a roof slope) chop one face into strips that carry no spot height; the seam between a spotless strip and the
+        /// face beside it is dropped, and the faces found again (up to 4 rounds). Faces that still have no spot are counted.</summary>
+        internal static List<List<Pt>> RoofFaces(List<Seg> segs, List<Pt> spots, double minArea, bool mergeSpotless, out int seamsDropped)
+        {
+            seamsDropped = 0;
+            var rings = SurveyDetail.Faces(segs, 10, minArea);
+            if (!mergeSpotless || spots.Count == 0) return rings;
+            for (int round = 0; round < 4; round++)
+            {
+                var spotted = new HashSet<int>(spots.Select(s => SurveyDetail.FaceAt(rings, s)).Where(i => i >= 0));
+                var keep = new List<Seg>(); int dropped = 0;
+                foreach (var s in segs)
+                {
+                    double dx = s.B.X - s.A.X, dy = s.B.Y - s.A.Y, len = Math.Sqrt(dx * dx + dy * dy);
+                    if (len < 1) { keep.Add(s); continue; }
+                    var mid = new Pt((s.A.X + s.B.X) / 2, (s.A.Y + s.B.Y) / 2); double nx = -dy / len * 60, ny = dx / len * 60;
+                    int f1 = SurveyDetail.FaceAt(rings, new Pt(mid.X + nx, mid.Y + ny)), f2 = SurveyDetail.FaceAt(rings, new Pt(mid.X - nx, mid.Y - ny));
+                    // a seam: faces on both sides, at least one of them without a spot height
+                    if (f1 >= 0 && f2 >= 0 && f1 != f2 && (!spotted.Contains(f1) || !spotted.Contains(f2))) { dropped++; continue; }
+                    keep.Add(s);
+                }
+                if (dropped == 0) break;
+                seamsDropped += dropped; segs = keep;
+                rings = SurveyDetail.Faces(segs, 10, minArea);
+            }
+            return rings;
+        }
+
+        private static Func<Pt, Pt> SurveyMap(Document doc, DwgContent file, out string note, Func<string, bool> isWall = null)
         {
             var pp = doc.ActiveProjectLocation.GetProjectPosition(XYZ.Zero);
             var total = doc.ActiveProjectLocation.GetTotalTransform(); // shared -> internal
@@ -865,7 +954,10 @@ namespace BarrGazetas.RevitMcp
             }
             var walls = new FilteredElementCollector(doc).OfClass(typeof(Wall)).Cast<Wall>().Where(w => w.Location is LocationCurve lc && lc.Curve is Line)
                 .Select(w => { var c = ((LocationCurve)w.Location).Curve; return (s: new Seg(CadLink.ToMm(c.GetEndPoint(0)), CadLink.ToMm(c.GetEndPoint(1)), 0), half: w.Width * Mm / 2); }).ToList();
-            var sample = file.Lines.Where(l => DwgFile.LayerMatches(l.Layer, new[] { "EF_25*", "*Wall*" })).Take(400).SelectMany(l => new[] { l.A, l.B }).ToList();
+            // wall lines by role (Survey to Revit), else the old names; with neither, every line (better than scoring 0%)
+            var wallish = file.Lines.Where(l => isWall != null ? isWall(l.Layer) : DwgFile.LayerMatches(l.Layer, new[] { "EF_25*", "*Wall*" })).ToList();
+            if (wallish.Count < 20) wallish = file.Lines.Where(l => Math.Abs(l.A.X - l.B.X) + Math.Abs(l.A.Y - l.B.Y) > 500).ToList();
+            var sample = wallish.Take(400).SelectMany(l => new[] { l.A, l.B }).ToList();
             (string name, Func<Pt, Pt> f, double score) best = (ways[0].name, ways[0].f, -1);
             foreach (var (name, f) in ways)
             {
@@ -885,7 +977,11 @@ namespace BarrGazetas.RevitMcp
                 {
                     try
                     {
-                        int n = DwgFile.Read(f).Lines.Count(l => DwgFile.LayerMatches(l.Layer, new[] { "*Roof*" }));
+                        // a roof plan by its roof-layer lines, or by its name ("ROOF PLAN", "-RF"): another surveyor's roof plan
+                        // may have no layer called *Roof* (On Centre: all on BUILDINGS)
+                        var name = Path.GetFileNameWithoutExtension(f).ToUpperInvariant();
+                        bool named = name.Contains("ROOF") || System.Text.RegularExpressions.Regex.IsMatch(name, @"(^|[^A-Z])RF([^A-Z]|$)");
+                        int n = DwgFile.Read(f).Lines.Count(l => DwgFile.LayerMatches(l.Layer, new[] { "*Roof*" })) + (named ? 100000 : 0);
                         if (n > most) { most = n; best = f; }
                     }
                     catch { }

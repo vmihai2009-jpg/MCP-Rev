@@ -30,6 +30,8 @@ namespace BarrGazetas.RevitMcp
                     ("build", S("boolean", "Make native roofs (default false: report)"), false),
                     ("roof_type", S("string", "Roof type name (default: the first basic roof type)"), false),
                     ("min_area_m2", S("number", "Smallest face (default 0.3)"), false),
+                    ("roof_layers", Arr("string", "Roof line layers (default: by Survey to Revit's layer roles, Roof/Wall on the roof plan)"), false),
+                    ("merge_spotless", S("boolean", "Merge faces with no spot height into their neighbour across the seam (default true)"), false),
                     ("keep_shapes", S("boolean", "Keep roof_from_survey's solids (default false: delete the ones for faces built here)"), false)),
                 Run = (app, a) =>
                 {
@@ -37,15 +39,16 @@ namespace BarrGazetas.RevitMcp
                     double datum = Datum(doc), minArea = (Args.Dbl(a, "min_area_m2") ?? 0.3) * 1e6;
                     string path = Args.Str(a, "path") ?? FindRoofPlan(doc) ?? throw new InvalidOperationException("No roof plan found beside the plans; give path.");
                     var file = DwgFile.Read(path);
-                    var map = SurveyMap(doc, file, out string mapNote);
+                    var rl = RoofLayers(app, file, path, a);
+                    var map = SurveyMap(doc, file, out string mapNote, rl.Wall);
                     Seg M(DwgLine l) => new Seg(map(l.A), map(l.B), 0);
-                    bool On(DwgLine l, params string[] g) => DwgFile.LayerMatches(l.Layer, g);
-                    var segs = file.Lines.Where(l => On(l, "*Roof*", "EF_25*", "*Chimney*", "*Skylight*")).Select(M).ToList();
-                    var chimneys = LoopBuilder.Build(file.Lines.Where(l => On(l, "*Chimney*")).Select(M).ToList(), 10).Loops;
-                    var lights = LoopBuilder.Build(file.Lines.Where(l => On(l, "*Skylight*")).Select(M).ToList(), 10).Loops;
-                    var spots = file.Texts.Where(t => DwgFile.LayerMatches(t.Layer, new[] { "*Level*" }) && ElevationFit.LevelValueMm(t.Value) is double)
+                    var segs = file.Lines.Where(l => l.Layer != null && rl.Roof(l.Layer)).Select(M).ToList();
+                    var chimneys = LoopBuilder.Build(file.Lines.Where(l => l.Layer != null && rl.Chimney(l.Layer)).Select(M).ToList(), 10).Loops;
+                    var lights = LoopBuilder.Build(file.Lines.Where(l => l.Layer != null && rl.Light(l.Layer)).Select(M).ToList(), 10).Loops;
+                    var spots = file.Texts.Where(t => t.Layer != null && rl.Spot(t.Layer) && ElevationFit.LevelValueMm(t.Value) is double)
                         .Select(t => { var p = map(t.At); return new Pt(p.X, p.Y, ElevationFit.LevelValueMm(t.Value).Value); }).ToList();
-                    var rings = SurveyDetail.Faces(segs, 10, minArea / 3);
+                    var rings = RoofFaces(segs, spots, minArea / 3, Args.Bool(a, "merge_spotless") != false, out int seams);
+                    mapNote += $"; {rl.Note}; {seams} seam lines between spotless strips dropped";
                     var bySpot = spots.GroupBy(s => SurveyDetail.FaceAt(rings, s)).Where(g => g.Key >= 0).ToDictionary(g => g.Key, g => g.ToList());
                     var faces = new List<RoofFace>(); var noHeight = 0;
                     for (int i = 0; i < rings.Count; i++)

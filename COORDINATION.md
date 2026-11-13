@@ -594,6 +594,16 @@ _Write your entries here, newest first. Use the "Revit run results" template for
   `SurveyFacadeReliefTools.cs`, `SurveyFidelityTools.cs`, `SurveySectionTools.cs`, `SurveyTools.cs`,
   `SurveyElevationFitCheck.cs`, `SurveyConflictTools.cs`, `SpeedTools.cs`, `SurveyAutofixTools.cs`,
   `SurveyFacadeCheckAll.cs`, `tests/SurveyCore/FitPartTests.cs`, `BGMCP.csproj`. Version 1.36.11.
+- 1.36.12 (Mount Row, rule 6): `roof_from_survey` and `roof_solver` took roof lines only from Plowman Craven names
+  ("*Roof*", "EF_25*", "*Chimney*", "*Skylight*") and placed the plan by "EF_25*"/"*Wall*": On Centre draws the whole
+  roof plan on BUILDINGS (spots on LEVELS), so both found 0 faces. Now layers come by **Survey to Revit's roles**
+  (`survey_layer_roles`: Roof, plus Wall, which on a roof plan are the roof's edges as Survey to Revit reads them;
+  Chimney, Rooflight; LevelText/HeightText for spots), `roof_layers` overrides, the old names only without Survey to
+  Revit. `SurveyMap` samples wall-role lines (all lines if none). `FindRoofPlan` also takes a DWG named "...ROOF..." or
+  "RF". New `merge_spotless` (default true): a lead roof's roll seams chop a face into strips without spot heights;
+  seams between a spotless strip and its neighbour are dropped and the faces found again, instead of the strips being
+  left out. Files: `SurveyDetailTools.cs` (SurveyRoles, RoofLayers, RoofFaces, SurveyMap, FindRoofPlan),
+  `SurveyRoofSolver.cs`, `BGMCP.csproj`. Not yet run on a model.
 
 ### 2026-11-13: mansard as a native roof (mansard_roof), roof_detail, create_roof fix; roof_solver report (1.36.3)
 - What: `mansard_roof` (new, `SurveyRoofTools.cs`): the mansard as one native footprint roof from the survey sections
