@@ -39,25 +39,10 @@ namespace BarrGazetas.RevitMcp
                 Run = (app, a) =>
                 {
                     var doc = Doc(app);
-                    string fid = Args.Str(a, "facade") ?? throw new ArgumentException("facade is needed.");
-                    var spec = ElevationSpecs(doc, null).FirstOrDefault(s => string.Equals(Args.Str(s, "facade"), fid, StringComparison.OrdinalIgnoreCase))
-                        ?? throw new ArgumentException($"No elevation for {fid} in elevation-index.json: elevation_index first.");
-                    Func<IEnumerable<string>, Dictionary<string, string>> roles = null;
-                    try { roles = ReadingFor(app, doc, a)?.Roles; } catch { }
-                    var fr = ElevationFrame(doc, spec, roles);
-                    var (nx, ny) = Outward(doc, fr);
-                    var dr = Args.Numbers(a, "depth_mm");
-                    double behind = dr.Count == 2 ? Math.Abs(dr[0]) : 3000, front = dr.Count == 2 ? Math.Abs(dr[1]) : 1500;
-                    var o = new FacadeMatchOptions { TolMm = Args.Dbl(a, "tol_mm") ?? 20 };
+                    var cr = Correspond(app, doc, a);
+                    if (cr.drawn == null) return new { facade = cr.fid, note = "The elevation has no building lines in its sheet range: nothing to check against." };
+                    var (fid, fr, drawn, model, labels, m, o) = (cr.fid, cr.fr, cr.drawn, cr.model, cr.labels, cr.m, cr.o);
                     int list = Args.Int(a, "list", 20);
-
-                    var drawn = fr.Lines.Where(l => !DwgFile.LayerMatches(l.Layer, CheckSkip))
-                        .Select(l => new FacadeEdge(fr.U(l.A.X), fr.Z(l.A.Y), fr.U(l.B.X), fr.Z(l.B.Y), 0, l.Layer))
-                        .Where(e => e.Len >= 5 && Math.Max(e.U0, e.U1) >= -500 && Math.Min(e.U0, e.U1) <= fr.Length + 500).ToList();
-                    if (drawn.Count == 0) return new { facade = fid, note = "The elevation has no building lines in its sheet range: nothing to check against." };
-                    double zLo = drawn.Min(e => Math.Min(e.Z0, e.Z1)) - 500, zHi = drawn.Max(e => Math.Max(e.Z0, e.Z1)) + 500;
-                    var (model, labels) = ModelEdges(doc, fr, nx, ny, behind, front, zLo, zHi);
-                    var m = FacadeMatch.Match(drawn, model, o);
 
                     // per item of the facade's detail map: is the drawing there covered?
                     var map = FacadeMap.Read(drawn.Select(e => new DwgLine { Layer = e.Layer, A = new Pt(e.U0, e.Z0), B = new Pt(e.U1, e.Z1) }), fr.Length);
@@ -85,7 +70,7 @@ namespace BarrGazetas.RevitMcp
                     var byVerdict = m.Elements.GroupBy(e => e.Verdict).ToDictionary(g => g.Key, g => g.Count());
                     var answer = new
                     {
-                        facade = fid, elevation = Args.Str(spec, "name"), tolMm = o.TolMm,
+                        facade = fid, elevation = cr.elevation, tolMm = o.TolMm,
                         coverage = Math.Round(m.Coverage, 3), precision = Math.Round(m.Precision, 3),
                         drawnLengthM = Math.Round(m.DrawnMm / 1000, 1), modelDetailLengthM = Math.Round(m.ModelMm / 1000, 1),
                         elements = byVerdict,
@@ -97,7 +82,7 @@ namespace BarrGazetas.RevitMcp
                         mapItemsUncovered = itemCover.Where(x => x.share < 0.5).Take(list).Select(x => new { x.it.Id, x.it.Kind, x.it.Type, covered = Math.Round(x.share, 2), u = new[] { Math.Round(x.it.U0), Math.Round(x.it.U1) }, zModelMm = new[] { Math.Round(x.it.Z0), Math.Round(x.it.Z1) } }).ToList(),
                         mapItems = map.Items.Count, mapItemsCovered = itemCover.Count(x => x.share >= 0.5),
                         target = "coverage and precision 0.90 or more per facade",
-                        next = "shifted: move the element by -shiftMm (storeyOffset true: it is on the wrong level or the elevation's height fit is wrong there; check elevation-index.json for that part). " +
+                        next = "shifted: move the element by shiftMm (along, up; facade_shift_fix does it) (storeyOffset true: it is on the wrong level or the elevation's height fit is wrong there; check elevation-index.json for that part). " +
                                "spurious: delete it or rebuild it from the drawing. gaps and mapItemsUncovered: build them (facade_detail_map says how). Re-run after each fix.",
                     };
                     string folder = ReportsFolder(doc);
@@ -378,6 +363,31 @@ namespace BarrGazetas.RevitMcp
                     return answer;
                 }
             };
+        }
+
+        /// <summary>facade_correspondence's matching, shared with facade_shift_fix: drawn is null when the elevation has no lines.</summary>
+        internal static (string fid, string elevation, ElevFrame fr, double nx, double ny, List<FacadeEdge> drawn, List<FacadeEdge> model, Dictionary<long, string> labels, FacadeMatchResult m, FacadeMatchOptions o)
+            Correspond(Autodesk.Revit.UI.UIApplication app, Document doc, System.Text.Json.Nodes.JsonObject a)
+        {
+                    string fid = Args.Str(a, "facade") ?? throw new ArgumentException("facade is needed.");
+                    var spec = ElevationSpecs(doc, null).FirstOrDefault(s => string.Equals(Args.Str(s, "facade"), fid, StringComparison.OrdinalIgnoreCase))
+                        ?? throw new ArgumentException($"No elevation for {fid} in elevation-index.json: elevation_index first.");
+                    Func<IEnumerable<string>, Dictionary<string, string>> roles = null;
+                    try { roles = ReadingFor(app, doc, a)?.Roles; } catch { }
+                    var fr = ElevationFrame(doc, spec, roles);
+                    var (nx, ny) = Outward(doc, fr);
+                    var dr = Args.Numbers(a, "depth_mm");
+                    double behind = dr.Count == 2 ? Math.Abs(dr[0]) : 3000, front = dr.Count == 2 ? Math.Abs(dr[1]) : 1500;
+                    var o = new FacadeMatchOptions { TolMm = Args.Dbl(a, "tol_mm") ?? 20 };
+
+                    var drawn = fr.Lines.Where(l => !DwgFile.LayerMatches(l.Layer, CheckSkip))
+                        .Select(l => new FacadeEdge(fr.U(l.A.X), fr.Z(l.A.Y), fr.U(l.B.X), fr.Z(l.B.Y), 0, l.Layer))
+                        .Where(e => e.Len >= 5 && Math.Max(e.U0, e.U1) >= -500 && Math.Min(e.U0, e.U1) <= fr.Length + 500).ToList();
+                    if (drawn.Count == 0) return (fid, Args.Str(spec, "name"), fr, nx, ny, null, null, null, null, o);
+                    double zLo = drawn.Min(e => Math.Min(e.Z0, e.Z1)) - 500, zHi = drawn.Max(e => Math.Max(e.Z0, e.Z1)) + 500;
+                    var (model, labels) = ModelEdges(doc, fr, nx, ny, behind, front, zLo, zHi);
+                    var m = FacadeMatch.Match(drawn, model, o);
+                    return (fid, Args.Str(spec, "name"), fr, nx, ny, drawn, model, labels, m, o);
         }
 
         /// <summary>A 3D view to cast rays in: the named one, else {3D}, else the first; null if the model has none.</summary>
