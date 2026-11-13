@@ -33,6 +33,14 @@ The operating guide for every tool is Part 1 of `COORDINATION.md`. This file is 
    per pilaster/pier. `as: shapes` exists only for checking. Older tools still making DirectShapes (`roof_from_survey`,
    `model_sweep`, `model_extrusion`, `facade_details`): don't use them on a model to hand over until converted.
 
+7. **Site photos alongside the DWGs, for every facade detail** (Mihai, 2026-11-13). The DWGs give sizes; photos (Street
+   View, site visit) say *what* each thing is and *where it applies*: which fronts carry the mansard and which are a
+   flat set-back attic, where balustrades, dormers, pediments, pavilions and quoins are, what is stone vs slate, what
+   projects. Ask the user for one or two per facade plus the corners and roofline; keep them in the job's survey
+   folder (e.g. `12 Surveys\photos\<street or facade>.jpg`), never in this public repo (Street View is Google's
+   copyright). Before building any facade detail, say which photo confirms it. On 7 Swallow Place the photos showed
+   the mansard on the street fronts only, which was also why a whole-building mansard kept failing in Revit.
+
 ## Order of work
 
 ### 1. Read and key the drawings
@@ -136,8 +144,40 @@ parametric BG Window types, mansard from the section. Revit's API can't make in-
 | Balconies, balustrades | Railings (`Pr_25_30_36-Railing_Type_31/34`, `Baluster_Square`), round balusters | Railings along the balcony fronts read from the plan/elevation (to do) |
 | Dormers | Dormer roofs + walls | Box from the elevation's dormer outline back into the mansard slope, its roof from the pediment line (to do) |
 
+### Roofs: how the reference builds them (read with `roof_detail`, 1.36.x) and how we build them
+`roof_detail element_id: N [document: ref]` lists a roof's kind, base/cutoff levels and offsets, thickness, rafter cut,
+and every sketch edge with its slope. Use it on the reference before building any roof. What it showed here:
+- **Main mansard** = ONE Basic Roof footprint (`Roof_Generic-500mm`), base 05_Fifth Floor offset 0, **cutoff
+  07_Seventh Floor**, plumb cut, 500 thick. 23 edges, **every edge sloped** (72° on lines, 68° on the curved corner,
+  which is **one arc edge**), including 348-445 mm jogs. A flat edge next to sloped ones, or neighbours at slightly
+  different angles, gives "Invalid footprint" (Mihai).
+- **Flat roof on top** = a second Basic Roof (`Roof_Generic-620`) at 07_Seventh Floor -620.
+- **Dormer tops** = small flat footprint roofs (`EF_30_10-Roof_H60`, 1552x539, Sixth Floor -60) and **extrusion roofs
+  with an arched (segmental) profile**, 669 deep; in-place "roof voids" cut the mansard behind them.
+
+Ours (`mansard_roof`, 1.36.3): the slopes, eaves, kerb and setback come from the survey sections (`facade_profile`
+writes `reports/mansard.json`, dry run included). The outline is the slab at the mansard's base storey with its chord
+runs **fitted back to true arcs** (CurveChains, 6 m chords allowed) and jogs simplified. **Default `street_only`**:
+a sloped band only along the street facades (default: those with a mansard section), from the eaves to the kerb line
+(the same chain set in by the slope's run, 1.36 m here), ends and kerb flat. Native, editable (sketch, slope per edge,
+type). The flat roof behind is `roof_solver`'s top face (R260 here, 653 m2 at the kerb), built after Mihai has seen it.
+
+Lessons (Revit footprint roofs, API):
+- `NewFootPrintRoof(..., out ModelCurveArray map)`: pass an **existing** `new ModelCurveArray()`; null throws "Value
+  cannot be null" (create_roof had this bug too; fixed in 1.36.3).
+- A roof can be made flat and still fail sloped: Revit solves the whole hip skeleton up to the ridge. On an L-shaped
+  plan with narrow rear limbs it gave no solid at any angle (45°, 66°). `diagnose: true` slopes edges longest first,
+  halving, and names the first edge that breaks it: here every one was on the rear, which the photos show has no
+  mansard. A plain 10x6 m rectangle at 66° works (36.9 m3), so check a rectangle first when in doubt.
+- Set in (CreateViaOffset) **after** simplifying: offsetting the raw 138-edge slab edge made a spike that doubled back.
+- Check `Volume(roof) > 0` after `doc.Regenerate()` inside a SubTransaction; "Can't make footprint roof" otherwise
+  only shows at commit and takes the whole transaction with it.
+
 ## Known gaps (next)
-- Dormers: fronts only (relief); cheeks and roofs back to the mansard not built yet.
+- Mansard: F53's street run (Section-B) didn't match an outline edge at the sixth floor; the south end of Regent
+  Street (y < -15 m) is outside F29's line. Add those runs with `facades: [...]` once checked against the photos.
+- Dormers: fronts only (relief); cheeks and roofs back to the mansard not built yet. Technique: the reference's
+  arched extrusion roof + flat H60 roof, a void into the mansard; positions from the elevation's dormer outlines.
 - Sills, surrounds and pediments are relief extrusions; rationalise into swept profiles with true depths (the
   sections and the reference model show how).
 - Wall fixes (`survey_autofix openings: false`) crashed Revit once in the 1.12.0 fallback; reported, not run since.

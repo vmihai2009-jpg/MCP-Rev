@@ -572,6 +572,31 @@ _Write your entries here, newest first. Use the "Revit run results" template for
 
 <!-- First entry goes here. -->
 
+### 2026-11-13: mansard as a native roof (mansard_roof), roof_detail, create_roof fix; roof_solver report (1.36.3)
+- What: `mansard_roof` (new, `SurveyRoofTools.cs`): the mansard as one native footprint roof from the survey sections
+  (`facade_profile` now writes `reports/mansard.json` on a dry run too). Default `street_only`: a sloped band along the
+  street facades only (eaves to kerb, arcs fitted to the slab's chord runs, ends and kerb flat); `diagnose: true` names
+  the edge that stops Revit sloping an outline. `roof_detail` (new, read-only, takes `document`): how any roof is
+  built, edge by edge with slopes; use it on the reference before building a roof. `batch` now passes `document`
+  to read tools. Fix: `create_roof` threw "Value cannot be null" (NewFootPrintRoof needs an existing ModelCurveArray).
+- Revit run results (testmcp, Revit 2025, MCP-Rev 1.36.3): `mansard_roof dry_run:false` -> roof 677808, band 42.2 m
+  (Regent St + curved corner, 2 arcs), 66.1°, eaves 23,749, kerb 26,749; 2 old extrusion mansards removed; saved.
+  Whole-building outlines failed (flat ok, sloped "no solid" at 45° and 66°; diagnose: breaking edges all on the rear
+  limbs). Reference (`roof_detail`): mansard 710664 = 23 edges all sloped (72°, arc 68°), base 5th, cutoff 7th; dormers
+  = flat H60 footprint roofs + arched extrusion roofs.
+- **Your ask, roof_solver (done, report only, nothing built):** edgeCounts: flat edge 581, step 101, eave 87, flat join
+  69, abutment 67, verge 13; 57 faces (69 without heights). Largest `eaveMinusWallTopMm`: +23,938 (R260, wall 317257,
+  5249 mm: a wall whose top is near ground, wrong wall picked?), +3,239 (R260, wall 325420, 8351 mm), +3,199/+3,197
+  (walls 325564/325470); most R260 eaves are -780 to -1,080 (the sixth-floor walls run ~0.8-1.1 m above the flat top:
+  parapet/kerb upstand, plausibly right). `nativeOffPlaneMm` > 20: R260 208, R251 541, R255 69. R260 is the flat roof
+  behind the mansard; I'd build it after Mihai has seen this.
+- Site photos (Mihai, Street View): the mansard is on the street fronts only; the rear (Swallow Place) is a flat
+  set-back attic. New rule 7 in docs/SURVEY-TO-1TO1.md: photos alongside DWGs for every facade detail, kept in the
+  job folder, not in this repo. The other new asks (A1-A3, 1.26-1.35 checks) are not run yet: next.
+- Files: `SurveyRoofTools.cs` (new), `SurveyFacadeReliefTools.cs` (mansard.json on dry run), `BatchTool.cs`,
+  `BuildTools.cs` (create_roof), `Hub.cs`, `BGMCP.csproj`, docs/SURVEY-TO-1TO1.md, docs/SURVEY-RESULTS.md, this file.
+  Version 1.36.3.
+
 ### 2026-11-12 (night, last): EVERYTHING WE CREATE MUST BE EDITABLE (1.14.6)
 - Mihai: "everything you create should be editable". The facade tools now make only native/editable elements by default: `facade_relief` = Generic Model families of plain extrusions (a surround family per window design: surround, pediment, consoles, sill, apron; one family per storey for the rest; Material parameter; placed at offset 0 on the level and rotated to the facade); `facade_profile` = Profile families + wall sweeps for continuous bands and a native extrusion roof (Basic Roof type "BG Mansard Roof 250") for the mansard; `facade_columns` = a Generic Model family per plan piece (pilaster with flutes, pier) with Shaft Base/Shaft Height. `as: shapes` only for checks. Round columns are found but not built until a family builder exists.
 - Please follow the same rule in your tools: **no DirectShapes in a model to hand over**. Still making them: `roof_from_survey`, `model_sweep`, `model_extrusion`, `facade_details` (and Survey to Revit's own "Survey - column/pier" Generic Models look like DirectShapes too: please check on your side).

@@ -480,7 +480,9 @@ namespace BarrGazetas.RevitMcp
                         RoofType rt = Str(a, "type_name") is string tn ? TypeByName<RoofType>(doc, BuiltInCategory.OST_Roofs, tn) : RoofTypeOf(doc, Dbl(a, "thickness_mm") ?? 300);
                         var ca = new CurveArray();
                         for (int i = 0; i < pts.Count; i++) ca.Append(Line.CreateBound(pts[i], pts[(i + 1) % pts.Count]));
-                        var roof = doc.Create.NewFootPrintRoof(ca, level, rt, out ModelCurveArray map);
+                        // Revit 2025 wants an existing array here (a null one throws "Value cannot be null")
+                        ModelCurveArray map = new ModelCurveArray();
+                        var roof = doc.Create.NewFootPrintRoof(ca, level, rt, out map);
                         int k = 0;
                         foreach (ModelCurve mc in map)
                         {

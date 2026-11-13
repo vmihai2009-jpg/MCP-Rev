@@ -7,6 +7,8 @@ gave good results. Method: `docs/SURVEY-TO-1TO1.md`. Pictures and JSON: `runs/<d
 
 | Step | Tool + settings | Result | Notes |
 |---|---|---|---|
+| Mansard (native) | `facade_profile` F29, F53 (dry run, writes mansard.json); `mansard_roof dry_run:false` (1.36.3, street_only) | 1 footprint roof (677808), sloped band 42.2 m along Regent St + curved corner (2 true arcs), 66.1°, eaves 23,749 -> kerb 26,749, run 1.36 m; replaced 2 extrusion mansards; saved | whole-building outline: flat yes, sloped no (diagnose: rear edges); photos: mansard on street fronts only |
+| Roof plan read | `roof_solver` (report, 1.36.0) | 57 faces; edges: eave 87, abutment 67, step 101, verge 13, flat edge 581, flat join 69; R260 = flat top 653 m2 at ~26.9 m (the kerb) | R260 eaves ~830 mm below the wall tops under them; nativeOffPlane R260 208 mm, R251 541 mm |
 | All editable (1.14.6) | `facade_relief` (families), `facade_profile` (sweeps + roof), `facade_columns` (families) on all 6 indexed facades | testmcp: 0 DirectShapes from these tools; 164 surround + 39 storey families, 7 pilaster families, 21 wall sweeps, 2 mansard Basic Roofs | detail families placed at offset 0 on their level (the point's Z is the offset); a roof type must be a basic one (the first RoofType was Sloped Glazing); F29's detailed mansard sketch refused, straight slope used |
 | Editable bands | `facade_profile` F29 (1.14.5, as sweeps) | 4 profile families, 15 native wall sweeps: shopfront cornice 821 mm out, main cornice 861, 5th-floor band 279, balustrade base 52; all start at the facade line | profile set on the type; best-fit side/flip/offset per wall |
 | Pilasters | `facade_columns` F29 (1.14.4) | plan sections found (fluted pilasters 850 wide, 137 proud, flutes r 24); 2 pieces built; most fluted pilasters' heights not confirmed by the elevation (edges broken at bands) | to become loadable families |
@@ -19,6 +21,9 @@ gave good results. Method: `docs/SURVEY-TO-1TO1.md`. Pictures and JSON: `runs/<d
 | Elevation heights | `survey_autofix walls:false` (1.9.16) | 111 windows to elevation sill/head | plan S/H labels are internal |
 
 ### What didn't work (don't repeat)
+- A mansard footprint round the whole building's outline (all edges sloped, any angle, with or without a kerb hole):
+  Revit made no solid; the rear limbs break the hip skeleton, and the photos show no mansard there anyway.
+- Setting the eaves' setback (CurveLoop.CreateViaOffset) on the raw slab edge: spikes that double back.
 - DirectShapes for detail the team will edit (relief, profile shapes, columns): not editable. Use profiles + wall
   sweeps, roofs, loadable families.
 - Setting WallSweepInfo.ProfileId only: the sweep keeps the type's default 152x152 profile.

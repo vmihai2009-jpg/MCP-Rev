@@ -213,6 +213,19 @@ namespace BarrGazetas.RevitMcp
                     var ids = new List<long>(); List<string> revit = null; int made = 0, failed = 0;
                     bool asSweeps = !string.Equals(Args.Str(a, "as"), "shapes", StringComparison.OrdinalIgnoreCase);
                     var sweepLog = new List<object>(); List<double[]> mansardLine = null;
+                    // kept for mansard_roof (dry run too): each facade's surveyed mansard, eaves and kerb (out from the facade line, height)
+                    if (placed.Any(x => x.roof))
+                        try
+                        {
+                            var rr0 = placed.Where(x => x.roof).OrderByDescending(x => x.r.Max(p => p.Y) - x.r.Min(p => p.Y)).First().r;
+                            var ml = SectionProfile.OuterLine(env, z0, 10, rr0.Min(p => p.Y), rr0.Max(p => p.Y), 50);
+                            string mf = Path.Combine(ReportsFolder(doc), "mansard.json");
+                            var root = File.Exists(mf) ? (JsonNode.Parse(File.ReadAllText(mf)) as JsonObject ?? new JsonObject()) : new JsonObject();
+                            root[fid] = new JsonObject { ["eaves"] = new JsonArray(Math.Round(ml[0].X), Math.Round(ml[0].Y)), ["kerb"] = new JsonArray(Math.Round(ml[^1].X), Math.Round(ml[^1].Y)),
+                                                         ["section"] = Args.Str(sec, "name"), ["line"] = new JsonArray(ml.Select(p => (JsonNode)new JsonArray(Math.Round(p.X), Math.Round(p.Y))).ToArray()) };
+                            File.WriteAllText(mf, root.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+                        }
+                        catch { }
                     if (!dry && placed.Count > 0)
                     {
                         string tag = $"MCP|facade_profile|{fid}";

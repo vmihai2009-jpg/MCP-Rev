@@ -93,7 +93,9 @@ namespace BarrGazetas.RevitMcp
                             var t = own.FirstOrDefault(x => x.Name == tool);
                             if (t != null)
                             {
-                                object r = t.Run(app, args);
+                                // a read tool may look at a reference model here too (document: its reference_open name), as when called alone
+                                object r;
+                                using (Reference.Use(t.Write ? null : Args.Str(args, "document"))) r = t.Run(app, args);
                                 text = r is ToolContent tc ? tc.Text : r as string ?? JsonSerializer.Serialize(r, json); // pictures are left out of a batch
                             }
                             else text = other(app, tool, args) ?? throw new ArgumentException($"There is no tool \"{tool}\".");
