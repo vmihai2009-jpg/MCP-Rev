@@ -81,6 +81,20 @@ namespace BarrGazetas.RevitMcp
         /// A Generic Model family of extrusions, one per piece: sketched on a vertical plane facing out (outSign: +1 when
         /// the facade's outside is the family's +Y), from V0 to V1. Saved to path.
         /// </summary>
+        /// <summary>Arcs in a closed ring: start vertex -> end vertex (end may be pts.Count for the closing vertex), from CurveChains.</summary>
+        internal static Dictionary<int, int> ArcRuns(IList<Pt> pts)
+        {
+            var edges = Enumerable.Range(0, pts.Count).Select(i => (pts[i], pts[(i + 1) % pts.Count])).ToList();
+            var res = new Dictionary<int, int>();
+            foreach (var c in CurveChains.Find(edges, new CurveChainOptions { MaxPieceMm = 600, TolMm = 2, MinRadiusMm = 20, MinSweepDeg = 10, MinPieces = 3 }))
+            {
+                var m = c.Members.OrderBy(x => x).ToList();
+                if (m.Count < 3 || m[^1] - m[0] != m.Count - 1 || c.SweepDeg >= 300) continue;   // contiguous, not wrapping past vertex 0, not a whole circle
+                res[m[0]] = m[^1] + 1;
+            }
+            return res;
+        }
+
         internal static string Build(UIApplication app, IList<Piece> pieces, int outSign, string path)
         {
             var fdoc = app.Application.NewFamilyDocument(ProfileFamilyBuilder.Template(app, "Metric Generic Model.rft"));
@@ -104,8 +118,21 @@ namespace BarrGazetas.RevitMcp
                         var plane = Plane.CreateByNormalAndOrigin(new XYZ(0, outSign, 0), new XYZ(0, y0, 0));
                         var sp = SketchPlane.Create(fdoc, plane);
                         var loop = new CurveArray();
-                        for (int i = 0; i < pts.Count; i++)
-                            loop.Append(Line.CreateBound(new XYZ(pts[i].X / Mm, y0, pts[i].Y / Mm), new XYZ(pts[(i + 1) % pts.Count].X / Mm, y0, pts[(i + 1) % pts.Count].Y / Mm)));
+                        XYZ P3(Pt q) => new XYZ(q.X / Mm, y0, q.Y / Mm);
+                        // 1.26.0: runs of short edges on one circle (an arched head, a curved pediment, a scroll) become one arc,
+                        // so the family has true curves a person can edit, not facets
+                        var arcs = ArcRuns(pts);
+                        for (int i = 0; i < pts.Count;)
+                        {
+                            if (arcs.TryGetValue(i, out int end))
+                            {
+                                int mid = (i + end) / 2; if (mid == i) mid = i + 1;
+                                try { loop.Append(Arc.Create(P3(pts[i]), P3(pts[end % pts.Count]), P3(pts[mid % pts.Count]))); i = end; continue; }
+                                catch { /* fall back to straight edges */ }
+                            }
+                            loop.Append(Line.CreateBound(P3(pts[i]), P3(pts[(i + 1) % pts.Count])));
+                            i++;
+                        }
                         var prof = new CurveArrArray(); prof.Append(loop);
                         try
                         {
