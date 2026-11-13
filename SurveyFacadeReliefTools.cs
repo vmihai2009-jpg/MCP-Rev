@@ -446,6 +446,13 @@ namespace BarrGazetas.RevitMcp
                     var openings = windows.Concat(drawnOpenings).ToList();
 
                     stage = "faces"; var faces = FacadeRelief.Build(segs, openings, PlanAt, o);
+                    // 1.26.0: pieces facade_types placed as one family per type are not built again here
+                    var typed = new FilteredElementCollector(doc).OfClass(typeof(FamilyInstance))
+                        .Select(e => e.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "")
+                        .Where(cm => cm.StartsWith($"MCP|facade_types|{fid}|") && cm.Contains("|box:"))
+                        .Select(cm => cm.Substring(cm.IndexOf("|box:") + 5).Split(',').Select(x => double.TryParse(x, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : double.NaN).ToArray())
+                        .Where(b => b.Length == 4 && b.All(x => !double.IsNaN(x))).ToList();
+                    int typedLeftOut = faces.RemoveAll(f => typed.Any(b => (f.U0 + f.U1) / 2 >= b[0] - 20 && (f.U0 + f.U1) / 2 <= b[1] + 20 && (f.Z0 + f.Z1) / 2 >= b[2] - 20 && (f.Z0 + f.Z1) / 2 <= b[3] + 20));
                     // above the facade's walls the roof slopes back (mansard, chimneys): those lines are not on the facade plane;
                     double wallTop = walls.Where(w => { var c = ((LocationCurve)w.Location).Curve.Evaluate(0.5, true); double v = (c.X * Mm - fr.A.X) * nx + (c.Y * Mm - fr.A.Y) * ny, uu = (c.X * Mm - fr.A.X) * fr.Ux + (c.Y * Mm - fr.A.Y) * fr.Uy; return Math.Abs(v) < 1500 && uu > -500 && uu < fr.Length + 500; })
                         .Select(w => w.get_BoundingBox(null)?.Max.Z * Mm ?? double.MinValue).DefaultIfEmpty(double.MaxValue).Max();
@@ -629,7 +636,7 @@ namespace BarrGazetas.RevitMcp
                     {
                         facade = fid, elevation = Args.Str(spec, "name"), lines = segs.Count, faces = faces.Count, bySource,
                         storeysWithPlan = profiles.Select(p => new { p.level, projectsMm = Math.Round(p.p.Depth.Max()) }).ToList(),
-                        windowsLeftOut = windows.Count, drawnOpeningsLeftOut = drawnOpenings.Count, setBackOntoRoof = setBack.Count, aboveOwnWallLeftOut, aboveWallTop = aboveRoof, leftForColumns = byColumns, leftForSweeps = bySweeps, wallTopMm = Math.Round(wallTop), made, failed, facesOnWallsInFront = onWall, removed, shapes = ids, families = familyLog.Count > 0 ? familyLog : null, revit,
+                        windowsLeftOut = windows.Count, drawnOpeningsLeftOut = drawnOpenings.Count, setBackOntoRoof = setBack.Count, aboveOwnWallLeftOut, typedLeftOut, aboveWallTop = aboveRoof, leftForColumns = byColumns, leftForSweeps = bySweeps, wallTopMm = Math.Round(wallTop), made, failed, facesOnWallsInFront = onWall, removed, shapes = ids, families = familyLog.Count > 0 ? familyLog : null, revit,
                         next = dry ? "dry_run: false to build it (check_view + view_image to compare with the elevation)." : "check_view facade + view_image, side by side with the elevation.",
                     };
                   }
