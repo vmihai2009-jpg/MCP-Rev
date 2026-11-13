@@ -115,7 +115,7 @@ run. They write `facade-check-<F>.json` in the reports folder and, with `image: 
 - **Out:** "floating" pieces (a dormer front hung on the facade plane in front of a set-back mansard; a balustrade
   in front of nothing) with the gap in mm; "buried" pieces with their depth inside the wall.
 
-### 2.5 One call: `facade_check`
+### 2.5 One call: `facade_check` — built, 1.22.0
 Runs 2.1-2.4 for a facade and returns one line per check plus the worst 20 issues; writes the JSON and the picture.
 **Every facade build step ends with it** (COORDINATION.md 1.5 e step 5), and its numbers go into the run results, so
 nobody has to look at screenshots to know what is wrong.

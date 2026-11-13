@@ -47,6 +47,7 @@ namespace BarrGazetas.RevitMcp
             // batch runs the others (and other add-ins' tools, called directly: it is already on Revit's thread) as one undo step
             revitTools.Add(BatchTool.Make(revitTools, (app, tool, args) => Providers.CallHere(app, tool, args), Compact));
             // survey_run drives score -> autofix -> score per floor (and Survey to Revit's survey_build when asked)
+            revitTools.Add(SurveyTools.FacadeCheckAll(revitTools, Compact));
             revitTools.Add(SurveyTools.RunTool(revitTools, (app, tool, args) => Providers.CallHere(app, tool, args), Compact));
             _own = revitTools.Select(t => new ToolInfo
             {

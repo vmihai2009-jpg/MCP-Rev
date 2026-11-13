@@ -34,6 +34,7 @@ namespace BarrGazetas.RevitMcp
                 ("rebuild", S("boolean", "Rebuild each floor with Survey to Revit's survey_build first (default false: ask the user before)"), false),
                 ("dry_run", S("boolean", "Autofix tried and rolled back (default false)"), false),
                 ("save", S("boolean", "save_model at the end (default false; never with dry_run)"), false),
+                ("facades", S("boolean", "Also run facade_check on every indexed facade at the end and include its scores (default false)"), false),
                 ("max_causes", S("integer", "Causes to return per floor (default 8)"), false),
                 ("source", S("string", "As survey_fidelity"), false),
                 ("survey_folder", S("string", "As survey_fidelity"), false)),
@@ -140,12 +141,22 @@ namespace BarrGazetas.RevitMcp
                 detail["floors"] = detailFloors;
                 string runFile = Path.Combine(reports, $"run-{stamp}.json");
                 File.WriteAllText(runFile, detail.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                object facadeScores = null;
+                if (Args.Bool(a, "facades") == true)
+                    try
+                    {
+                        var fc = Call("facade_check", new JsonObject { ["facade"] = "all", ["issues"] = 5 });
+                        facadeScores = fc;
+                        detail["facades"] = fc?.DeepClone();
+                        File.WriteAllText(runFile, detail.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                    }
+                    catch (Exception ex) { warnings.Add("facade_check: " + McpServer.Unwrap(ex).Message); }
                 object saved = null;
                 if (Args.Bool(a, "save") == true && !dry)
                     try { saved = Call("save_model", new JsonObject()); } catch (Exception ex) { warnings.Add("Not saved: " + McpServer.Unwrap(ex).Message); }
                 return new
                 {
-                    dryRun = dry, floors, warnings = warnings.Count > 0 ? warnings : null,
+                    dryRun = dry, floors, facades = facadeScores, warnings = warnings.Count > 0 ? warnings : null,
                     detail = runFile, history = Path.Combine(reports, "score-history.csv"), saved,
                     next = "Work the causes top down: a systematic cause is one fix (a reading/layer or build rule), not many hand edits. dwg_image with element_id or near=at to look at one. Then survey_run that floor again.",
                     undo = dry ? "dry run: nothing kept" : "Each autofix half is one undo step per floor in Revit.",
