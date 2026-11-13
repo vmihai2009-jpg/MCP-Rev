@@ -131,8 +131,8 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 ### Facade checks (2026-11-13, docs/FACADE-CHECKS.md)
 | # | Tool | What | Where | Priority |
 |---|---|---|---|---|
-| C1 | `facade_correspondence` | Model edges vs elevation lines on the facade plane: coverage (gaps), precision (spurious), shifted elements with their Δu/Δz, per map item. This is F1 `facade_score`. | Hub | P0 |
-| C2 | `opening_clear_check` + opening mask in `facade_relief` | Rays through every window: what blocks the glass; drawn openings with no or wrong model window. Relief clipped to outside the drawn openings. | Hub | P0 |
+| C1 | `facade_correspondence` (done, 1.18.0) | Model edges vs elevation lines on the facade plane: coverage (gaps), precision (spurious), shifted elements with their Δu/Δz, per map item. This is F1 `facade_score`. | Hub | P0 |
+| C2 | `opening_clear_check` + opening mask in `facade_relief` (done, 1.18.0) | Rays through every window: what blocks the glass; drawn openings with no or wrong model window. Relief clipped to outside the drawn openings. | Hub | P0 |
 | C3 | `facade_course_check` | Cornices, string courses, sill/head rows at the elevation's heights, run by run; storey offsets and bad height fits named. | Hub | P1 |
 | C4 | `detail_support_check` | Detail floating in front of nothing (dormers on the facade plane) or buried in walls. | Hub | P1 |
 | C5 | `facade_check` | Runs C1-C4, one score per facade; ends every facade build step and `survey_run`. | Hub | P1 |
