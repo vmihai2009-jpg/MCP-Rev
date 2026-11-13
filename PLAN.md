@@ -146,7 +146,7 @@ Priority: **P0** now, **P1** next, **P2** after. "Repo": S2R = Survey to Revit (
 14. Provenance and confidence tags on every built element (source DWG entity, view, confidence) and a "review these first" queue. Done 1.32.0 (`review_queue`: provenance from Comments tags, confidence from the checks' findings).
 15. Editability audit: in-place/DirectShape solids, families without parameters, curves built in segments. Done 1.33.0 (`editability_audit`).
 16. Opening clustering: window_look's one-type-per-window merged into a few parametric types. Done 1.34.0 (`opening_clusters`).
-17. Stairs and vertical cores from plans and sections, with slab openings cut floor to floor.
+17. Stairs and vertical cores from plans and sections, with slab openings cut floor to floor. Done 1.35.0 (`survey_cores`, from plans; stairs themselves still checked by survey_stairs).
 18. Roof solver: ridges, hips, valleys, eaves and pitches from the roof plan, checked against sections, with dormers, chimneys and parapets.
 
 ### Facade checks (2026-11-13, docs/FACADE-CHECKS.md)
