@@ -596,6 +596,11 @@ _Write your entries here, newest first. Use the "Revit run results" template for
 - Files: `SurveyRoofTools.cs` (new), `SurveyFacadeReliefTools.cs` (mansard.json on dry run), `BatchTool.cs`,
   `BuildTools.cs` (create_roof), `Hub.cs`, `BGMCP.csproj`, docs/SURVEY-TO-1TO1.md, docs/SURVEY-RESULTS.md, this file.
   Version 1.36.3.
+- 1.36.4: `clash_check` (new, read-only): what given elements intersect (default the MCP mansard roofs). On testmcp
+  the mansard hits 14 Sixth Floor walls (13 thin "Concept Wall 100mm/40mm", tagged SurveyToRevit|106|Low/Medium, no
+  inserts, = the plan's cut through the mansard skin read as walls; 1 x 380 mm), 1 Generic Model (327106) and the
+  roof-plan slab 346660. **For Survey to Revit:** on a floor that a sloped roof covers (mansard storey), the plan's
+  cut through the roof skin should not become full-height walls; flag them or stop them under the roof.
 
 ### 2026-11-12 (night, last): EVERYTHING WE CREATE MUST BE EDITABLE (1.14.6)
 - Mihai: "everything you create should be editable". The facade tools now make only native/editable elements by default: `facade_relief` = Generic Model families of plain extrusions (a surround family per window design: surround, pediment, consoles, sill, apron; one family per storey for the rest; Material parameter; placed at offset 0 on the level and rotated to the facade); `facade_profile` = Profile families + wall sweeps for continuous bands and a native extrusion roof (Basic Roof type "BG Mansard Roof 250") for the mansard; `facade_columns` = a Generic Model family per plan piece (pilaster with flutes, pier) with Shaft Base/Shaft Height. `as: shapes` only for checks. Round columns are found but not built until a family builder exists.

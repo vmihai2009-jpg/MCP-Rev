@@ -105,6 +105,50 @@ namespace BarrGazetas.RevitMcp
 
         public static IEnumerable<RevitTool> RoofTools()
         {
+            // read-only: what clips through what (Mihai: "clipping through walls and stuff, make sure everything is correct")
+            yield return new RevitTool
+            {
+                Name = "clash_check",
+                Description = "What the given elements intersect (solid against solid, Revit's own test): per element hit, its category, " +
+                              "type, level, Comments tag, and for walls the length, base/top and how many windows/doors it hosts. Default: " +
+                              "the mansard roofs (Comments MCP|mansard_roof). Run after every roof/facade build: a mansard through the " +
+                              "storey's walls, relief through windows. Changes nothing.",
+                InputSchema = Schema(("element_ids", S("array", "Elements to test (default the MCP mansard roofs)"), false),
+                                     ("categories", S("array", "Only hits in these categories (default all model categories)"), false)),
+                Run = (app, a) =>
+                {
+                    var doc = Doc(app);
+                    var src = (a["element_ids"] as JsonArray)?.Select(v => doc.GetElement(new ElementId(v.GetValue<long>()))).Where(e => e != null).ToList()
+                              ?? new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Roofs).WhereElementIsNotElementType()
+                                   .Where(e => (e.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "") == "MCP|mansard_roof").ToList();
+                    if (src.Count == 0) throw new ArgumentException("Nothing to test: give element_ids.");
+                    var cats = (a["categories"] as JsonArray)?.Select(v => v.ToString()).ToList();
+                    var result = new List<object>();
+                    foreach (var s in src)
+                    {
+                        var hits = new FilteredElementCollector(doc).WhereElementIsNotElementType().WherePasses(new ElementIntersectsElementFilter(s))
+                            .Where(e => e.Id != s.Id && e.Category != null && e.Category.CategoryType == CategoryType.Model)
+                            .Where(e => cats == null || cats.Any(c => string.Equals(c, e.Category.Name, StringComparison.OrdinalIgnoreCase))).ToList();
+                        var byCat = hits.GroupBy(e => e.Category.Name).Select(g => new { category = g.Key, count = g.Count() }).OrderByDescending(x => x.count).ToList();
+                        var list = hits.Take(150).Select(e =>
+                        {
+                            var w = e as Wall; var lc = (e.Location as LocationCurve)?.Curve;
+                            int inserts = w == null ? 0 : w.FindInserts(true, false, false, false).Count;
+                            return new
+                            {
+                                id = e.Id.Value, category = e.Category.Name, type = doc.GetElement(e.GetTypeId())?.Name, level = (doc.GetElement(e.LevelId) as Level)?.Name,
+                                tag = e.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString(),
+                                lengthMm = lc == null ? (double?)null : Math.Round(lc.Length * Mm),
+                                topMm = w == null ? (double?)null : Math.Round((e.get_BoundingBox(null)?.Max.Z ?? 0) * Mm),
+                                hosts = w == null ? (int?)null : inserts,
+                            };
+                        }).ToList();
+                        result.Add(new { element = s.Id.Value, hits = hits.Count, byCategory = byCat, list });
+                    }
+                    return new { tested = src.Count, results = result, next = "Walls of the mansard storey hit by the roof: attach their tops to the roof (wall_attach) or move them to the kerb line; detail families hit: move/trim them; windows hit: they need dormers." };
+                }
+            };
+
             // read-only: how a roof is made (ours or a reference model's), so a person or the next agent can copy the technique
             yield return new RevitTool
             {
