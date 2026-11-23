@@ -234,6 +234,26 @@ namespace BarrGazetas.RevitMcp
             };
         }
 
+        /// <summary>1.36.16: an element Survey to Revit built as context (the buildings next door: comment tagged |CONTEXT|, or on
+        /// a workset named Context). It is not this building, so the score leaves it out (Mount Row: 3 of 43 opening issues
+        /// were neighbour windows).</summary>
+        internal static bool IsContext(Element e)
+        {
+            try
+            {
+                string c = e.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString();
+                if (c != null && c.IndexOf("|CONTEXT|", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                var doc = e.Document;
+                if (doc.IsWorkshared && e.WorksetId != WorksetId.InvalidWorksetId)
+                {
+                    var ws = doc.GetWorksetTable().GetWorkset(e.WorksetId);
+                    if (ws != null && string.Equals(ws.Name, "Context", StringComparison.OrdinalIgnoreCase)) return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
         /// <summary>Model mm -> British National Grid metres, through the project position (verified against the survey DWGs).</summary>
         private static (double e, double n) ToGrid(ProjectPosition pp, Pt p)
         {
@@ -287,6 +307,9 @@ namespace BarrGazetas.RevitMcp
             // its own schema and facade numbering): its drawings are read too, matched to the hub's facades by line, for the
             // facades the hub's index doesn't have
             var specs = new List<JsonObject>();
+            // 1.36.16: Survey to Revit's index names a sheet without its folder or .dwg; it is looked for beside the index's
+            // survey folder and the linked plans' folders
+            var linkDirs = CadLink.All(doc).Select(i => { try { return CadLink.FilePath(doc, i); } catch { return null; } }).Where(p => p != null).Select(Path.GetDirectoryName).Distinct().ToList();
             List<JsonObject> Load(string file)
             {
                 try
@@ -294,12 +317,15 @@ namespace BarrGazetas.RevitMcp
                     if (!File.Exists(file)) return new List<JsonObject>();
                     var root = JsonNode.Parse(File.ReadAllText(file));
                     var arr = root is JsonArray ja ? ja : (root?["elevations"] ?? root?["Elevations"]) as JsonArray;
-                    return arr?.OfType<JsonObject>().Select(e => NormalizeElevation(doc, e)).Where(e => e != null).ToList() ?? new List<JsonObject>();
+                    var near = new List<string> { Path.GetDirectoryName(file) };
+                    if (Path.GetDirectoryName(Path.GetDirectoryName(file)) is string up) near.Add(up);
+                    near.AddRange(linkDirs);
+                    return arr?.OfType<JsonObject>().Select(e => NormalizeElevation(doc, e, near)).Where(e => e != null).ToList() ?? new List<JsonObject>();
                 }
                 catch { return new List<JsonObject>(); }
             }
             specs.AddRange(Load(Path.Combine(ReportsFolder(doc), "elevation-index.json")));
-            foreach (var dir in CadLink.All(doc).Select(i => { try { return CadLink.FilePath(doc, i); } catch { return null; } }).Where(p => p != null).Select(Path.GetDirectoryName).Distinct())
+            foreach (var dir in linkDirs)
                 foreach (var s in Load(Path.Combine(dir, "_prep", "elevation-index.json")))
                 {
                     string f = Args.Str(s, "facade");
@@ -313,10 +339,16 @@ namespace BarrGazetas.RevitMcp
         /// own entries as they are; Survey to Revit's (File, Box = x0 y0 x1 y1, FacadeLine, Mirrored, Score) converted, its facade
         /// matched to the hub's facades.json by line (parallel, within 1.5 m, overlapping) so the ids agree, the direction
         /// turned when the two lines run opposite ways. Unmatched or low-score drawings: null.</summary>
-        internal static JsonObject NormalizeElevation(Document doc, JsonObject e)
+        internal static JsonObject NormalizeElevation(Document doc, JsonObject e, IEnumerable<string> searchFolders = null)
         {
             if (e["path"] != null)
             {
+                // a hub entry with a path that has moved or was given as a bare name: found in the survey's folders
+                string given = Args.Str(e, "path");
+                if (searchFolders != null && given != null && !File.Exists(given) && DrawingPaths.Resolve(given, searchFolders) is string found)
+                {
+                    e = (JsonObject)e.DeepClone(); e["path"] = found; e["path_was"] = given;
+                }
                 // 1.36.15: the hub's own entry; if it saved its facade's line, re-match the id by line: facade ids change when the
                 // model is rebuilt (Mount Row: south F4 -> F6), and an id alone would put the drawing on another facade silently
                 if (e["facade_line_saved"] is JsonArray sl && sl.Count == 4)
@@ -336,6 +368,8 @@ namespace BarrGazetas.RevitMcp
             string file = N("File")?.ToString();
             var box = N("Box") as JsonArray;
             if (file == null || box == null || box.Count < 4) return null;
+            string sheetName = file;
+            file = DrawingPaths.Resolve(file, searchFolders) ?? file;
             double B(int i) => box[i].GetValue<double>();
             double score = N("Score") is JsonValue sv && sv.TryGetValue<double>(out var sc) ? sc : 1;
             var fl = N("FacadeLine") as JsonArray;
@@ -343,7 +377,7 @@ namespace BarrGazetas.RevitMcp
             bool mir = N("Mirrored") is JsonValue mv && mv.TryGetValue<bool>(out var m) && m;
             var o = new JsonObject
             {
-                ["path"] = file, ["name"] = N("Title")?.ToString(), ["source"] = "Survey to Revit elevation index",
+                ["path"] = file, ["sheet"] = sheetName, ["name"] = N("Title")?.ToString(), ["source"] = "Survey to Revit elevation index",
                 ["sheet_x_range"] = new JsonArray(Math.Min(B(0), B(2)), Math.Max(B(0), B(2))),
                 ["sheet_y_range"] = new JsonArray(Math.Min(B(1), B(3)), Math.Max(B(1), B(3))),
             };
@@ -412,7 +446,7 @@ namespace BarrGazetas.RevitMcp
             foreach (var cat in new[] { BuiltInCategory.OST_Windows, BuiltInCategory.OST_Doors })
                 foreach (var fi in new FilteredElementCollector(doc).OfCategory(cat).WhereElementIsNotElementType().OfType<FamilyInstance>())
                 {
-                    if (!(fi.Location is LocationPoint lp)) continue;
+                    if (!(fi.Location is LocationPoint lp) || IsContext(fi)) continue;
                     var p = CadLink.ToMm(lp.Point);
                     double u = (p.X - fa.X) * ux + (p.Y - fa.Y) * uy, off = Math.Abs((p.X - fa.X) * -uy + (p.Y - fa.Y) * ux);
                     if (off > band || u < -500 || u > fl + 500) continue;
@@ -447,7 +481,7 @@ namespace BarrGazetas.RevitMcp
             if (reading == null && imp == null) throw new ArgumentException($"{level.Name}: no plan DWG is linked into its plan, and Survey to Revit's reading has no floor of that name.");
             var input = new FidelityInput { Level = level.Name, LevelZ = level.Elevation * Mm, DatumMm = datumMm };
             input.Walls = new FilteredElementCollector(doc).OfClass(typeof(Wall)).Cast<Wall>()
-                .Where(w => w.LevelId == level.Id && w.WallType.Kind == WallKind.Basic && w.Location is LocationCurve lc && lc.Curve is Line)
+                .Where(w => w.LevelId == level.Id && w.WallType.Kind == WallKind.Basic && !IsContext(w) && w.Location is LocationCurve lc && lc.Curve is Line)
                 .Select(w =>
                 {
                     var c = ((LocationCurve)w.Location).Curve;
@@ -458,13 +492,34 @@ namespace BarrGazetas.RevitMcp
             foreach (var cat in new[] { BuiltInCategory.OST_Windows, BuiltInCategory.OST_Doors })
                 foreach (var fi in new FilteredElementCollector(doc).OfCategory(cat).WhereElementIsNotElementType().OfType<FamilyInstance>())
                 {
-                    if (!(fi.Host is Wall host) || !wallIds.Contains(host.Id.Value) || !(fi.Location is LocationPoint lp)) continue;
+                    if (!(fi.Host is Wall host) || !wallIds.Contains(host.Id.Value) || IsContext(fi) || !(fi.Location is LocationPoint lp)) continue;
                     input.Inserts.Add(new FidInsert
                     {
                         Id = fi.Id.Value, Category = fi.Category?.Name, HostWallId = host.Id.Value, At = CadLink.ToMm(lp.Point), W = WidthOf(fi),
                         Sill = LenOf(fi, BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM), Head = LenOf(fi, BuiltInParameter.INSTANCE_HEAD_HEIGHT_PARAM),
                     });
                 }
+            // 1.36.16: plain rectangular wall openings count as openings that are there (Survey to Revit cuts one where Revit
+            // refuses a door or window family; a person may cut one too). Mount Row: 4 doors were "missing" that were open
+            foreach (var op in new FilteredElementCollector(doc).OfClass(typeof(Opening)).Cast<Opening>())
+            {
+                try
+                {
+                    if (!(op.Host is Wall host) || !wallIds.Contains(host.Id.Value) || IsContext(op) || !op.IsRectBoundary) continue;
+                    var r = op.BoundaryRect;
+                    if (r == null || r.Count < 2) continue;
+                    var p0 = CadLink.ToMm(r[0]); var p1 = CadLink.ToMm(r[1]);
+                    double w = Math.Sqrt((p1.X - p0.X) * (p1.X - p0.X) + (p1.Y - p0.Y) * (p1.Y - p0.Y));
+                    if (w < 150) continue;
+                    double lz = level.Elevation * Mm, z0 = Math.Min(r[0].Z, r[1].Z) * Mm - lz, z1 = Math.Max(r[0].Z, r[1].Z) * Mm - lz;
+                    input.Inserts.Add(new FidInsert
+                    {
+                        Id = op.Id.Value, Category = Fidelity.WallOpeningCategory, HostWallId = host.Id.Value,
+                        At = new Pt((p0.X + p1.X) / 2, (p0.Y + p1.Y) / 2), W = w, Sill = z0, Head = z1,
+                    });
+                }
+                catch { /* an opening Revit can't describe is left out */ }
+            }
 
             var spots = new List<(Pt at, double aodMm)>();
             if (reading != null)
