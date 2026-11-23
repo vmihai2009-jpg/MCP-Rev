@@ -24,11 +24,13 @@ What is being built next, and why, is in `PLAN.md` at the root of MCP-Rev (the r
 7. **Easy for a person to correct (Mihai's rule, 2026-11-13).** What we build must be what an architect would draw: a curve in the survey is one curved wall or one sweep, never a staircase of short pieces; a repeated detail is one family placed many times; a band is a profile on a wall sweep. Nothing a person has to delete piece by piece to fix. Before building, check the survey's lines for curves (`curve_check`); after building, if a curve came out in pieces, rebuild it (`curve_walls`) rather than leaving it.
 8. **Done / blocked:** mark each ask in your entry as done (with the files) or blocked (with the exact reason).
 
-**Current asks (2026-11-13), in order:**
+**Current asks (2026-11-23), in order:**
 
-- **A1. Facade map of F29.** Pull `main` (1.17.0 or later), `mcp_reload`. Run `facade_detail_map {"facade":"F29","image":true}`, then again with `"reference":"<the name you opened the human model under>"`, then with `"reference":"active"`. Save the three answers and the PNG to `runs/2026-11-13/`. In your entry: the `kinds` counts, `explainedShare`, the `layers` list, how many items have nothing built (`reference: active`), and anything named wrongly with its `u`/`aodMm` box.
-- **A2. The top right of F29 (heights).** Mihai sees detail at the wrong height at the top right of the front. Find which facade id(s) and which elevation drawing cover that block (`facade_list`, `elevation-index.json`; is it Elevation 4, the one left out?). Then for that bay: `check_view` + `view_image` of the model, and `dwg_image` of the same stretch of the elevation DWG. Save both pictures. In your entry say: the facade id, the elevation name and `sheet_x_range`, whether the block is a second building with a lower wall top, and the model heights (`aodMm`) of its cornice and of the dormer/pediment versus the elevation's level marks there.
-- **A3. Measure F29 with the new checks (1.18.0).** Pull `main`, `mcp_reload`. Run `opening_clear_check {"facade":"F29"}` and `facade_correspondence {"facade":"F29","image":true}`; save both answers and the PNG to `runs/2026-11-13/`. Then rebuild F29's relief (`facade_relief {"facade":"F29"}` dry run, then `"dry_run":false`): since 1.18.0 it cuts every stone face back from the openings the elevation draws, so no relief covers a window. Run both checks again and save. In your entry: blocked openings before and after, coverage and precision before and after, the `shifted` list (above all any `storeyOffset: true`), and the top `spurious` and `gaps`. If `opening_clear_check` says there's no 3D view, open the default 3D view once and run again.
+- **B1. Score Mount Row with hub 1.36.16.** Pull MCP-Rev `main` (1.36.16 or later), `mcp_reload`. On MRTest after your latest Survey to Revit build (0.33.38+), run `survey_fidelity {}` and save the JSON to `runs/2026-11-23/fidelity-mount-row.json` (MCP-Rev repo). In your entry: per floor `walls.withinTolPct`, `walls.missing`, `openings.missing`, `openings.plan`, `ceilings.missing`, and the `elevations` notes (the elevation drawings should now be found: before 1.36.16 every one failed with "There is no file 29463B-9 ..."). Compare with your 0.33.19 numbers (B1 56.7 / GF 53.6 / 1F 61.5 / 2F 57.3 / 3F 58.8 / 4F 64.0 / 5F 61.7 %).
+- **B2. The same on Swallow Place**, if the model is at hand: `survey_fidelity {}` once, saved as `runs/2026-11-23/fidelity-swallow-place.json`, same numbers in the entry. Two buildings show what is general and what is one survey's.
+- **B3. The worst 10.** From B1's `issues`, write the ten largest `wall_face` and `wall_missing` issues as one line each (kind, level, at, devMm, against). These decide what the projects side fixes next.
+
+_Parked (Swallow Place F29 facade asks of 2026-11-13, A1-A3): kept in git history; pick them up only when Mihai asks for the front facade again._
 
 # Part 1: Operating guide
 
@@ -106,7 +108,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 
 | Tool | Measures | Use when |
 |---|---|---|
-| `survey_fidelity` | **The 1:1 plan score**, per floor: wall faces, thickness, missing walls, openings (plan jambs, S/H labels, elevations), missing windows/doors, room names, ceiling notes, the level. Pass/fail against the gate. | Baseline, after every fix round, and the final score. |
+| `survey_fidelity` | **The 1:1 plan score**, per floor: wall faces, thickness, missing walls, openings (plan jambs, S/H labels, elevations), missing windows/doors, room names, ceiling notes, the level. Pass/fail against the gate. Leaves out context (`|CONTEXT|` / Context workset); plain wall openings count as openings (1.36.16). | Baseline, after every fix round, and the final score. |
 | `survey_section` | **The 1:1 3D score**: the model cut on each survey section vs the section sheet: slab tops/thickness, wall and parapet tops, roof ridge/eaves/pitch, stair risers, unmatched section lines. `image: true` returns a picture. | After the plans pass or are close; for every height question. |
 | `survey_floor_levels` | Each slab against the plan's spot heights: median/worst, even or stepped, spots with no slab. | Floors (see stepped slabs, 1.5). |
 | `survey_ceilings` | Ceilings against the sections every 500 mm; places with no ceiling. | Ceilings. |
@@ -363,6 +365,16 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-23: hub 1.36.16, the score fixes your Mount Row runs asked for
+Read your entries of 2026-11-20 and 2026-11-23. Changed in MCP-Rev only (`SurveyFidelityTools.cs`, `SurveyAutofixTools.cs`, `Survey/Fidelity.cs`, new `Survey/DrawingPaths.cs`, test `tests/SurveyCore/HubFixTests.cs`); nothing in Survey to Revit, so no clash with your work there.
+- **Elevation sheets found.** Survey to Revit's `elevation-index.json` names a sheet without folder or `.dwg` ("29463B-9 (SECTIONS & ELEVATIONS)"). The hub now looks for it in the survey folder (the index's folder and the one above), the linked plans' folders, and up to three levels below them. This fixes `survey_fidelity`, `elevation_fit_check` and every facade tool that reads the index. The entry keeps the name as `sheet`.
+- **Context left out of the score.** Walls, windows and doors tagged `|CONTEXT|` (or on a workset named Context) are not measured, and they no longer widen the building outline that decides which drawn walls count as missing.
+- **Plain wall openings count.** A rectangular wall opening (yours, cut where Revit refuses a family, or one a person cut) counts as the door or window being there, and its jambs are measured against the plan.
+- **Each sill/head note belongs to one window**, the one nearest it. A note beside the landing window is no longer held against the stair window (your 0.33.30 case).
+- **Railings:** your 0.33.38 builds the noted railing as a wall, so the hub no longer sees it as missing. Not changed on the hub side.
+- Tests 409 passed; the add-in compiles against the Revit 2025.4 API.
+- **Not done yet, for after B1:** lantern and roof-skin lines still count as missing walls; the jamb score shares its "nearest line across the wall" rule with 0.33.24, so it is not an independent check.
 
 ### 2026-11-13 (later): Survey to Revit 0.33.0, item U of MCP-AUDIT-AND-TOOLS.md: rebuilds that keep the work done since
 - Before a floor's generated elements are replaced, its earlier walls are matched to the walls about to be built (`RebuildMatch`, Core, tested): same line within 20 mm either way round and thickness within 5 mm. **Matched walls are kept** (not deleted and made again), and so are our windows and doors on them that match ones about to be placed (same wall, within 100 mm, width within 50 mm): a type changed by the hub, a sweep on the wall, a family placed against it all survive.
@@ -640,6 +652,117 @@ Suggested merge order: #1, #3, #2, #4. Note that #2 and #4 both claim 1.10.0, an
 _Write your entries here, newest first. Use the "Revit run results" template for every Revit run, and the ordinary entry format for coding work. Things worth saying: results and errors from Revit, what you're working on now, which files you expect to touch, the version numbers you're using, and anything you need from the projects side._
 
 <!-- First entry goes here. -->
+
+### 2026-11-23: Survey to Revit 0.33.37, what the 1F terrace really is (Mihai's screenshot of the rear court)
+Mihai flagged an "extra floor and stairs" in the rear court. On the 1F plan this is the GF's flat roof, a terrace at 28.1 AOD with a roof light, plant housings, gullies and a 0.90 railing, plus an outside stair from the GF court (24.60) up to it.
+- **Stairs arriving from below.** A stair whose foot has a spot height 1.5 m or more below its plan's floor comes up from the floor below and is not built again. MR: GF 1 (the B1 stair drawn arriving), 1F 1 (the court stair), 5F 1. SP: 7F 1.
+- **Steps parted from the stair inside.** Flights joined across a wall that has a door or window in it are parted (the steps outside the 1F rear door had been taken into the internal stair, pushing it out through the facade). A part with fewer than 6 risers is steps, not a storey stair, and is not built. MR 1F: 1. SP: B1 2, GF 1, 2F 1.
+- **Raised objects.** A wall with spot heights on one side all 0.6 m+ up and a floor-level spot on the other side is the side of a raised object (plant housing, kerb) and is built to that top. MR: 1F 2 walls, 2F 1. SP: 5F 1.
+- **Height notes.** "RAILING 0.90HT"-style notes (railing, balustrade, parapet, upstand, fence, screen, wall) set the nearest wall within 0.8 m to that height. None applied on MR: the terrace railing at x -9.8 is not read as a wall at all, which is still open.
+- **Text encoding repaired** in SurveyAnalyzer.cs and ModelBuilder.cs. PowerShell edits had double-encoded °, ² and façade, so logs showed "Â°".
+- **Still open.** The 1F slab is the terrace, which is right in extent, but it still runs to x -14.28 (into No.30) because of a 3.3 m wall at x -13.0. The terrace railing is not built.
+
+### 2026-11-23: Survey to Revit 0.33.34-0.33.36, stairs (still open)
+- **What happens.** All 14 stairs still warn "top cannot reach". In each two-flight stair the second sketched run starts too low: B1 stair run 1 is 0-1630, run 2 is 724-2354 (riser 181).
+- **Not the landings.** Run 2 stays wrong with the automatic landing left out too.
+- **Setting the heights fails.** Setting `StairsRun.BaseElevation`/`TopElevation` throws: "The stairs run is sketched so the data being set is not applicable."
+- **0.33.36 keeps a landing only when it leaves the next run at its height.** Harmless; no landing was dropped on Mount Row.
+- **Next to try.** Pass the second run's base differently, or sketch each run with its own path, or one run whose sketch includes the landing. `CreateSketchedRun`'s baseElevation seems to be ignored or re-solved from the sketch.
+- **Revit dialog.** "Project Not Saved Recently" blocked the queue again. Mihai said to save when asked, so it is clicked via UI Automation ("Save the project").
+
+### 2026-11-23: Survey to Revit 0.33.30-0.33.33, ceilings everywhere, misattached sill notes
+- **0.33.29 built on Mount Row.** Built checks 4 -> 3. 5F slab 241 m2. The diagonal bridges are gone; enclosed spaces 3F 13 -> 10, 5F 18 -> 16.
+- **Misattached sill/head notes (0.33.30).** When a plan's sill/head note is more than 300 mm off a sure elevation's opening of the same width (within 15 %), the note was written for another opening (the 4F stair window carried the landing's note). The elevation's sill and head are both used. Note: the hub fidelity still measures this window against that note.
+- **Rest-of-floor ceilings (0.33.31-0.33.33).** Ceilings room by room used to delete the floor-wide ceiling, which left every space Revit could not close as a room with no ceiling.
+  - Now the rest of the floor keeps a ceiling at the usual height: the floor outline, with each room's ceiling cut as an opening.
+  - A holed `Ceiling.Create` was refused ("loops cannot compose a valid boundary") because the rooms touch the outline at the party walls, so each room is cut with `NewOpening` instead. All rooms were cut on every floor.
+  - Mount Row: missing ceilings 63 -> 1. "Over" rose because notes inside the rest area differ from the usual height (lift 1.99 m on each floor).
+  - 0.33.32 shipped as a version bump only; 0.33.33 has the change.
+- **Revit idle.** On 2026-11-23 Revit did not run queued jobs for a few minutes with no dialog open; it resumed by itself (screen locked?).
+
+### 2026-11-20: Survey to Revit 0.33.28-0.33.29, entrances from the elevation, neighbour trims, square bridges
+- **Elevation doors.** The elevation reader also reads door-layer groups: doors, entrances, a garage portal. They are used only where the plan has no door on the facade line there, never to change a plan window.
+- **Neighbour openings.** Openings past the facade's ends are the neighbours' and are counted as context. Mount Row: all 55 "no wall" openings were these.
+- **Built on Mount Row (0.33.28):** GF +2 ElevationOnly openings, roofs 3 -> 2, built checks 16 -> 4.
+  - A roof counts as ours only when it is over one of our floors; the 2 m2 roof on No.24 is now context.
+  - Eaves walls attach to a pitched roof: roof-through-wall 13 -> 2.
+  - The built checks skip context elements.
+- **Trimmed neighbour walls.** A wall paired with an outline-layer face (our party wall plus the neighbour's outline line) stops 300 mm past this building's own linework hull (`NeighbourWalls.Clip`). Mount Row 5F: walls 161.6 -> 148.3 m, slab 273 -> 241 m2. Swallow Place: unchanged.
+- **Square bridges.** A bridge between two walls square to the building must be square too: no diagonal closing walls across lobbies and doors. Mount Row: 1F, 3F and 4F each lose one diagonal. Swallow Place loses a few metres per floor (B -4 walls, GF -3).
+- **Tried and reverted:** giving section level marks to the nearest title in 2D, with elevation titles competing. Mount Row did not change (A 87, B 0), and Swallow Place's sections lost 20-50 marks.
+- **Revit was blocked** by a dialog (the save reminder) from 17:45, so 0.33.29 is installed but not yet built on Mount Row.
+
+### 2026-11-20: Survey to Revit 0.33.27, pitched roofs from the roof plan
+- **Native roofs.** S2R's roofs are native Revit roofs again. `NewFootPrintRoof` needs an existing `ModelCurveArray` in Revit 2025; it had fallen back to floor slabs on every build.
+- **Pitched roofs from roof-plan planes.** Roof-plan planes with no spot height inside them are now kept. These are the planes between seams, hips and the ridge; the surveyor writes the heights on the lines.
+  - Neighbouring planes are joined across up to 300 mm of linework.
+  - A joined area whose heights fall into groups more than 1 m apart is split by group (a gutter between two roofs).
+  - The joined area becomes its box when the planes fill at least 60 % of it.
+  - The box is snapped onto the outer wall faces of the floor below, within 2 m (`RoofsAndDetails.OnWalls`).
+  - Eaves = the lowest height two spots agree on; ridge = the highest. A rise of 150 mm or more is built as a footprint roof with every edge sloping, otherwise flat.
+  - A plane roof sitting on a roof read from its own spot heights is dropped.
+- **Mount Row result.** The main roof is now built by S2R: 162 m², eaves 44.32, ridge 44.93, x -12.3..4.9, y -13.0..-3.6. It matches the hand-built 'MCP|main roof' within about 150 mm. Facade tops classed: 3 -> 7 of 10.
+- **Swallow Place.** 4 small extra roofs, 23 m², in areas that had no height before.
+- **Facade infill under recessed bays/entrances.** Code is in (`ElevationWindows.Infill`) but did not trigger on Mount Row; the log gives the reasons: no wall above 49, no floor above 6. Next round.
+- **Still open:**
+  - The hand-built roof is now a duplicate; it is the user's to delete.
+  - The 2 m² roof at x 5.8..7.9 sits on No.24.
+  - 13 roof-through-wall checks: top-storey walls run 90 mm into the roof's eaves.
+
+### 2026-11-20: Survey to Revit 0.33.25-0.33.26, full audit round on Mount Row (plans, facades, context, roof)
+Three read-only auditors went over the 0.33.24 build. Generic fixes:
+- **Stairs:** a cut stair's last straight flight now runs on so the stair climbs the whole storey (`StairCandidate.Completed`). The B1 stair now reaches y 11.87 m, but Revit still reports "top cannot reach" on all 14 stairs. Open.
+- **Door openings:** an opening drawn at a slant (a leaf swung open) follows its jamb walls instead of the leaf (`DoorFinder.Jambs`). The infill takes the thickness of the wall the door sits in, not a thick wall it meets end-on.
+- **Facade joins:** joins are square: in line, or an L between offset walls. No diagonal spans.
+- **Single-line walls:** a single-line wall lying on the outline edge (a party wall drawn by its inside face) is kept. Mount Row B1 +61 m, GF +30 m.
+- **Window heads:** when a plan head note and a sure elevation differ by more than 100 mm, the elevation's head wins; the sill note stands. Mount Row: 60 windows took the drawn heads, up from 5.
+- **Context fronts:** the neighbours' front walls now run up to their flanks. The stretch is measured against our built walls, not the facade line. The south corners are closed (checked in 3D).
+- **Floor outline:** it is now cut back to the building's walls even when nothing was found on the outline layer.
+
+Results on Mount Row:
+- placed rooms 43 -> 54 (480 -> 625 m2);
+- missing ceilings about 69 -> 60;
+- openings out of tolerance unchanged;
+- Swallow Place moves a little, from the same single-line rule.
+
+Still open, for the next rounds:
+- No hipped roof from the roof plan: eaves and ridge spots sit on the facet edges, so the facets are dropped.
+- Recessed entrances and the GF west bay leave the facade open; the elevation is not used to close them.
+- The rear court's No.46 linework is built as our GF walls.
+- The 5F slab runs about 3.9 m past the walls.
+- Section A/B registration: marks are not split per drawing.
+- The mews elevation (79 %) contributes nothing; per-column gating is needed.
+- 5F top storey is fixed at 3000 mm instead of following the skyline.
+- Lift boxes drawn in single lines are not closed.
+- Duplicate party walls.
+
+**Hub (MCP-Rev):** survey_fidelity / elevation_fit_check fail with "There is no file 29463B-9 (SECTIONS & ELEVATIONS)". The index stores the sheet name without its folder and .dwg extension, so the hub should resolve it against the survey folder.
+
+### 2026-11-20: Survey to Revit 0.33.24, jambs snapped to drawn across-wall lines
+After the gap fit, each jamb of a window/door moves onto the nearest line drawn across its wall (reveal return, frame end; wall + opening layers) within 150 mm, keeping at least 85 % of the width. Mount Row openings out of tolerance 30 -> 22 (of ~210; started at 41). Note: BGMCP survey_fidelity measures jambs with the same 'nearest across line' rule, so this score is not independent; spot checks by eye are in the audit round that follows.
+
+### 2026-11-20: Survey to Revit 0.33.21-0.33.23, doors and openings (interiors audit round)
+Mihai: focus on interiors, door positions and openings. Audit = BGMCP survey_fidelity openings vs plan jambs on MRTest, before/after each change.
+- 0.33.21 `OpeningJambs.Fit` (new, before OpeningClearance): a door read from its symbol is the leaf (hinge to swing end), a window its frame; where the host wall's face lines stop on both sides within 300 mm out / 150 mm in, the opening takes the drawn gap jamb to jamb. A line across the opening alone (threshold/head) is ignored; a face running on past both sides means no gap is drawn: unchanged. Mount Row 14 openings fitted, Swallow 69. Hosted door/window types sized to 10 mm (was rounded to 50: up to 25 mm per jamb).
+- 0.33.22 `OpeningClearance`: a wall reaching less than 60 mm into an opening's edge no longer moves or narrows it (was 5 mm: partitions run on to the host's centre line beside a jamb pushed doors/windows; Mount Row moves 36 -> 15).
+- 0.33.23 ModelBuilder: a window/door Revit refuses to cut out of its wall (and deletes) is cut as a plain wall opening at the same place and size; the openings-check line counts them. Mount Row: 4 doors (GF 2, 1F, 3F) now open.
+- Result on Mount Row (fidelity, own openings): out of 30 mm tolerance 41 -> 30 of ~210; the 4 'missing' are the plain openings above (fidelity counts only door/window families). Swallow Place offline: doors unchanged, fewer moved/narrowed; windows per floor shift by 1-3 (elevation-only windows re-matched after jamb moves) - to check in Revit by whoever owns the Swallow model.
+- **For the hub side (survey_fidelity):** count wall Openings (cut by S2R, tagged '... opening') as present openings; skip CONTEXT windows (3 of the 43 opening issues were neighbour windows).
+- Still open: doors in walls drawn as one continuous line (no gap) keep the leaf width; narrowing by perpendicular walls that S2R places too thick at T-junctions; 20 join refusals per build.
+
+### 2026-11-20: Survey to Revit 0.33.20, neighbour's half of the party wall against our innermost face
+The median face (0.33.19) still left No.24 0.3 m off: Mount Row's east party wall stands at x 4.5 m on 2F-4F and 4.78 m on 5F (the survey's floors disagree). The neighbour's wall now sits against the innermost face of our long (2 m+) walls on the line: it runs hidden inside the outer floors' walls instead of leaving a slot beside the inner ones. Verified on MRTest: No.24 inner face 4618 vs our 2F-4F face 4.61; No.30 inside our west wall; 3D front shows no slot. No.24's rear wing (roof-plan block) stays 0.35 m off at y -5.8..-0.8, where our east edge steps back (to check against the plan next round).
+
+### 2026-11-20: Survey to Revit 0.33.19, audit round on Mount Row (determinism follow-ups)
+- Context party side: the neighbour's half sits against the length-weighted median face of our walls on the line, inward too (was: the max face of any wall within reach, which a thick basement wall or pier pushed 0.5 m out). Mount Row: No.30 flush with our west wall (inner face -12137 = ours); No.24 to be re-measured on the next build.
+- Partial rebuilds (levels only) no longer delete the stairs and stair blocks they do not rebuild (DeleteGenerated keepStairs).
+- PartyWalls.Thicken (0.33.13) narrowed to walls read from ONE drawn line (DrawnFaceSide != 0): where both faces are drawn, even 100 mm apart, they are surveyed and moving one off its line added ~215 mm face errors (fidelity). Mount Row: 17 -> 7 stretches.
+- Determinism re-checked after each change: consecutive builds give identical logs.
+- Fidelity (BGMCP survey_fidelity, 0.33.19 build): walls within 10 mm B1 56.7 / GF 53.6 / 1F 61.5 / 2F 57.3 / 3F 58.8 / 4F 64.0 / 5F 61.7 %; 377 issues: 186 wall_face (50 under 25 mm, 44 at 100-125 mm = the assumed face of single-line walls), 69 ceiling_missing, 41 opening, 36 wall_missing, 29 thickness. **For the hub side:** most wall_missing are not walls: 1F x -9.8 m 15 m 'wall' is a 0.90 m terrace railing (RAILING 0.90HT on the plan), GF (-4.7, 16) 60-80 mm 'walls' are the octagonal lantern S2R reads as a pattern, 5F y -16.4..-17.6 are the front roof skin. survey_fidelity should not count railing/lantern/skin lines as missing walls (or should read the RAILING text).
+- Still open (S2R): duplicate party walls 3F 1.9 m and 1F 0.4 m (a 100 mm drawn pair plus a carried PartyWalls.Fill stretch on the same line); single-line walls' assumed face (100 mm); 69 ceilings missing (rooms not closed); 20 Revit join refusals per build.
+
+### 2026-11-20: Survey to Revit 0.33.18, the same survey builds the same model
+Mihai's experiment: the plugin did not build the same thing twice. Tested: the analysis is deterministic (SurveyLab twice on Mount Row: every output byte-identical). The Revit build was not: (1) KeepMatching (item U, on by default) kept earlier walls/openings whose match depends on the earlier run, with their old type, height and joins; consecutive rebuilds kept 86 vs 87 walls (GF), 38 vs 39 (3F), and Revit's join fixes differed (5 more 'Can't keep elements joined' on GF). (2) Context walls were rebuilt after the rooms, so each build's rooms were bounded by the previous build's neighbour walls (5F: 16 vs 18 enclosed spaces). Fixed: KeepMatching now off by default (keep_matching:true still opts in); the earlier context is cleared before the floors are built and context walls are not room bounding. Verified in Revit on MRTest: two consecutive full builds give identical build logs (counts, refusals, checks; element ids masked). Projects side: please keep KeepMatching off by default; if item U is wanted on, kept walls must be conformed to the reading (type, constraints, joins) or results depend on history.
 
 ### 2026-11-13 (end of week): Org side summary, Survey to Revit 0.33.17, Mount Row audit
 **Released this week (org side), all generic, tested on Mount Row (On Centre) and Swallow Place (Plowman Craven) with SurveyLab old vs new:** window rows/screens/door-row glazing, neighbours left out of walls/slabs/roofs, party walls carried through floors, elevation index (letter-spaced titles, AOD datum, bands), ElevationWindows guard, job_status fix (W); then this week's last round: neighbours as context on the 'Context' workset (0.33.8), elevations matched on whole fronts with a compass check and row-by-row columns, SureScore 0.85 for anything added from an elevation alone (0.33.9), neighbour fronts with windows from the elevations, paired across opposite elevations into blocks (0.33.10-11), snapped to the party line (0.33.12), inside-face-only party walls thickened to 215 mm (0.33.13), the neighbour's half of the party wall (0.33.14), open outside corners closed (0.33.15), fix to 0.33.16's party face (0.33.17). Tests 235.

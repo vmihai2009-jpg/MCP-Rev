@@ -248,6 +248,14 @@ namespace BarrGazetas.RevitMcp.Survey
         public static List<HeightLabel> LabelsOf(FidelityInput f) => f.Heights.Count > 0 ? f.Heights : Parse(f.Labels);
 
         /// <summary>The nearest sill and head within 1.2 m (the score's reading: no ambiguity rule, the nearest wins).</summary>
+        /// <summary>The category name a plain wall opening (not a family) is scored under.</summary>
+        public const string WallOpeningCategory = "Wall opening";
+
+        public static bool IsWallOpening(FidInsert i) => string.Equals(i.Category, WallOpeningCategory, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>A window for the labels and the elevation: a window family (or one of unknown category); doors and plain wall openings are not.</summary>
+        public static bool IsWindowInsert(FidInsert i) => i.Category == null || i.Category.IndexOf("Window", StringComparison.OrdinalIgnoreCase) >= 0;
+
         private static (double? sill, double? head) Nearest(Pt at, List<HeightLabel> labels)
         {
             double? Near(char k) => labels.Where(l => l.Kind == k && l.At.Dist2D(at) <= 1200).OrderBy(l => l.At.Dist2D(at)).Select(l => (double?)l.Mm).FirstOrDefault();
@@ -385,6 +393,16 @@ namespace BarrGazetas.RevitMcp.Survey
 
             // ---- openings ----
             var labels = LabelsOf(f);
+            // 1.36.16: a sill/head label belongs to the window nearest it. A label written beside one window was held against
+            // its neighbour when that one had no label of its own nearer (Mount Row 4F: the stair window measured against the
+            // landing window's note). Each label is now used only for the window it is closest to
+            var windowInserts = f.Inserts.Where(i => IsWindowInsert(i)).ToList();
+            var labelOwner = new Dictionary<HeightLabel, long>();
+            foreach (var l in labels)
+            {
+                var own = windowInserts.OrderBy(i => i.At.Dist2D(l.At)).FirstOrDefault();
+                if (own != null) labelOwner[l] = own.Id;
+            }
             var jambLines = f.WallFaces.Concat(f.OpeningLines).ToList();
             var elevById = f.Elevation.GroupBy(e => e.Insert.Id).ToDictionary(x => x.Key, x => x.First());
             foreach (var ins in f.Inserts)
@@ -406,11 +424,11 @@ namespace BarrGazetas.RevitMcp.Survey
                     }
                 }
                 // labels (windows only: a door's sill is the floor): the nearest S and H within 1.2 m
-                bool isWindow = ins.Category == null || ins.Category.IndexOf("Window", StringComparison.OrdinalIgnoreCase) >= 0;
+                bool isWindow = IsWindowInsert(ins);
                 // the S/H labels are measured inside the room (window board, internal head): where an elevation draws
                 // the window, its outside sill and head decide and the labels are not held against it
                 bool onElevation = isWindow && elevById.ContainsKey(ins.Id);
-                var (sl, hl) = isWindow && !onElevation ? Nearest(ins.At, labels) : (null, null);
+                var (sl, hl) = isWindow && !onElevation ? Nearest(ins.At, labels.Where(l => !labelOwner.TryGetValue(l, out var o) || o == ins.Id).ToList()) : (null, null);
                 bool labelChecked = false, labelOver = false;
                 if (ins.Sill is double sill && sl is double slv)
                 { labelChecked = true; double d = sill - slv; labelOver |= Math.Abs(d) > g.OpeningMm; Take(d, $"sill label S {slv / 1000:0.00}"); }
@@ -442,8 +460,10 @@ namespace BarrGazetas.RevitMcp.Survey
             var planMissing = new List<PlanOpening>();
             foreach (var po in f.PlanOpenings)
             {
+                // 1.36.16: a plain wall opening (Survey to Revit cuts one where Revit refuses a door or window family) is the
+                // opening being there, for a door or a window
                 bool there = f.Inserts.Any(i => i.At.Dist2D(po.At) <= Math.Max(400, po.W / 2)
-                    && (po.Door ? i.Category == null || i.Category.IndexOf("Door", StringComparison.OrdinalIgnoreCase) >= 0 : i.Category == null || i.Category.IndexOf("Door", StringComparison.OrdinalIgnoreCase) < 0));
+                    && (IsWallOpening(i) || (po.Door ? i.Category == null || i.Category.IndexOf("Door", StringComparison.OrdinalIgnoreCase) >= 0 : i.Category == null || i.Category.IndexOf("Door", StringComparison.OrdinalIgnoreCase) < 0)));
                 if (there) continue;
                 planMissing.Add(po);
                 string what = po.Door ? "door" : "window";

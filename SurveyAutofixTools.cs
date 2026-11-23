@@ -343,7 +343,7 @@ namespace BarrGazetas.RevitMcp
             var list = new List<ArcWall>();
             foreach (var w in new FilteredElementCollector(doc).OfClass(typeof(Wall)).Cast<Wall>())
             {
-                if (w.LevelId != level.Id || w.WallType.Kind != WallKind.Basic || !(w.Location is LocationCurve lc) || !(lc.Curve is Arc arc) || !arc.IsBound) continue;
+                if (w.LevelId != level.Id || w.WallType.Kind != WallKind.Basic || IsContext(w) || !(w.Location is LocationCurve lc) || !(lc.Curve is Arc arc) || !arc.IsBound) continue;
                 var c = arc.Center; var p0 = arc.GetEndPoint(0); var p1 = arc.GetEndPoint(1); var pm = arc.Evaluate(0.5, true);
                 double a0 = Math.Atan2(p0.Y - c.Y, p0.X - c.X), a1 = Math.Atan2(p1.Y - c.Y, p1.X - c.X), am = Math.Atan2(pm.Y - c.Y, pm.X - c.X);
                 double Norm(double v) { v %= 2 * Math.PI; return v < 0 ? v + 2 * Math.PI : v; }
