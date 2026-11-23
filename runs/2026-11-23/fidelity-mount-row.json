@@ -1,0 +1,5762 @@
+{
+  "model": "MRTest_mihai.vasilescuDH2HN.rvt",
+  "when": "2026-11-23 17:17",
+  "gate": {
+    "wallWithinPct": 95,
+    "wallTolMm": 10,
+    "wallMaxMm": 25,
+    "thicknessMm": 10,
+    "openingMm": 30,
+    "levelMm": 10,
+    "missingWalls": 0,
+    "missingOpenings": 0,
+    "sectionWithinPct": 90,
+    "sectionTolMm": 20,
+    "heightMm": 25,
+    "slabThicknessMm": 20,
+    "pitchDeg": 1.5,
+    "riserMm": 5,
+    "ceilingMm": 20,
+    "missingCeilings": 0,
+    "missingRooms": 0
+  },
+  "floors": [
+    {
+      "level": "Basement",
+      "pass": false,
+      "failedOn": [
+        "walls",
+        "thickness",
+        "openings",
+        "ceilings"
+      ],
+      "unverified": [],
+      "sources": [
+        "plan: Survey to Revit\u0027s reading of 29463B-1 (BASEMENT PLAN).dwg (same frame as the project (Build from Survey set it up))"
+      ],
+      "walls": {
+        "checked": 39,
+        "unverified": 12,
+        "faceLengthM": 342.6,
+        "withinTolPct": 38.8,
+        "within25Pct": 49.8,
+        "maxMm": 245,
+        "thicknessChecked": 10,
+        "thicknessOver": 2,
+        "missing": 0,
+        "outsideBuilding": 0,
+        "pairsNotWalls": 1,
+        "curvedChecked": 0
+      },
+      "openings": {
+        "checked": 19,
+        "planChecked": 17,
+        "planOver": 1,
+        "labelChecked": 0,
+        "labelOver": 0,
+        "elevationChecked": 0,
+        "elevationOver": 0,
+        "missing": 0,
+        "missingOnPlan": 0,
+        "extra": 0,
+        "notChecked": 2
+      },
+      "levelCheck": {
+        "modelAodM": 21.37,
+        "spotHeights": 59,
+        "devMm": 0,
+        "checked": true,
+        "note": "38 of 59 spot heights within 600 mm agree on 21.370 m"
+      },
+      "rooms": {
+        "checked": 0,
+        "missing": 0,
+        "misnamed": 0
+      },
+      "ceilings": {
+        "checked": 24,
+        "over": 12,
+        "missing": 0,
+        "maxMm": 250
+      },
+      "score": 0.748,
+      "issueCount": 41
+    },
+    {
+      "level": "Ground Floor",
+      "pass": false,
+      "failedOn": [
+        "walls",
+        "thickness",
+        "missing walls",
+        "openings",
+        "ceilings",
+        "missing ceilings"
+      ],
+      "unverified": [],
+      "sources": [
+        "plan: Survey to Revit\u0027s reading of 29463B-2 (GROUND FLOOR PLAN).dwg (same frame as the project (Build from Survey set it up))"
+      ],
+      "walls": {
+        "checked": 79,
+        "unverified": 19,
+        "faceLengthM": 369.8,
+        "withinTolPct": 51.5,
+        "within25Pct": 63.2,
+        "maxMm": 292,
+        "thicknessChecked": 22,
+        "thicknessOver": 4,
+        "missing": 15,
+        "outsideBuilding": 3,
+        "pairsNotWalls": 16,
+        "curvedChecked": 0
+      },
+      "openings": {
+        "checked": 47,
+        "planChecked": 42,
+        "planOver": 5,
+        "labelChecked": 6,
+        "labelOver": 0,
+        "elevationChecked": 0,
+        "elevationOver": 0,
+        "missing": 0,
+        "missingOnPlan": 0,
+        "extra": 0,
+        "notChecked": 5
+      },
+      "levelCheck": {
+        "modelAodM": 24.63,
+        "spotHeights": 55,
+        "devMm": 0,
+        "checked": true,
+        "note": "37 of 55 spot heights within 600 mm agree on 24.630 m"
+      },
+      "rooms": {
+        "checked": 0,
+        "missing": 0,
+        "misnamed": 0
+      },
+      "ceilings": {
+        "checked": 15,
+        "over": 10,
+        "missing": 1,
+        "maxMm": 410
+      },
+      "score": 0.752,
+      "issueCount": 87
+    },
+    {
+      "level": "First Floor",
+      "pass": false,
+      "failedOn": [
+        "walls",
+        "thickness",
+        "missing walls",
+        "openings",
+        "level",
+        "ceilings"
+      ],
+      "unverified": [],
+      "sources": [
+        "plan: Survey to Revit\u0027s reading of 29463B-3 (FIRST FLOOR PLAN).dwg (same frame as the project (Build from Survey set it up))"
+      ],
+      "walls": {
+        "checked": 55,
+        "unverified": 8,
+        "faceLengthM": 279.6,
+        "withinTolPct": 59.9,
+        "within25Pct": 74.4,
+        "maxMm": 241,
+        "thicknessChecked": 22,
+        "thicknessOver": 8,
+        "missing": 2,
+        "outsideBuilding": 17,
+        "pairsNotWalls": 4,
+        "curvedChecked": 0
+      },
+      "openings": {
+        "checked": 39,
+        "planChecked": 38,
+        "planOver": 5,
+        "labelChecked": 3,
+        "labelOver": 0,
+        "elevationChecked": 0,
+        "elevationOver": 0,
+        "missing": 0,
+        "missingOnPlan": 0,
+        "extra": 0,
+        "notChecked": 1
+      },
+      "levelCheck": {
+        "modelAodM": 27.99,
+        "spotHeights": 61,
+        "devMm": -60,
+        "checked": true,
+        "note": "20 of 61 spot heights within 600 mm agree on 27.930 m"
+      },
+      "rooms": {
+        "checked": 0,
+        "missing": 0,
+        "misnamed": 0
+      },
+      "ceilings": {
+        "checked": 13,
+        "over": 9,
+        "missing": 0,
+        "maxMm": 680
+      },
+      "score": 0.679,
+      "issueCount": 56
+    },
+    {
+      "level": "Second Floor",
+      "pass": false,
+      "failedOn": [
+        "walls",
+        "thickness",
+        "openings",
+        "ceilings"
+      ],
+      "unverified": [],
+      "sources": [
+        "plan: Survey to Revit\u0027s reading of 29463B-4 (SECOND FLOOR PLAN).dwg (same frame as the project (Build from Survey set it up))"
+      ],
+      "walls": {
+        "checked": 34,
+        "unverified": 6,
+        "faceLengthM": 215.4,
+        "withinTolPct": 55,
+        "within25Pct": 73.8,
+        "maxMm": 173,
+        "thicknessChecked": 17,
+        "thicknessOver": 3,
+        "missing": 0,
+        "outsideBuilding": 6,
+        "pairsNotWalls": 2,
+        "curvedChecked": 0
+      },
+      "openings": {
+        "checked": 32,
+        "planChecked": 25,
+        "planOver": 3,
+        "labelChecked": 3,
+        "labelOver": 3,
+        "elevationChecked": 0,
+        "elevationOver": 0,
+        "missing": 0,
+        "missingOnPlan": 0,
+        "extra": 0,
+        "notChecked": 7
+      },
+      "levelCheck": {
+        "modelAodM": 31.21,
+        "spotHeights": 17,
+        "devMm": 0,
+        "checked": true,
+        "note": "16 of 17 spot heights within 600 mm agree on 31.210 m"
+      },
+      "rooms": {
+        "checked": 0,
+        "missing": 0,
+        "misnamed": 0
+      },
+      "ceilings": {
+        "checked": 13,
+        "over": 8,
+        "missing": 0,
+        "maxMm": 710
+      },
+      "score": 0.753,
+      "issueCount": 33
+    },
+    {
+      "level": "Third Floor",
+      "pass": false,
+      "failedOn": [
+        "walls",
+        "thickness",
+        "missing walls",
+        "openings",
+        "ceilings"
+      ],
+      "unverified": [],
+      "sources": [
+        "plan: Survey to Revit\u0027s reading of 29463B-5 (THIRD FLOOR PLAN).dwg (same frame as the project (Build from Survey set it up))"
+      ],
+      "walls": {
+        "checked": 45,
+        "unverified": 8,
+        "faceLengthM": 267.1,
+        "withinTolPct": 57.2,
+        "within25Pct": 73.8,
+        "maxMm": 220,
+        "thicknessChecked": 17,
+        "thicknessOver": 3,
+        "missing": 1,
+        "outsideBuilding": 4,
+        "pairsNotWalls": 0,
+        "curvedChecked": 0
+      },
+      "openings": {
+        "checked": 42,
+        "planChecked": 38,
+        "planOver": 3,
+        "labelChecked": 7,
+        "labelOver": 7,
+        "elevationChecked": 0,
+        "elevationOver": 0,
+        "missing": 0,
+        "missingOnPlan": 0,
+        "extra": 0,
+        "notChecked": 4
+      },
+      "levelCheck": {
+        "modelAodM": 34.6,
+        "spotHeights": 22,
+        "devMm": 0,
+        "checked": true,
+        "note": "21 of 22 spot heights within 600 mm agree on 34.600 m"
+      },
+      "rooms": {
+        "checked": 0,
+        "missing": 0,
+        "misnamed": 0
+      },
+      "ceilings": {
+        "checked": 16,
+        "over": 12,
+        "missing": 0,
+        "maxMm": 730
+      },
+      "score": 0.758,
+      "issueCount": 51
+    },
+    {
+      "level": "Fourth Floor",
+      "pass": false,
+      "failedOn": [
+        "walls",
+        "thickness",
+        "missing walls",
+        "openings",
+        "ceilings"
+      ],
+      "unverified": [],
+      "sources": [
+        "plan: Survey to Revit\u0027s reading of 29463B-6 (FOURTH FLOOR PLAN).dwg (same frame as the project (Build from Survey set it up))"
+      ],
+      "walls": {
+        "checked": 48,
+        "unverified": 8,
+        "faceLengthM": 271.7,
+        "withinTolPct": 63.5,
+        "within25Pct": 79.9,
+        "maxMm": 215,
+        "thicknessChecked": 20,
+        "thicknessOver": 1,
+        "missing": 2,
+        "outsideBuilding": 20,
+        "pairsNotWalls": 1,
+        "curvedChecked": 0
+      },
+      "openings": {
+        "checked": 41,
+        "planChecked": 40,
+        "planOver": 3,
+        "labelChecked": 8,
+        "labelOver": 8,
+        "elevationChecked": 0,
+        "elevationOver": 0,
+        "missing": 0,
+        "missingOnPlan": 0,
+        "extra": 0,
+        "notChecked": 1
+      },
+      "levelCheck": {
+        "modelAodM": 37.99,
+        "spotHeights": 25,
+        "devMm": 0,
+        "checked": true,
+        "note": "25 of 25 spot heights within 600 mm agree on 37.990 m"
+      },
+      "rooms": {
+        "checked": 0,
+        "missing": 0,
+        "misnamed": 0
+      },
+      "ceilings": {
+        "checked": 13,
+        "over": 4,
+        "missing": 0,
+        "maxMm": 550
+      },
+      "score": 0.779,
+      "issueCount": 40
+    },
+    {
+      "level": "Fifth Floor",
+      "pass": false,
+      "failedOn": [
+        "walls",
+        "thickness",
+        "missing walls",
+        "openings",
+        "missing openings",
+        "ceilings"
+      ],
+      "unverified": [],
+      "sources": [
+        "plan: Survey to Revit\u0027s reading of 29463B-7 (FIFTH FLOOR PLAN).dwg (same frame as the project (Build from Survey set it up))",
+        "elevations: 3"
+      ],
+      "walls": {
+        "checked": 64,
+        "unverified": 8,
+        "faceLengthM": 268.9,
+        "withinTolPct": 61.2,
+        "within25Pct": 75.5,
+        "maxMm": 253,
+        "thicknessChecked": 29,
+        "thicknessOver": 7,
+        "missing": 10,
+        "outsideBuilding": 29,
+        "pairsNotWalls": 4,
+        "curvedChecked": 0
+      },
+      "openings": {
+        "checked": 31,
+        "planChecked": 22,
+        "planOver": 0,
+        "labelChecked": 3,
+        "labelOver": 2,
+        "elevationChecked": 0,
+        "elevationOver": 0,
+        "missing": 61,
+        "missingOnPlan": 0,
+        "extra": 0,
+        "notChecked": 9
+      },
+      "levelCheck": {
+        "modelAodM": 41.11,
+        "spotHeights": 41,
+        "devMm": 0,
+        "checked": true,
+        "note": "16 of 41 spot heights within 600 mm agree on 41.110 m"
+      },
+      "rooms": {
+        "checked": 0,
+        "missing": 0,
+        "misnamed": 0
+      },
+      "ceilings": {
+        "checked": 6,
+        "over": 3,
+        "missing": 0,
+        "maxMm": 620
+      },
+      "score": 0.592,
+      "issueCount": 112
+    }
+  ],
+  "issues": [
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848751,
+      "devMm": 730,
+      "against": "plan ceiling note 1.99 m (model 2.72 m)",
+      "at": [
+        2526,
+        -12034
+      ],
+      "fix": "set_parameters id 848751 \u0022Height Offset From Level\u0022 1990 mm",
+      "severity": 36.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Second Floor",
+      "id": 848091,
+      "devMm": 710,
+      "against": "plan ceiling note 1.98 m (model 2.69 m)",
+      "at": [
+        2526,
+        -12034
+      ],
+      "fix": "set_parameters id 848091 \u0022Height Offset From Level\u0022 1980 mm",
+      "severity": 35.49999999999998
+    },
+    {
+      "kind": "ceiling",
+      "level": "First Floor",
+      "id": 847362,
+      "devMm": 680,
+      "against": "plan ceiling note 1.88 m (model 2.56 m)",
+      "at": [
+        -8788,
+        -10615
+      ],
+      "fix": "set_parameters id 847362 \u0022Height Offset From Level\u0022 1880 mm",
+      "severity": 34
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849260,
+      "devMm": 1000,
+      "against": "sill label S 0.36",
+      "at": [
+        -10864,
+        -3769
+      ],
+      "fix": "set_insert id 849260 (width / sill / head / move) to match sill label S 0.36",
+      "severity": 33.333333333333336
+    },
+    {
+      "kind": "ceiling",
+      "level": "First Floor",
+      "id": 847362,
+      "devMm": 660,
+      "against": "plan ceiling note 1.90 m (model 2.56 m)",
+      "at": [
+        -11191,
+        -3841
+      ],
+      "fix": "set_parameters id 847362 \u0022Height Offset From Level\u0022 1900 mm",
+      "severity": 33
+    },
+    {
+      "kind": "ceiling",
+      "level": "Fifth Floor",
+      "id": 851397,
+      "devMm": 620,
+      "against": "plan ceiling note 1.99 m (model 2.61 m)",
+      "at": [
+        2526,
+        -12034
+      ],
+      "fix": "set_parameters id 851397 \u0022Height Offset From Level\u0022 1990 mm",
+      "severity": 31
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846066,
+      "devMm": 292,
+      "against": "plan DWG wall face lines",
+      "at": [
+        561,
+        23040
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846066]",
+      "severity": 29.171368594430625
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846065,
+      "devMm": 292,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -8128,
+        23026
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846065]",
+      "severity": 29.15979791287083
+    },
+    {
+      "kind": "ceiling",
+      "level": "First Floor",
+      "id": 847362,
+      "devMm": 580,
+      "against": "plan ceiling note 1.98 m (model 2.56 m)",
+      "at": [
+        2526,
+        -12034
+      ],
+      "fix": "set_parameters id 847362 \u0022Height Offset From Level\u0022 1980 mm",
+      "severity": 29
+    },
+    {
+      "kind": "ceiling",
+      "level": "Fourth Floor",
+      "id": 849679,
+      "devMm": 550,
+      "against": "plan ceiling note 1.99 m (model 2.54 m)",
+      "at": [
+        2526,
+        -12034
+      ],
+      "fix": "set_parameters id 849679 \u0022Height Offset From Level\u0022 1990 mm",
+      "severity": 27.49999999999998
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850970,
+      "devMm": 253,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1895,
+        -12935
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850970]",
+      "severity": 25.29251501490621
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845199,
+      "devMm": 245,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3951,
+        3541
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845199]",
+      "severity": 24.481059930189303
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846970,
+      "devMm": 241,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11180,
+        -8987
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846970]",
+      "severity": 24.058834290843386
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "First Floor",
+      "id": 846970,
+      "devMm": -240,
+      "against": "DWG face pair 100 mm (model 340 mm)",
+      "at": [
+        -11180,
+        -8987
+      ],
+      "fix": "dwg_wall_fit_apply ids [846970]",
+      "severity": 24
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850912,
+      "devMm": 239,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -12206,
+        -3556
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850912]",
+      "severity": 23.93368997306247
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848751,
+      "devMm": -440,
+      "against": "plan ceiling note 3.16 m (model 2.72 m)",
+      "at": [
+        2230,
+        -17938
+      ],
+      "fix": "set_parameters id 848751 \u0022Height Offset From Level\u0022 3160 mm",
+      "severity": 22
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848401,
+      "devMm": 220,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1786,
+        -7666
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848401]",
+      "severity": 21.950650659348362
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845159,
+      "devMm": 219,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -7693,
+        -18325
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845159]",
+      "severity": 21.892622614215576
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846023,
+      "devMm": 216,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11232,
+        -11247
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846023]",
+      "severity": 21.62964505161282
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849206,
+      "devMm": 215,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4542,
+        -5319
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849206]",
+      "severity": 21.503287438420855
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846987,
+      "devMm": 215,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4542,
+        -5355
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846987]",
+      "severity": 21.50266456076205
+    },
+    {
+      "kind": "opening",
+      "level": "Fifth Floor",
+      "id": 850979,
+      "devMm": 621,
+      "against": "sill label S 0.50",
+      "at": [
+        -8823,
+        -3884
+      ],
+      "fix": "set_insert id 850979 (width / sill / head / move) to match sill label S 0.50",
+      "severity": 20.7
+    },
+    {
+      "kind": "opening",
+      "level": "Fifth Floor",
+      "id": 850982,
+      "devMm": 621,
+      "against": "sill label S 0.50",
+      "at": [
+        -66,
+        -3934
+      ],
+      "fix": "set_insert id 850982 (width / sill / head / move) to match sill label S 0.50",
+      "severity": 20.7
+    },
+    {
+      "kind": "ceiling",
+      "level": "Ground Floor",
+      "id": 846545,
+      "devMm": -410,
+      "against": "plan ceiling note 2.75 m (model 2.34 m)",
+      "at": [
+        -1852,
+        7717
+      ],
+      "fix": "set_parameters id 846545 \u0022Height Offset From Level\u0022 2750 mm",
+      "severity": 20.5
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850924,
+      "devMm": 203,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10124,
+        -4163
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850924]",
+      "severity": 20.268652411691498
+    },
+    {
+      "kind": "ceiling",
+      "level": "First Floor",
+      "id": 847362,
+      "devMm": -400,
+      "against": "plan ceiling note 2.96 m (model 2.56 m)",
+      "at": [
+        -9832,
+        -18172
+      ],
+      "fix": "set_parameters id 847362 \u0022Height Offset From Level\u0022 2960 mm",
+      "severity": 20
+    },
+    {
+      "kind": "ceiling",
+      "level": "First Floor",
+      "id": 847319,
+      "devMm": 400,
+      "against": "plan ceiling note 2.55 m (model 2.95 m)",
+      "at": [
+        -1128,
+        -17785
+      ],
+      "fix": "set_parameters id 847319 \u0022Height Offset From Level\u0022 2550 mm",
+      "severity": 20
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848402,
+      "devMm": 199,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10133,
+        -8043
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848402]",
+      "severity": 19.93224989693238
+    },
+    {
+      "kind": "ceiling",
+      "level": "Fourth Floor",
+      "id": 849594,
+      "devMm": 380,
+      "against": "plan ceiling note 2.16 m (model 2.54 m)",
+      "at": [
+        -1083,
+        -5270
+      ],
+      "fix": "set_parameters id 849594 \u0022Height Offset From Level\u0022 2160 mm",
+      "severity": 18.99999999999998
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849191,
+      "devMm": 187,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2552,
+        -11256
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849191]",
+      "severity": 18.726973766788053
+    },
+    {
+      "kind": "ceiling",
+      "level": "Ground Floor",
+      "id": 846545,
+      "devMm": 370,
+      "against": "plan ceiling note 1.97 m (model 2.34 m)",
+      "at": [
+        -11265,
+        11629
+      ],
+      "fix": "set_parameters id 846545 \u0022Height Offset From Level\u0022 1970 mm",
+      "severity": 18.5
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850929,
+      "devMm": 185,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11164,
+        -13449
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850929]",
+      "severity": 18.47256326640987
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846973,
+      "devMm": 178,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1151,
+        -14059
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846973]",
+      "severity": 17.77599596665055
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 847008,
+      "devMm": 177,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -2279,
+        7607
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [847008]",
+      "severity": 17.66738080497232
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848403,
+      "devMm": 173,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4499,
+        -5332
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848403]",
+      "severity": 17.253031436980216
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847812,
+      "devMm": 173,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4499,
+        -5332
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847812]",
+      "severity": 17.253031132894225
+    },
+    {
+      "kind": "ceiling",
+      "level": "Ground Floor",
+      "id": 846545,
+      "devMm": 340,
+      "against": "plan ceiling note 2.00 m (model 2.34 m)",
+      "at": [
+        -10182,
+        -15152
+      ],
+      "fix": "set_parameters id 846545 \u0022Height Offset From Level\u0022 2000 mm",
+      "severity": 17
+    },
+    {
+      "kind": "ceiling",
+      "level": "Second Floor",
+      "id": 848091,
+      "devMm": 340,
+      "against": "plan ceiling note 2.35 m (model 2.69 m)",
+      "at": [
+        404,
+        -5133
+      ],
+      "fix": "set_parameters id 848091 \u0022Height Offset From Level\u0022 2350 mm",
+      "severity": 16.99999999999998
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845983,
+      "devMm": 168,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11150,
+        11479
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845983]",
+      "severity": 16.837493354970924
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846001,
+      "devMm": 160,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -730,
+        7701
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846001]",
+      "severity": 16.001502485651244
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850928,
+      "devMm": 150,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4652,
+        -18088
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850928]",
+      "severity": 15.044974720595897
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 847015,
+      "devMm": 148,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11242,
+        -7791
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [847015]",
+      "severity": 14.760972848326592
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fifth Floor",
+      "devMm": 12506,
+      "against": "DWG face pair 512 mm, 12506 mm long",
+      "at": [
+        -5267,
+        -17052
+      ],
+      "line": [
+        -11520,
+        -17025,
+        986,
+        -17079
+      ],
+      "fix": "create_walls level \u0022Fifth Floor\u0022 line [-11520, -17025, 986, -17079] thickness 512 (check with cad_lines first)",
+      "severity": 14.506
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fifth Floor",
+      "devMm": 12078,
+      "against": "DWG face pair 150 mm, 12078 mm long",
+      "at": [
+        -5051,
+        -16442
+      ],
+      "line": [
+        -11090,
+        -16416,
+        988,
+        -16468
+      ],
+      "fix": "create_walls level \u0022Fifth Floor\u0022 line [-11090, -16416, 988, -16468] thickness 150 (check with cad_lines first)",
+      "severity": 14.078
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848438,
+      "devMm": 139,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -3675,
+        -7673
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848438]",
+      "severity": 13.911844008730322
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845158,
+      "devMm": 138,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -1456,
+        -18367
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845158]",
+      "severity": 13.766397294203347
+    },
+    {
+      "kind": "ceiling",
+      "level": "Second Floor",
+      "id": 848091,
+      "devMm": -270,
+      "against": "plan ceiling note 2.96 m (model 2.69 m)",
+      "at": [
+        -9832,
+        -18172
+      ],
+      "fix": "set_parameters id 848091 \u0022Height Offset From Level\u0022 2960 mm",
+      "severity": 13.500000000000023
+    },
+    {
+      "kind": "ceiling",
+      "level": "Second Floor",
+      "id": 848091,
+      "devMm": -270,
+      "against": "plan ceiling note 2.96 m (model 2.69 m)",
+      "at": [
+        -5537,
+        -18191
+      ],
+      "fix": "set_parameters id 848091 \u0022Height Offset From Level\u0022 2960 mm",
+      "severity": 13.500000000000023
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846977,
+      "devMm": 134,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -7884,
+        -10714
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846977]",
+      "severity": 13.401543238683036
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846072,
+      "devMm": 134,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -9338,
+        10635
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846072]",
+      "severity": 13.352040647299713
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846077,
+      "devMm": 133,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1478,
+        -5098
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846077]",
+      "severity": 13.258008096471414
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847802,
+      "devMm": 132,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2793,
+        -18244
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847802]",
+      "severity": 13.193813784085645
+    },
+    {
+      "kind": "ceiling",
+      "level": "Ground Floor",
+      "id": 846545,
+      "devMm": 260,
+      "against": "plan ceiling note 2.08 m (model 2.34 m)",
+      "at": [
+        2127,
+        -18519
+      ],
+      "fix": "set_parameters id 846545 \u0022Height Offset From Level\u0022 2080 mm",
+      "severity": 13
+    },
+    {
+      "kind": "ceiling",
+      "level": "First Floor",
+      "id": 847362,
+      "devMm": -260,
+      "against": "plan ceiling note 2.82 m (model 2.56 m)",
+      "at": [
+        -5477,
+        -4295
+      ],
+      "fix": "set_parameters id 847362 \u0022Height Offset From Level\u0022 2820 mm",
+      "severity": 13
+    },
+    {
+      "kind": "ceiling",
+      "level": "First Floor",
+      "id": 847362,
+      "devMm": -260,
+      "against": "plan ceiling note 2.82 m (model 2.56 m)",
+      "at": [
+        2679,
+        -4331
+      ],
+      "fix": "set_parameters id 847362 \u0022Height Offset From Level\u0022 2820 mm",
+      "severity": 13
+    },
+    {
+      "kind": "ceiling",
+      "level": "Second Floor",
+      "id": 848057,
+      "devMm": 260,
+      "against": "plan ceiling note 2.68 m (model 2.94 m)",
+      "at": [
+        -969,
+        -17786
+      ],
+      "fix": "set_parameters id 848057 \u0022Height Offset From Level\u0022 2680 mm",
+      "severity": 12.999999999999977
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847803,
+      "devMm": 127,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3891,
+        -18265
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847803]",
+      "severity": 12.725861164782522
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846006,
+      "devMm": 127,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3484,
+        -9011
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846006]",
+      "severity": 12.680163114012279
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845489,
+      "devMm": 250,
+      "against": "plan ceiling note 2.11 m (model 2.36 m)",
+      "at": [
+        -10313,
+        -8729
+      ],
+      "fix": "set_parameters id 845489 \u0022Height Offset From Level\u0022 2110 mm",
+      "severity": 12.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Ground Floor",
+      "id": 846545,
+      "devMm": -250,
+      "against": "plan ceiling note 2.59 m (model 2.34 m)",
+      "at": [
+        -7973,
+        -3654
+      ],
+      "fix": "set_parameters id 846545 \u0022Height Offset From Level\u0022 2590 mm",
+      "severity": 12.5
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845198,
+      "devMm": 122,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11776,
+        2019
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845198]",
+      "severity": 12.201205190912189
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845175,
+      "devMm": 122,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -4023,
+        11280
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845175]",
+      "severity": 12.201021853229848
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Second Floor",
+      "id": 847802,
+      "devMm": 122,
+      "against": "DWG face pair 542 mm (model 420 mm)",
+      "at": [
+        2793,
+        -18244
+      ],
+      "fix": "dwg_wall_fit_apply ids [847802]",
+      "severity": 12.2
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Second Floor",
+      "id": 847803,
+      "devMm": 122,
+      "against": "DWG face pair 542 mm (model 420 mm)",
+      "at": [
+        3891,
+        -18265
+      ],
+      "fix": "dwg_wall_fit_apply ids [847803]",
+      "severity": 12.2
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845489,
+      "devMm": 240,
+      "against": "plan ceiling note 2.12 m (model 2.36 m)",
+      "at": [
+        -7088,
+        -15439
+      ],
+      "fix": "set_parameters id 845489 \u0022Height Offset From Level\u0022 2120 mm",
+      "severity": 12
+    },
+    {
+      "kind": "ceiling",
+      "level": "Ground Floor",
+      "id": 846545,
+      "devMm": 240,
+      "against": "plan ceiling note 2.10 m (model 2.34 m)",
+      "at": [
+        -10191,
+        -15457
+      ],
+      "fix": "set_parameters id 846545 \u0022Height Offset From Level\u0022 2100 mm",
+      "severity": 12
+    },
+    {
+      "kind": "ceiling",
+      "level": "Ground Floor",
+      "id": 846545,
+      "devMm": 230,
+      "against": "plan ceiling note 2.11 m (model 2.34 m)",
+      "at": [
+        -10313,
+        -8729
+      ],
+      "fix": "set_parameters id 846545 \u0022Height Offset From Level\u0022 2110 mm",
+      "severity": 11.5
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845989,
+      "devMm": 112,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3390,
+        -15798
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845989]",
+      "severity": 11.187562706160161
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Third Floor",
+      "id": 848398,
+      "devMm": 110,
+      "against": "DWG face pair 390 mm (model 280 mm)",
+      "at": [
+        1233,
+        -7720
+      ],
+      "fix": "dwg_wall_fit_apply ids [848398]",
+      "severity": 11
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849196,
+      "devMm": 108,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -12082,
+        -10876
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849196]",
+      "severity": 10.803703199082449
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848704,
+      "devMm": 210,
+      "against": "plan ceiling note 2.60 m (model 2.81 m)",
+      "at": [
+        -9604,
+        -17808
+      ],
+      "fix": "set_parameters id 848704 \u0022Height Offset From Level\u0022 2600 mm",
+      "severity": 10.5
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849220,
+      "devMm": 105,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1842,
+        -8446
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849220]",
+      "severity": 10.46847621326543
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847818,
+      "devMm": 105,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2434,
+        -12901
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847818]",
+      "severity": 10.465620922941493
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846980,
+      "devMm": 103,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4432,
+        -14617
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846980]",
+      "severity": 10.283478441116852
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845173,
+      "devMm": 103,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11880,
+        1374
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845173]",
+      "severity": 10.269791691550868
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849203,
+      "devMm": 102,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3631,
+        -7161
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849203]",
+      "severity": 10.204472300740163
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845177,
+      "devMm": 102,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11180,
+        -13556
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845177]",
+      "severity": 10.17602396331723
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849197,
+      "devMm": 102,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4454,
+        -15451
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849197]",
+      "severity": 10.173179518667935
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846022,
+      "devMm": 101,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -8839,
+        -11252
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846022]",
+      "severity": 10.133992002004868
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846989,
+      "devMm": 101,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3425,
+        -4119
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846989]",
+      "severity": 10.11715081858963
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846033,
+      "devMm": 101,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3592,
+        6883
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846033]",
+      "severity": 10.081858563948153
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846046,
+      "devMm": 101,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2399,
+        -10805
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846046]",
+      "severity": 10.062612605886613
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846043,
+      "devMm": 101,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3184,
+        -356
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846043]",
+      "severity": 10.058872202851386
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846028,
+      "devMm": 101,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4318,
+        -5211
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846028]",
+      "severity": 10.056878365368224
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846026,
+      "devMm": 101,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -9637,
+        -7865
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846026]",
+      "severity": 10.054195801414062
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850945,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11000,
+        -4418
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850945]",
+      "severity": 10.048444928352046
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850940,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2069,
+        -16220
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850940]",
+      "severity": 10.043128144142896
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846038,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3253,
+        -11097
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846038]",
+      "severity": 10.036883691502094
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848424,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1255,
+        -7933
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848424]",
+      "severity": 10.036808566572763
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847816,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4448,
+        -15800
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847816]",
+      "severity": 10.032337705341158
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848416,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3235,
+        -12898
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848416]",
+      "severity": 10.030203855684828
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850934,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3540,
+        -5727
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850934]",
+      "severity": 10.03017421853484
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846981,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10282,
+        -6433
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846981]",
+      "severity": 10.025562924393794
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845178,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -8841,
+        -12389
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845178]",
+      "severity": 10.023048727111158
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849212,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4155,
+        -11645
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849212]",
+      "severity": 10.018262098857544
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845183,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10130,
+        -15408
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845183]",
+      "severity": 10.01243438344248
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848415,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3621,
+        -8962
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848415]",
+      "severity": 10.01200559293341
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845189,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3372,
+        -10482
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845189]",
+      "severity": 10.010870527793347
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849208,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3248,
+        -12913
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849208]",
+      "severity": 10.004918202050906
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845190,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2141,
+        -11989
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845190]",
+      "severity": 10.003556057085142
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847822,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3620,
+        -9348
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847822]",
+      "severity": 10.00300012290351
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846037,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3913,
+        512
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846037]",
+      "severity": 10.002665435292204
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847827,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3436,
+        -11097
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847827]",
+      "severity": 10.00138004862087
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848422,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3436,
+        -11097
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848422]",
+      "severity": 10.001263358946652
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845186,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3199,
+        -12896
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845186]",
+      "severity": 10.000261428012804
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "First Floor",
+      "id": 846967,
+      "devMm": -100,
+      "against": "DWG face pair 280 mm (model 380 mm)",
+      "at": [
+        -3040,
+        10424
+      ],
+      "fix": "dwg_wall_fit_apply ids [846967]",
+      "severity": 10
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "First Floor",
+      "id": 846974,
+      "devMm": -100,
+      "against": "DWG face pair 100 mm (model 200 mm)",
+      "at": [
+        -10704,
+        -10428
+      ],
+      "fix": "dwg_wall_fit_apply ids [846974]",
+      "severity": 10
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "First Floor",
+      "id": 846968,
+      "devMm": -100,
+      "against": "DWG face pair 280 mm (model 380 mm)",
+      "at": [
+        -2661,
+        8774
+      ],
+      "fix": "dwg_wall_fit_apply ids [846968]",
+      "severity": 10
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846029,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -7665,
+        -10394
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846029]",
+      "severity": 9.999686104461727
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845188,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -8055,
+        -9685
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845188]",
+      "severity": 9.999236376234695
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846031,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10376,
+        9790
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846031]",
+      "severity": 9.99785586185779
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848421,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3430,
+        -12537
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848421]",
+      "severity": 9.997435278770443
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847826,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3430,
+        -12537
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847826]",
+      "severity": 9.997315652146918
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846039,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3569,
+        -12537
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846039]",
+      "severity": 9.995461910859536
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845181,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -8092,
+        -13669
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845181]",
+      "severity": 9.995121220504185
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845187,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10309,
+        -18136
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845187]",
+      "severity": 9.994467116680358
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850943,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4154,
+        -11801
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850943]",
+      "severity": 9.994260838966685
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849215,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3442,
+        -12537
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849215]",
+      "severity": 9.992334103156463
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846024,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3893,
+        3541
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846024]",
+      "severity": 9.984662331522504
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848407,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4448,
+        -15693
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848407]",
+      "severity": 9.980817701467315
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850948,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2176,
+        -14533
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850948]",
+      "severity": 9.964081234661467
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850938,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4274,
+        -14174
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850938]",
+      "severity": 9.96325891716353
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846979,
+      "devMm": 100,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11985,
+        -10314
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846979]",
+      "severity": 9.950213773143666
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846021,
+      "devMm": 99,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11776,
+        2019
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846021]",
+      "severity": 9.933268996921617
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848423,
+      "devMm": 99,
+      "against": "plan DWG wall face lines",
+      "at": [
+        725,
+        -7956
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848423]",
+      "severity": 9.926948568636652
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845193,
+      "devMm": 99,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3617,
+        7385
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845193]",
+      "severity": 9.902951184290249
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850933,
+      "devMm": 98,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3625,
+        -9109
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850933]",
+      "severity": 9.837492237827858
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846008,
+      "devMm": 98,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3373,
+        -12959
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846008]",
+      "severity": 9.81358800209404
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846007,
+      "devMm": 98,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -7216,
+        -17270
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846007]",
+      "severity": 9.783847173432495
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846976,
+      "devMm": 98,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3600,
+        -8758
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846976]",
+      "severity": 9.777231137106353
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848404,
+      "devMm": 97,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4132,
+        -11820
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848404]",
+      "severity": 9.749506232821
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847813,
+      "devMm": 97,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4132,
+        -11820
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847813]",
+      "severity": 9.749503297954986
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847814,
+      "devMm": 97,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2952,
+        -10154
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847814]",
+      "severity": 9.743269911222956
+    },
+    {
+      "kind": "opening",
+      "level": "Third Floor",
+      "id": 848445,
+      "devMm": 290,
+      "against": "plan jambs (left -290, right -1 mm)",
+      "at": [
+        -5621,
+        -7306
+      ],
+      "fix": "set_insert id 848445 (width / sill / head / move) to match plan jambs (left -290, right -1 mm)",
+      "severity": 9.678230280123758
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846004,
+      "devMm": 97,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4406,
+        -13849
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846004]",
+      "severity": 9.65669187930262
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846060,
+      "devMm": 96,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4371,
+        -17467
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846060]",
+      "severity": 9.556044408733875
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846005,
+      "devMm": 95,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2455,
+        -1776
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846005]",
+      "severity": 9.529330302036234
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846073,
+      "devMm": 93,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -6615,
+        9654
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846073]",
+      "severity": 9.34191137835464
+    },
+    {
+      "kind": "ceiling",
+      "level": "Second Floor",
+      "id": 848091,
+      "devMm": -180,
+      "against": "plan ceiling note 2.87 m (model 2.69 m)",
+      "at": [
+        -5477,
+        -4295
+      ],
+      "fix": "set_parameters id 848091 \u0022Height Offset From Level\u0022 2870 mm",
+      "severity": 9.000000000000023
+    },
+    {
+      "kind": "ceiling",
+      "level": "Second Floor",
+      "id": 848091,
+      "devMm": -180,
+      "against": "plan ceiling note 2.87 m (model 2.69 m)",
+      "at": [
+        444,
+        -4317
+      ],
+      "fix": "set_parameters id 848091 \u0022Height Offset From Level\u0022 2870 mm",
+      "severity": 9.000000000000023
+    },
+    {
+      "kind": "level",
+      "level": "First Floor",
+      "devMm": 60,
+      "against": "20 of 61 spot heights within 600 mm agree on 27.930 m",
+      "fix": "move level \u0022First Floor\u0022 by -60 mm (set_parameters Elevation), then re-check sills",
+      "severity": 8.999999999999636
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848398,
+      "devMm": 87,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1233,
+        -7720
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848398]",
+      "severity": 8.739350580654648
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848405,
+      "devMm": 85,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11973,
+        -11191
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848405]",
+      "severity": 8.520591753294896
+    },
+    {
+      "kind": "ceiling",
+      "level": "Second Floor",
+      "id": 848091,
+      "devMm": -170,
+      "against": "plan ceiling note 2.86 m (model 2.69 m)",
+      "at": [
+        -9581,
+        -4254
+      ],
+      "fix": "set_parameters id 848091 \u0022Height Offset From Level\u0022 2860 mm",
+      "severity": 8.500000000000023
+    },
+    {
+      "kind": "ceiling",
+      "level": "Fifth Floor",
+      "id": 851397,
+      "devMm": 170,
+      "against": "plan ceiling note 2.44 m (model 2.61 m)",
+      "at": [
+        -5422,
+        -13816
+      ],
+      "fix": "set_parameters id 851397 \u0022Height Offset From Level\u0022 2440 mm",
+      "severity": 8.5
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847815,
+      "devMm": 85,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11974,
+        -11188
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847815]",
+      "severity": 8.475468063080562
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845453,
+      "devMm": 160,
+      "against": "plan ceiling note 2.36 m (model 2.52 m)",
+      "at": [
+        -840,
+        -16113
+      ],
+      "fix": "set_parameters id 845453 \u0022Height Offset From Level\u0022 2360 mm",
+      "severity": 8
+    },
+    {
+      "kind": "ceiling",
+      "level": "Ground Floor",
+      "id": 846545,
+      "devMm": -160,
+      "against": "plan ceiling note 2.50 m (model 2.34 m)",
+      "at": [
+        -6098,
+        10987
+      ],
+      "fix": "set_parameters id 846545 \u0022Height Offset From Level\u0022 2500 mm",
+      "severity": 8
+    },
+    {
+      "kind": "ceiling",
+      "level": "Fourth Floor",
+      "id": 849743,
+      "devMm": 160,
+      "against": "plan ceiling note 2.38 m (model 2.54 m)",
+      "at": [
+        406,
+        -4742
+      ],
+      "fix": "set_parameters id 849743 \u0022Height Offset From Level\u0022 2380 mm",
+      "severity": 7.999999999999977
+    },
+    {
+      "kind": "opening",
+      "level": "Ground Floor",
+      "id": 846098,
+      "devMm": 231,
+      "against": "plan jambs (left 22, right -231 mm)",
+      "at": [
+        -891,
+        7701
+      ],
+      "fix": "set_insert id 846098 (width / sill / head / move) to match plan jambs (left 22, right -231 mm)",
+      "severity": 7.704801387603889
+    },
+    {
+      "kind": "opening",
+      "level": "Ground Floor",
+      "id": 846097,
+      "devMm": 231,
+      "against": "plan jambs (left -11, right -231 mm)",
+      "at": [
+        -1435,
+        8066
+      ],
+      "fix": "set_insert id 846097 (width / sill / head / move) to match plan jambs (left -11, right -231 mm)",
+      "severity": 7.7048013876038794
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849221,
+      "devMm": 77,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2040,
+        -10381
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849221]",
+      "severity": 7.687741551464525
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849242,
+      "devMm": 230,
+      "against": "plan jambs (left -54, right -230 mm)",
+      "at": [
+        -5582,
+        -8623
+      ],
+      "fix": "set_insert id 849242 (width / sill / head / move) to match plan jambs (left -54, right -230 mm)",
+      "severity": 7.654020547809978
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845434,
+      "devMm": 150,
+      "against": "plan ceiling note 2.36 m (model 2.51 m)",
+      "at": [
+        -813,
+        -12489
+      ],
+      "fix": "set_parameters id 845434 \u0022Height Offset From Level\u0022 2360 mm",
+      "severity": 7.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845489,
+      "devMm": 150,
+      "against": "plan ceiling note 2.21 m (model 2.36 m)",
+      "at": [
+        624,
+        -9110
+      ],
+      "fix": "set_parameters id 845489 \u0022Height Offset From Level\u0022 2210 mm",
+      "severity": 7.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845489,
+      "devMm": -150,
+      "against": "plan ceiling note 2.51 m (model 2.36 m)",
+      "at": [
+        -3254,
+        10108
+      ],
+      "fix": "set_parameters id 845489 \u0022Height Offset From Level\u0022 2510 mm",
+      "severity": 7.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845489,
+      "devMm": -150,
+      "against": "plan ceiling note 2.51 m (model 2.36 m)",
+      "at": [
+        -6978,
+        -16265
+      ],
+      "fix": "set_parameters id 845489 \u0022Height Offset From Level\u0022 2510 mm",
+      "severity": 7.5
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850918,
+      "devMm": 74,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4522,
+        -16426
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850918]",
+      "severity": 7.415489200591037
+    },
+    {
+      "kind": "opening",
+      "level": "Ground Floor",
+      "id": 846102,
+      "devMm": 221,
+      "against": "plan jambs (left -0, right 221 mm)",
+      "at": [
+        -2675,
+        -10151
+      ],
+      "fix": "set_insert id 846102 (width / sill / head / move) to match plan jambs (left -0, right 221 mm)",
+      "severity": 7.35274862400723
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846078,
+      "devMm": 72,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3081,
+        -9735
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846078]",
+      "severity": 7.221525024402726
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845489,
+      "devMm": -140,
+      "against": "plan ceiling note 2.50 m (model 2.36 m)",
+      "at": [
+        1249,
+        -411
+      ],
+      "fix": "set_parameters id 845489 \u0022Height Offset From Level\u0022 2500 mm",
+      "severity": 7
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845489,
+      "devMm": -140,
+      "against": "plan ceiling note 2.50 m (model 2.36 m)",
+      "at": [
+        -3040,
+        8911
+      ],
+      "fix": "set_parameters id 845489 \u0022Height Offset From Level\u0022 2500 mm",
+      "severity": 7
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845489,
+      "devMm": -140,
+      "against": "plan ceiling note 2.50 m (model 2.36 m)",
+      "at": [
+        513,
+        -10563
+      ],
+      "fix": "set_parameters id 845489 \u0022Height Offset From Level\u0022 2500 mm",
+      "severity": 7
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Third Floor",
+      "id": 848389,
+      "devMm": -70,
+      "against": "DWG face pair 830 mm (model 900 mm)",
+      "at": [
+        3284,
+        -18477
+      ],
+      "fix": "dwg_wall_fit_apply ids [848389]",
+      "severity": 7
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848660,
+      "devMm": 140,
+      "against": "plan ceiling note 2.67 m (model 2.81 m)",
+      "at": [
+        -8030,
+        -17818
+      ],
+      "fix": "set_parameters id 848660 \u0022Height Offset From Level\u0022 2670 mm",
+      "severity": 7
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845200,
+      "devMm": 67,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3592,
+        6195
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845200]",
+      "severity": 6.7176446692494824
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 847011,
+      "devMm": 67,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1920,
+        -10297
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [847011]",
+      "severity": 6.69183995346676
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845489,
+      "devMm": -130,
+      "against": "plan ceiling note 2.49 m (model 2.36 m)",
+      "at": [
+        888,
+        -3741
+      ],
+      "fix": "set_parameters id 845489 \u0022Height Offset From Level\u0022 2490 mm",
+      "severity": 6.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Basement",
+      "id": 845489,
+      "devMm": -130,
+      "against": "plan ceiling note 2.49 m (model 2.36 m)",
+      "at": [
+        -6078,
+        -16269
+      ],
+      "fix": "set_parameters id 845489 \u0022Height Offset From Level\u0022 2490 mm",
+      "severity": 6.5
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846051,
+      "devMm": 64,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -80,
+        11951
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846051]",
+      "severity": 6.397049204999712
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848751,
+      "devMm": 120,
+      "against": "plan ceiling note 2.60 m (model 2.72 m)",
+      "at": [
+        406,
+        -4742
+      ],
+      "fix": "set_parameters id 848751 \u0022Height Offset From Level\u0022 2600 mm",
+      "severity": 6
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848685,
+      "devMm": 120,
+      "against": "plan ceiling note 2.67 m (model 2.79 m)",
+      "at": [
+        -8233,
+        -4756
+      ],
+      "fix": "set_parameters id 848685 \u0022Height Offset From Level\u0022 2670 mm",
+      "severity": 5.999999999999977
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846960,
+      "devMm": 58,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -12466,
+        15558
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846960]",
+      "severity": 5.766314317788254
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848413,
+      "devMm": 57,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -6407,
+        -14165
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848413]",
+      "severity": 5.721981067425951
+    },
+    {
+      "kind": "opening",
+      "level": "Third Floor",
+      "id": 848455,
+      "devMm": 170,
+      "against": "head label H 2.78",
+      "at": [
+        -145,
+        -18679
+      ],
+      "fix": "set_insert id 848455 (width / sill / head / move) to match head label H 2.78",
+      "severity": 5.666666666666667
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849253,
+      "devMm": 170,
+      "against": "head label H 2.53",
+      "at": [
+        -2932,
+        -3788
+      ],
+      "fix": "set_insert id 849253 (width / sill / head / move) to match head label H 2.53",
+      "severity": 5.666666666666667
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849255,
+      "devMm": 170,
+      "against": "head label H 2.53",
+      "at": [
+        -5827,
+        -3781
+      ],
+      "fix": "set_insert id 849255 (width / sill / head / move) to match head label H 2.53",
+      "severity": 5.666666666666667
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849257,
+      "devMm": 170,
+      "against": "head label H 2.53",
+      "at": [
+        -8722,
+        -3774
+      ],
+      "fix": "set_insert id 849257 (width / sill / head / move) to match head label H 2.53",
+      "severity": 5.666666666666667
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849258,
+      "devMm": 170,
+      "against": "head label H 2.53",
+      "at": [
+        -36,
+        -3794
+      ],
+      "fix": "set_insert id 849258 (width / sill / head / move) to match head label H 2.53",
+      "severity": 5.666666666666667
+    },
+    {
+      "kind": "opening",
+      "level": "Second Floor",
+      "id": 847860,
+      "devMm": 160,
+      "against": "head label H 2.87",
+      "at": [
+        -5827,
+        -3778
+      ],
+      "fix": "set_insert id 847860 (width / sill / head / move) to match head label H 2.87",
+      "severity": 5.333333333333333
+    },
+    {
+      "kind": "opening",
+      "level": "Third Floor",
+      "id": 848451,
+      "devMm": 160,
+      "against": "head label H 2.79",
+      "at": [
+        -7384,
+        -18649
+      ],
+      "fix": "set_insert id 848451 (width / sill / head / move) to match head label H 2.79",
+      "severity": 5.333333333333318
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 847003,
+      "devMm": 53,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -7886,
+        -12405
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [847003]",
+      "severity": 5.322672577903551
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845180,
+      "devMm": 52,
+      "against": "plan DWG wall face lines",
+      "at": [
+        149,
+        -11026
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845180]",
+      "severity": 5.238564736060061
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845209,
+      "devMm": 52,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -330,
+        -13291
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845209]",
+      "severity": 5.18506980230388
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846967,
+      "devMm": 52,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -3040,
+        10424
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846967]",
+      "severity": 5.164156354604329
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 847014,
+      "devMm": 52,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3627,
+        -4529
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [847014]",
+      "severity": 5.152911498879195
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846974,
+      "devMm": 51,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10704,
+        -10428
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846974]",
+      "severity": 5.056832746668228
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fifth Floor",
+      "devMm": 3026,
+      "against": "DWG face pair 390 mm, 3026 mm long",
+      "at": [
+        2638,
+        -2122
+      ],
+      "line": [
+        2629,
+        -3636,
+        2648,
+        -609
+      ],
+      "fix": "create_walls level \u0022Fifth Floor\u0022 line [2629, -3636, 2648, -609] thickness 390 (check with cad_lines first)",
+      "severity": 5.026
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850904,
+      "devMm": 50,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -9992,
+        -3907
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850904]",
+      "severity": 5.015566273061384
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845191,
+      "devMm": 50,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1257,
+        -11083
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845191]",
+      "severity": 5.000900878034172
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Basement",
+      "id": 845191,
+      "devMm": 50,
+      "against": "DWG face pair 150 mm (model 100 mm)",
+      "at": [
+        1257,
+        -11083
+      ],
+      "fix": "dwg_wall_fit_apply ids [845191]",
+      "severity": 5
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "First Floor",
+      "id": 846972,
+      "devMm": -50,
+      "against": "DWG face pair 270 mm (model 320 mm)",
+      "at": [
+        3208,
+        -16125
+      ],
+      "fix": "dwg_wall_fit_apply ids [846972]",
+      "severity": 5
+    },
+    {
+      "kind": "opening",
+      "level": "Third Floor",
+      "id": 848458,
+      "devMm": 150,
+      "against": "head label H 2.80",
+      "at": [
+        -2931,
+        -3790
+      ],
+      "fix": "set_insert id 848458 (width / sill / head / move) to match head label H 2.80",
+      "severity": 5
+    },
+    {
+      "kind": "opening",
+      "level": "Third Floor",
+      "id": 848460,
+      "devMm": 150,
+      "against": "head label H 2.80",
+      "at": [
+        -5827,
+        -3778
+      ],
+      "fix": "set_insert id 848460 (width / sill / head / move) to match head label H 2.80",
+      "severity": 5
+    },
+    {
+      "kind": "opening",
+      "level": "Third Floor",
+      "id": 848462,
+      "devMm": 150,
+      "against": "head label H 2.80",
+      "at": [
+        -8722,
+        -3766
+      ],
+      "fix": "set_insert id 848462 (width / sill / head / move) to match head label H 2.80",
+      "severity": 5
+    },
+    {
+      "kind": "opening",
+      "level": "Third Floor",
+      "id": 848463,
+      "devMm": 150,
+      "against": "head label H 2.80",
+      "at": [
+        84,
+        -3803
+      ],
+      "fix": "set_insert id 848463 (width / sill / head / move) to match head label H 2.80",
+      "severity": 5
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849248,
+      "devMm": 150,
+      "against": "head label H 2.53",
+      "at": [
+        -8829,
+        -17987
+      ],
+      "fix": "set_insert id 849248 (width / sill / head / move) to match head label H 2.53",
+      "severity": 5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Fourth Floor",
+      "id": 849610,
+      "devMm": 100,
+      "against": "plan ceiling note 2.44 m (model 2.54 m)",
+      "at": [
+        -9949,
+        -4678
+      ],
+      "fix": "set_parameters id 849610 \u0022Height Offset From Level\u0022 2440 mm",
+      "severity": 4.999999999999977
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846968,
+      "devMm": 50,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -2661,
+        8774
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846968]",
+      "severity": 4.999911489217107
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846972,
+      "devMm": 50,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3208,
+        -16125
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846972]",
+      "severity": 4.997201696604405
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fifth Floor",
+      "devMm": 2852,
+      "against": "DWG face pair 150 mm, 2852 mm long",
+      "at": [
+        -11166,
+        -14915
+      ],
+      "line": [
+        -11165,
+        -16341,
+        -11168,
+        -13489
+      ],
+      "fix": "create_walls level \u0022Fifth Floor\u0022 line [-11165, -16341, -11168, -13489] thickness 150 (check with cad_lines first)",
+      "severity": 4.852
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845176,
+      "devMm": 48,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4388,
+        -12141
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845176]",
+      "severity": 4.790590323109394
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850973,
+      "devMm": 47,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1210,
+        -8886
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850973]",
+      "severity": 4.710272606929619
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849244,
+      "devMm": 140,
+      "against": "head label H 2.54",
+      "at": [
+        -1590,
+        -18004
+      ],
+      "fix": "set_insert id 849244 (width / sill / head / move) to match head label H 2.54",
+      "severity": 4.666666666666682
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849245,
+      "devMm": 140,
+      "against": "head label H 2.54",
+      "at": [
+        -5933,
+        -17994
+      ],
+      "fix": "set_insert id 849245 (width / sill / head / move) to match head label H 2.54",
+      "severity": 4.666666666666682
+    },
+    {
+      "kind": "opening",
+      "level": "Second Floor",
+      "id": 847852,
+      "devMm": 140,
+      "against": "head label H 2.93",
+      "at": [
+        -145,
+        -18671
+      ],
+      "fix": "set_insert id 847852 (width / sill / head / move) to match head label H 2.93",
+      "severity": 4.666666666666667
+    },
+    {
+      "kind": "opening",
+      "level": "Third Floor",
+      "id": 848449,
+      "devMm": 140,
+      "against": "head label H 2.81",
+      "at": [
+        -10279,
+        -18636
+      ],
+      "fix": "set_insert id 848449 (width / sill / head / move) to match head label H 2.81",
+      "severity": 4.666666666666667
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850899,
+      "devMm": 46,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11875,
+        -3987
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850899]",
+      "severity": 4.630388925106553
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846956,
+      "devMm": 45,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2632,
+        -10749
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846956]",
+      "severity": 4.502350661216928
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848751,
+      "devMm": -90,
+      "against": "plan ceiling note 2.81 m (model 2.72 m)",
+      "at": [
+        444,
+        -4262
+      ],
+      "fix": "set_parameters id 848751 \u0022Height Offset From Level\u0022 2810 mm",
+      "severity": 4.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848751,
+      "devMm": -90,
+      "against": "plan ceiling note 2.81 m (model 2.72 m)",
+      "at": [
+        -2496,
+        -4269
+      ],
+      "fix": "set_parameters id 848751 \u0022Height Offset From Level\u0022 2810 mm",
+      "severity": 4.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848751,
+      "devMm": -90,
+      "against": "plan ceiling note 2.81 m (model 2.72 m)",
+      "at": [
+        -4671,
+        -4300
+      ],
+      "fix": "set_parameters id 848751 \u0022Height Offset From Level\u0022 2810 mm",
+      "severity": 4.5
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Fifth Floor",
+      "id": 850918,
+      "devMm": 44,
+      "against": "DWG face pair 284 mm (model 240 mm)",
+      "at": [
+        4522,
+        -16426
+      ],
+      "fix": "dwg_wall_fit_apply ids [850918]",
+      "severity": 4.4
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848389,
+      "devMm": 44,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3284,
+        -18477
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848389]",
+      "severity": 4.382610029513777
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846009,
+      "devMm": 43,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3557,
+        -6231
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846009]",
+      "severity": 4.295761043834891
+    },
+    {
+      "kind": "wall_missing",
+      "level": "First Floor",
+      "devMm": 2235,
+      "against": "DWG face pair 60 mm, 2235 mm long",
+      "at": [
+        -13526,
+        2654
+      ],
+      "line": [
+        -14204,
+        1766,
+        -12847,
+        3542
+      ],
+      "fix": "create_walls level \u0022First Floor\u0022 line [-14204, 1766, -12847, 3542] thickness 60 (check with cad_lines first)",
+      "severity": 4.234999999999999
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846955,
+      "devMm": 42,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3284,
+        -18476
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846955]",
+      "severity": 4.198404046771092
+    },
+    {
+      "kind": "opening",
+      "level": "First Floor",
+      "id": 847045,
+      "devMm": 126,
+      "against": "plan jambs (left -126, right 3 mm)",
+      "at": [
+        -2279,
+        7496
+      ],
+      "fix": "set_insert id 847045 (width / sill / head / move) to match plan jambs (left -126, right 3 mm)",
+      "severity": 4.195122750856444
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849181,
+      "devMm": 41,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11549,
+        -17987
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849181]",
+      "severity": 4.0755909753335775
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846966,
+      "devMm": 40,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -13015,
+        13720
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846966]",
+      "severity": 4.043919595333671
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850930,
+      "devMm": 40,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3226,
+        -15056
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850930]",
+      "severity": 4.033915384249486
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845162,
+      "devMm": 40,
+      "against": "plan DWG wall face lines",
+      "at": [
+        856,
+        8090
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845162]",
+      "severity": 4.018401554317824
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846058,
+      "devMm": 40,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -9398,
+        21567
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846058]",
+      "severity": 4.0166144662274945
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Ground Floor",
+      "id": 846009,
+      "devMm": -40,
+      "against": "DWG face pair 100 mm (model 140 mm)",
+      "at": [
+        3557,
+        -6231
+      ],
+      "fix": "dwg_wall_fit_apply ids [846009]",
+      "severity": 4
+    },
+    {
+      "kind": "ceiling",
+      "level": "Ground Floor",
+      "id": 846545,
+      "devMm": -80,
+      "against": "plan ceiling note 2.42 m (model 2.34 m)",
+      "at": [
+        -10079,
+        -18381
+      ],
+      "fix": "set_parameters id 846545 \u0022Height Offset From Level\u0022 2420 mm",
+      "severity": 4
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "First Floor",
+      "id": 846966,
+      "devMm": -40,
+      "against": "DWG face pair 340 mm (model 380 mm)",
+      "at": [
+        -13015,
+        13720
+      ],
+      "fix": "dwg_wall_fit_apply ids [846966]",
+      "severity": 4
+    },
+    {
+      "kind": "ceiling",
+      "level": "First Floor",
+      "id": 847362,
+      "devMm": 80,
+      "against": "plan ceiling note 2.48 m (model 2.56 m)",
+      "at": [
+        -11032,
+        -8768
+      ],
+      "fix": "set_parameters id 847362 \u0022Height Offset From Level\u0022 2480 mm",
+      "severity": 4
+    },
+    {
+      "kind": "opening",
+      "level": "Second Floor",
+      "id": 847847,
+      "devMm": 120,
+      "against": "head label H 2.95",
+      "at": [
+        -8831,
+        -18636
+      ],
+      "fix": "set_insert id 847847 (width / sill / head / move) to match head label H 2.95",
+      "severity": 4
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850916,
+      "devMm": 40,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4778,
+        -8532
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850916]",
+      "severity": 3.966188341589624
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846057,
+      "devMm": 39,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1837,
+        21586
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846057]",
+      "severity": 3.94005782158004
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848395,
+      "devMm": 39,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3287,
+        -14970
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848395]",
+      "severity": 3.913750388463759
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Fifth Floor",
+      "id": 850902,
+      "devMm": -39,
+      "against": "DWG face pair 621 mm (model 660 mm)",
+      "at": [
+        587,
+        -3935
+      ],
+      "fix": "dwg_wall_fit_apply ids [850902]",
+      "severity": 3.9
+    },
+    {
+      "kind": "opening",
+      "level": "Ground Floor",
+      "id": 846127,
+      "devMm": 116,
+      "against": "plan jambs (left -116, right -11 mm)",
+      "at": [
+        -10007,
+        -8899
+      ],
+      "fix": "set_insert id 846127 (width / sill / head / move) to match plan jambs (left -116, right -11 mm)",
+      "severity": 3.86799130144027
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846003,
+      "devMm": 39,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2862,
+        -14097
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846003]",
+      "severity": 3.8547879785603327
+    },
+    {
+      "kind": "opening",
+      "level": "First Floor",
+      "id": 847048,
+      "devMm": 115,
+      "against": "plan jambs (left -115, right 5 mm)",
+      "at": [
+        -10655,
+        -8976
+      ],
+      "fix": "set_insert id 847048 (width / sill / head / move) to match plan jambs (left -115, right 5 mm)",
+      "severity": 3.8323835737600045
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1735,
+      "against": "DWG face pair 60 mm, 1735 mm long",
+      "at": [
+        -4702,
+        16871
+      ],
+      "line": [
+        -3901,
+        16538,
+        -5503,
+        17204
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-3901, 16538, -5503, 17204] thickness 60 (check with cad_lines first)",
+      "severity": 3.7350000000000003
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1735,
+      "against": "DWG face pair 60 mm, 1735 mm long",
+      "at": [
+        -4100,
+        15414
+      ],
+      "line": [
+        -3767,
+        16215,
+        -4432,
+        14612
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-3767, 16215, -4432, 14612] thickness 60 (check with cad_lines first)",
+      "severity": 3.7350000000000003
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1735,
+      "against": "DWG face pair 60 mm, 1735 mm long",
+      "at": [
+        -4702,
+        16016
+      ],
+      "line": [
+        -5503,
+        15683,
+        -3901,
+        16348
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-5503, 15683, -3901, 16348] thickness 60 (check with cad_lines first)",
+      "severity": 3.7350000000000003
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1735,
+      "against": "DWG face pair 60 mm, 1735 mm long",
+      "at": [
+        -3244,
+        15414
+      ],
+      "line": [
+        -2912,
+        14613,
+        -3577,
+        16215
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-2912, 14613, -3577, 16215] thickness 60 (check with cad_lines first)",
+      "severity": 3.7350000000000003
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "First Floor",
+      "id": 846955,
+      "devMm": -37,
+      "against": "DWG face pair 803 mm (model 840 mm)",
+      "at": [
+        3284,
+        -18476
+      ],
+      "fix": "dwg_wall_fit_apply ids [846955]",
+      "severity": 3.7
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848399,
+      "devMm": 37,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10105,
+        -5505
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848399]",
+      "severity": 3.6860826246436367
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fourth Floor",
+      "devMm": 1670,
+      "against": "DWG face pair 101 mm, 1670 mm long",
+      "at": [
+        -14149,
+        -17548
+      ],
+      "line": [
+        -13314,
+        -17544,
+        -14984,
+        -17551
+      ],
+      "fix": "create_walls level \u0022Fourth Floor\u0022 line [-13314, -17544, -14984, -17551] thickness 101 (check with cad_lines first)",
+      "severity": 3.67
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1596,
+      "against": "DWG face pair 60 mm, 1596 mm long",
+      "at": [
+        -4412,
+        15704
+      ],
+      "line": [
+        -3847,
+        16268,
+        -4976,
+        15140
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-3847, 16268, -4976, 15140] thickness 60 (check with cad_lines first)",
+      "severity": 3.596
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1595,
+      "against": "DWG face pair 60 mm, 1595 mm long",
+      "at": [
+        -4718,
+        16443
+      ],
+      "line": [
+        -5515,
+        16443,
+        -3920,
+        16443
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-5515, 16443, -3920, 16443] thickness 60 (check with cad_lines first)",
+      "severity": 3.5949999999999998
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1530,
+      "against": "DWG face pair 80 mm, 1530 mm long",
+      "at": [
+        -5555,
+        16443
+      ],
+      "line": [
+        -5555,
+        15678,
+        -5555,
+        17208
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-5555, 15678, -5555, 17208] thickness 80 (check with cad_lines first)",
+      "severity": 3.5300000000000002
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1530,
+      "against": "DWG face pair 80 mm, 1530 mm long",
+      "at": [
+        -1790,
+        16444
+      ],
+      "line": [
+        -1790,
+        15679,
+        -1790,
+        17209
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-1790, 15679, -1790, 17209] thickness 80 (check with cad_lines first)",
+      "severity": 3.5300000000000002
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1530,
+      "against": "DWG face pair 80 mm, 1530 mm long",
+      "at": [
+        -3672,
+        14561
+      ],
+      "line": [
+        -2907,
+        14561,
+        -4437,
+        14561
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-2907, 14561, -4437, 14561] thickness 80 (check with cad_lines first)",
+      "severity": 3.5300000000000002
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1530,
+      "against": "DWG face pair 80 mm, 1530 mm long",
+      "at": [
+        -3672,
+        18326
+      ],
+      "line": [
+        -2908,
+        18326,
+        -4437,
+        18326
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-2908, 18326, -4437, 18326] thickness 80 (check with cad_lines first)",
+      "severity": 3.5300000000000002
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848391,
+      "devMm": 35,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -4937,
+        -18659
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848391]",
+      "severity": 3.525022168848225
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1524,
+      "against": "DWG face pair 80 mm, 1524 mm long",
+      "at": [
+        -2340,
+        17776
+      ],
+      "line": [
+        -1802,
+        17237,
+        -2879,
+        18315
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-1802, 17237, -2879, 18315] thickness 80 (check with cad_lines first)",
+      "severity": 3.524
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1524,
+      "against": "DWG face pair 80 mm, 1524 mm long",
+      "at": [
+        -5004,
+        17776
+      ],
+      "line": [
+        -4466,
+        18314,
+        -5543,
+        17237
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-4466, 18314, -5543, 17237] thickness 80 (check with cad_lines first)",
+      "severity": 3.524
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 1524,
+      "against": "DWG face pair 80 mm, 1524 mm long",
+      "at": [
+        -5004,
+        15112
+      ],
+      "line": [
+        -4465,
+        14573,
+        -5543,
+        15650
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-4465, 14573, -5543, 15650] thickness 80 (check with cad_lines first)",
+      "severity": 3.524
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "First Floor",
+      "id": 846975,
+      "devMm": -35,
+      "against": "DWG face pair 145 mm (model 180 mm)",
+      "at": [
+        -2476,
+        2577
+      ],
+      "fix": "dwg_wall_fit_apply ids [846975]",
+      "severity": 3.5
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Third Floor",
+      "id": 848391,
+      "devMm": -35,
+      "against": "DWG face pair 345 mm (model 380 mm)",
+      "at": [
+        -4937,
+        -18659
+      ],
+      "fix": "dwg_wall_fit_apply ids [848391]",
+      "severity": 3.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848751,
+      "devMm": 70,
+      "against": "plan ceiling note 2.65 m (model 2.72 m)",
+      "at": [
+        -980,
+        -17863
+      ],
+      "fix": "set_parameters id 848751 \u0022Height Offset From Level\u0022 2650 mm",
+      "severity": 3.5
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Fourth Floor",
+      "id": 849181,
+      "devMm": -35,
+      "against": "DWG face pair 385 mm (model 420 mm)",
+      "at": [
+        -11549,
+        -17987
+      ],
+      "fix": "dwg_wall_fit_apply ids [849181]",
+      "severity": 3.5
+    },
+    {
+      "kind": "opening",
+      "level": "First Floor",
+      "id": 847276,
+      "devMm": 103,
+      "against": "plan jambs (left 77, right -103 mm)",
+      "at": [
+        -10872,
+        -3565
+      ],
+      "fix": "set_insert id 847276 (width / sill / head / move) to match plan jambs (left 77, right -103 mm)",
+      "severity": 3.4189717045876025
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846975,
+      "devMm": 34,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -2476,
+        2577
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846975]",
+      "severity": 3.4119781997624754
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845992,
+      "devMm": 34,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -4030,
+        -18516
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845992]",
+      "severity": 3.411009009589543
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fifth Floor",
+      "devMm": 1365,
+      "against": "DWG face pair 390 mm, 1365 mm long",
+      "at": [
+        3527,
+        -420
+      ],
+      "line": [
+        2845,
+        -416,
+        4209,
+        -424
+      ],
+      "fix": "create_walls level \u0022Fifth Floor\u0022 line [2845, -416, 4209, -424] thickness 390 (check with cad_lines first)",
+      "severity": 3.365
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845987,
+      "devMm": 33,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4637,
+        14629
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845987]",
+      "severity": 3.3277111802736163
+    },
+    {
+      "kind": "opening",
+      "level": "Second Floor",
+      "id": 847845,
+      "devMm": 97,
+      "against": "plan jambs (left -44, right -97 mm)",
+      "at": [
+        -1689,
+        -18665
+      ],
+      "fix": "set_insert id 847845 (width / sill / head / move) to match plan jambs (left -44, right -97 mm)",
+      "severity": 3.2396986147391544
+    },
+    {
+      "kind": "opening",
+      "level": "Third Floor",
+      "id": 848457,
+      "devMm": 97,
+      "against": "plan jambs (left -97, right 5 mm)",
+      "at": [
+        -1586,
+        -3796
+      ],
+      "fix": "set_insert id 848457 (width / sill / head / move) to match plan jambs (left -97, right 5 mm)",
+      "severity": 3.2364604927030087
+    },
+    {
+      "kind": "opening",
+      "level": "Second Floor",
+      "id": 847856,
+      "devMm": 97,
+      "against": "plan jambs (left -97, right 5 mm)",
+      "at": [
+        -1586,
+        -3795
+      ],
+      "fix": "set_insert id 847856 (width / sill / head / move) to match plan jambs (left -97, right 5 mm)",
+      "severity": 3.232964620099847
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1170,
+      "against": "elevation: 1170 wide, sill 7541, head 9484",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.170000000507571
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1170,
+      "against": "elevation: 1170 wide, sill 7541, head 9484",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1700000004158064
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1170,
+      "against": "elevation: 1170 wide, sill 7541, head 9484",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1700000003699245
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1170,
+      "against": "elevation: 1170 wide, sill 7543, head 9487",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.170000000332948
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1170,
+      "against": "elevation: 1170 wide, sill 7543, head 9487",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.169999999983702
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1170,
+      "against": "elevation: 1170 wide, sill 7541, head 9484",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.169999999750871
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1164,
+      "against": "elevation: 1164 wide, sill 10958, head 12754",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.163894697034266
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1164,
+      "against": "elevation: 1164 wide, sill 14303, head 16099",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.163894697034266
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1164,
+      "against": "elevation: 1164 wide, sill 17617, head 19413",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.163894697034266
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1164,
+      "against": "elevation: 1164 wide, sill 21060, head 22554",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.163894697034266
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1164,
+      "against": "elevation: 1164 wide, sill 23970, head 25715",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.163894697034266
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1156,
+      "against": "elevation: 1156 wide, sill 10958, head 12754",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.156318416062277
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1156,
+      "against": "elevation: 1156 wide, sill 14303, head 16099",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.156318416062277
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1156,
+      "against": "elevation: 1156 wide, sill 17617, head 19413",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.156318416062277
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1156,
+      "against": "elevation: 1156 wide, sill 21060, head 22554",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.156318416062277
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1156,
+      "against": "elevation: 1156 wide, sill 23970, head 25715",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.156318416062277
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 10958, head 12754",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.14769254415296
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 14303, head 16099",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.14769254415296
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 17617, head 19413",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.14769254415296
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 21060, head 22554",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.14769254415296
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 23970, head 25715",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.14769254415296
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 10958, head 12754",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1476925439201295
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 14303, head 16099",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1476925439201295
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 17617, head 19413",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1476925439201295
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 21060, head 22554",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1476925439201295
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 23970, head 25715",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1476925439201295
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 10958, head 12754",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1476925436290912
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 14303, head 16099",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1476925436290912
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 17617, head 19413",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1476925436290912
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 21060, head 22554",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1476925436290912
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1148,
+      "against": "elevation: 1148 wide, sill 23970, head 25715",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.1476925436290912
+    },
+    {
+      "kind": "opening",
+      "level": "First Floor",
+      "id": 847028,
+      "devMm": 94,
+      "against": "plan jambs (left -94, right 53 mm)",
+      "at": [
+        1157,
+        -18670
+      ],
+      "fix": "set_insert id 847028 (width / sill / head / move) to match plan jambs (left -94, right 53 mm)",
+      "severity": 3.1383740043179955
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1099,
+      "against": "elevation: 1099 wide, sill 10958, head 12754",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0990977890905924
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1099,
+      "against": "elevation: 1099 wide, sill 14303, head 16099",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0990977890905924
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1099,
+      "against": "elevation: 1099 wide, sill 17617, head 19413",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0990977890905924
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1099,
+      "against": "elevation: 1099 wide, sill 21060, head 22554",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0990977890905924
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1099,
+      "against": "elevation: 1099 wide, sill 23970, head 25715",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0990977890905924
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1076,
+      "against": "elevation: 1076 wide, sill 10958, head 12754",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0762000555405393
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1076,
+      "against": "elevation: 1076 wide, sill 14303, head 16099",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0762000555405393
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1076,
+      "against": "elevation: 1076 wide, sill 17617, head 19413",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0762000555405393
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1076,
+      "against": "elevation: 1076 wide, sill 21060, head 22554",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0762000555405393
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846959,
+      "devMm": 31,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -12476,
+        11679
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846959]",
+      "severity": 3.0726956085738903
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1069,
+      "against": "elevation: 1069 wide, sill 10958, head 12754",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0686237740446813
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1069,
+      "against": "elevation: 1069 wide, sill 14303, head 16099",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0686237740446813
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1069,
+      "against": "elevation: 1069 wide, sill 17617, head 19413",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0686237740446813
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1069,
+      "against": "elevation: 1069 wide, sill 21060, head 22554",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0686237740446813
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 1050,
+      "against": "elevation: 1050 wide, sill 7541, head 9487",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 3.0498637320124544
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845192,
+      "devMm": 30,
+      "against": "plan DWG wall face lines",
+      "at": [
+        367,
+        -11954
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845192]",
+      "severity": 3.0010298873560863
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Basement",
+      "id": 845192,
+      "devMm": 30,
+      "against": "DWG face pair 130 mm (model 100 mm)",
+      "at": [
+        367,
+        -11954
+      ],
+      "fix": "dwg_wall_fit_apply ids [845192]",
+      "severity": 3
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Ground Floor",
+      "id": 845987,
+      "devMm": -30,
+      "against": "DWG face pair 370 mm (model 400 mm)",
+      "at": [
+        4637,
+        14629
+      ],
+      "fix": "dwg_wall_fit_apply ids [845987]",
+      "severity": 3
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Ground Floor",
+      "id": 846003,
+      "devMm": -30,
+      "against": "DWG face pair 130 mm (model 160 mm)",
+      "at": [
+        2862,
+        -14097
+      ],
+      "fix": "dwg_wall_fit_apply ids [846003]",
+      "severity": 3
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Ground Floor",
+      "id": 845993,
+      "devMm": -30,
+      "against": "DWG face pair 310 mm (model 340 mm)",
+      "at": [
+        -10841,
+        22860
+      ],
+      "fix": "dwg_wall_fit_apply ids [845993]",
+      "severity": 3
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Second Floor",
+      "id": 847806,
+      "devMm": -30,
+      "against": "DWG face pair 350 mm (model 380 mm)",
+      "at": [
+        -4916,
+        -3782
+      ],
+      "fix": "dwg_wall_fit_apply ids [847806]",
+      "severity": 3
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848751,
+      "devMm": -60,
+      "against": "plan ceiling note 2.78 m (model 2.72 m)",
+      "at": [
+        242,
+        -18227
+      ],
+      "fix": "set_parameters id 848751 \u0022Height Offset From Level\u0022 2780 mm",
+      "severity": 3
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Fifth Floor",
+      "id": 850930,
+      "devMm": -30,
+      "against": "DWG face pair 90 mm (model 120 mm)",
+      "at": [
+        3226,
+        -15056
+      ],
+      "fix": "dwg_wall_fit_apply ids [850930]",
+      "severity": 3
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849239,
+      "devMm": 90,
+      "against": "plan jambs (left 90, right 48 mm)",
+      "at": [
+        -3687,
+        -15809
+      ],
+      "fix": "set_insert id 849239 (width / sill / head / move) to match plan jambs (left 90, right 48 mm)",
+      "severity": 2.9986398808708334
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845993,
+      "devMm": 30,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10841,
+        22860
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845993]",
+      "severity": 2.9982389364502957
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fifth Floor",
+      "devMm": 990,
+      "against": "DWG face pair 421 mm, 990 mm long",
+      "at": [
+        -12537,
+        -2895
+      ],
+      "line": [
+        -12539,
+        -2400,
+        -12535,
+        -3390
+      ],
+      "fix": "create_walls level \u0022Fifth Floor\u0022 line [-12539, -2400, -12535, -3390] thickness 421 (check with cad_lines first)",
+      "severity": 2.99
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850915,
+      "devMm": 30,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2214,
+        -3744
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850915]",
+      "severity": 2.9509764023309892
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847806,
+      "devMm": 29,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -4916,
+        -3782
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847806]",
+      "severity": 2.9489563269328642
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850907,
+      "devMm": 29,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3294,
+        -17408
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850907]",
+      "severity": 2.944531372372025
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fourth Floor",
+      "devMm": 928,
+      "against": "DWG face pair 300 mm, 928 mm long",
+      "at": [
+        3942,
+        -18754
+      ],
+      "line": [
+        3478,
+        -18752,
+        4407,
+        -18756
+      ],
+      "fix": "create_walls level \u0022Fourth Floor\u0022 line [3478, -18752, 4407, -18756] thickness 300 (check with cad_lines first)",
+      "severity": 2.928
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fifth Floor",
+      "devMm": 928,
+      "against": "DWG face pair 300 mm, 928 mm long",
+      "at": [
+        3942,
+        -18754
+      ],
+      "line": [
+        3478,
+        -18752,
+        4407,
+        -18756
+      ],
+      "fix": "create_walls level \u0022Fifth Floor\u0022 line [3478, -18752, 4407, -18756] thickness 300 (check with cad_lines first)",
+      "severity": 2.928
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845980,
+      "devMm": 29,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -6830,
+        11479
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845980]",
+      "severity": 2.926451444752795
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850910,
+      "devMm": 29,
+      "against": "plan DWG wall face lines",
+      "at": [
+        5121,
+        -5401
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850910]",
+      "severity": 2.881994418911727
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fifth Floor",
+      "devMm": 809,
+      "against": "DWG face pair 252 mm, 809 mm long",
+      "at": [
+        6990,
+        -5706
+      ],
+      "line": [
+        7395,
+        -5704,
+        6585,
+        -5709
+      ],
+      "fix": "create_walls level \u0022Fifth Floor\u0022 line [7395, -5704, 6585, -5709] thickness 252 (check with cad_lines first)",
+      "severity": 2.809
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 792,
+      "against": "DWG face pair 80 mm, 792 mm long",
+      "at": [
+        -2599,
+        14853
+      ],
+      "line": [
+        -2319,
+        15133,
+        -2879,
+        14573
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-2319, 15133, -2879, 14573] thickness 80 (check with cad_lines first)",
+      "severity": 2.792
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850900,
+      "devMm": 27,
+      "against": "plan DWG wall face lines",
+      "at": [
+        6964,
+        -5218
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850900]",
+      "severity": 2.744915369225474
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 735,
+      "against": "elevation: 735 wide, sill 25233, head 26624",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.7349722605431452
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 735,
+      "against": "elevation: 735 wide, sill 11546, head 13548",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.734972260077484
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 735,
+      "against": "elevation: 735 wide, sill 14775, head 16777",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.734972260077484
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 735,
+      "against": "elevation: 735 wide, sill 18011, head 20013",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.734972260077484
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 735,
+      "against": "elevation: 735 wide, sill 21250, head 23252",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.734972260077484
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 735,
+      "against": "elevation: 735 wide, sill 25233, head 26624",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.734972260077484
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 735,
+      "against": "elevation: 735 wide, sill 24179, head 26624",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.734972259553615
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 735,
+      "against": "elevation: 735 wide, sill 25233, head 26624",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.7349722587969154
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Ground Floor",
+      "devMm": 732,
+      "against": "DWG face pair 80 mm, 732 mm long",
+      "at": [
+        -2060,
+        15392
+      ],
+      "line": [
+        -1801,
+        15651,
+        -2319,
+        15133
+      ],
+      "fix": "create_walls level \u0022Ground Floor\u0022 line [-1801, 15651, -2319, 15133] thickness 80 (check with cad_lines first)",
+      "severity": 2.732
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 729,
+      "against": "elevation: 729 wide, sill 14461, head 15965",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.7288634323049337
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 729,
+      "against": "elevation: 729 wide, sill 17801, head 19298",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.7288634323049337
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 729,
+      "against": "elevation: 729 wide, sill 21210, head 22400",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.7288634323049337
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 688,
+      "against": "elevation: 688 wide, sill 11156, head 13553",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.6883356404141523
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 688,
+      "against": "elevation: 688 wide, sill 14387, head 16784",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.6883356404141523
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 688,
+      "against": "elevation: 688 wide, sill 17623, head 20020",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.6883356404141523
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 688,
+      "against": "elevation: 688 wide, sill 20862, head 23259",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.6883356404141523
+    },
+    {
+      "kind": "opening_missing",
+      "level": "Fifth Floor",
+      "devMm": 684,
+      "against": "elevation: 684 wide, sill 25233, head 26624",
+      "fix": "place_inserts on the facade wall at that place (dwg_elevation gives the point)",
+      "severity": 2.6836430524708703
+    },
+    {
+      "kind": "wall_missing",
+      "level": "First Floor",
+      "devMm": 645,
+      "against": "DWG face pair 335 mm, 645 mm long",
+      "at": [
+        -11700,
+        -3712
+      ],
+      "line": [
+        -12023,
+        -3710,
+        -11378,
+        -3715
+      ],
+      "fix": "create_walls level \u0022First Floor\u0022 line [-12023, -3710, -11378, -3715] thickness 335 (check with cad_lines first)",
+      "severity": 2.645
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fifth Floor",
+      "devMm": 641,
+      "against": "DWG face pair 340 mm, 641 mm long",
+      "at": [
+        5143,
+        734
+      ],
+      "line": [
+        4935,
+        490,
+        5351,
+        979
+      ],
+      "fix": "create_walls level \u0022Fifth Floor\u0022 line [4935, 490, 5351, 979] thickness 340 (check with cad_lines first)",
+      "severity": 2.641
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847807,
+      "devMm": 26,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3238,
+        -15795
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847807]",
+      "severity": 2.6289305476597433
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Third Floor",
+      "devMm": 621,
+      "against": "DWG face pair 300 mm, 621 mm long",
+      "at": [
+        -11628,
+        -9894
+      ],
+      "line": [
+        -11939,
+        -9892,
+        -11318,
+        -9895
+      ],
+      "fix": "create_walls level \u0022Third Floor\u0022 line [-11939, -9892, -11318, -9895] thickness 300 (check with cad_lines first)",
+      "severity": 2.621
+    },
+    {
+      "kind": "opening",
+      "level": "Second Floor",
+      "id": 847857,
+      "devMm": 78,
+      "against": "plan jambs (left -5, right 78 mm)",
+      "at": [
+        84,
+        -3802
+      ],
+      "fix": "set_insert id 847857 (width / sill / head / move) to match plan jambs (left -5, right 78 mm)",
+      "severity": 2.613833641445187
+    },
+    {
+      "kind": "wall_missing",
+      "level": "Fifth Floor",
+      "devMm": 606,
+      "against": "DWG face pair 300 mm, 606 mm long",
+      "at": [
+        4710,
+        -18758
+      ],
+      "line": [
+        4407,
+        -18757,
+        5013,
+        -18760
+      ],
+      "fix": "create_walls level \u0022Fifth Floor\u0022 line [4407, -18757, 5013, -18760] thickness 300 (check with cad_lines first)",
+      "severity": 2.606
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850901,
+      "devMm": 26,
+      "against": "plan DWG wall face lines",
+      "at": [
+        5751,
+        -5331
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850901]",
+      "severity": 2.558235937807834
+    },
+    {
+      "kind": "opening",
+      "level": "Ground Floor",
+      "id": 846088,
+      "devMm": 77,
+      "against": "plan jambs (left -77, right -14 mm)",
+      "at": [
+        2279,
+        -18378
+      ],
+      "fix": "set_insert id 846088 (width / sill / head / move) to match plan jambs (left -77, right -14 mm)",
+      "severity": 2.553537265394099
+    },
+    {
+      "kind": "opening",
+      "level": "Fourth Floor",
+      "id": 849252,
+      "devMm": 76,
+      "against": "plan jambs (left 76, right 25 mm)",
+      "at": [
+        -1559,
+        -3791
+      ],
+      "fix": "set_insert id 849252 (width / sill / head / move) to match plan jambs (left 76, right 25 mm)",
+      "severity": 2.549281989600301
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850920,
+      "devMm": 25,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4548,
+        -5393
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850920]",
+      "severity": 2.531934260684455
+    },
+    {
+      "kind": "ceiling",
+      "level": "Third Floor",
+      "id": 848751,
+      "devMm": 50,
+      "against": "plan ceiling note 2.67 m (model 2.72 m)",
+      "at": [
+        -8051,
+        -12185
+      ],
+      "fix": "set_parameters id 848751 \u0022Height Offset From Level\u0022 2670 mm",
+      "severity": 2.5
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845978,
+      "devMm": 24,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -852,
+        -16812
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845978]",
+      "severity": 2.4092810864004415
+    },
+    {
+      "kind": "opening",
+      "level": "Basement",
+      "id": 845398,
+      "devMm": 65,
+      "against": "plan jambs (left -65, right 65 mm)",
+      "at": [
+        -63,
+        11268
+      ],
+      "fix": "set_insert id 845398 (width / sill / head / move) to match plan jambs (left -65, right 65 mm)",
+      "severity": 2.173173799777457
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849225,
+      "devMm": 21,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -6579,
+        -16099
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849225]",
+      "severity": 2.1373784997133654
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846962,
+      "devMm": 21,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -828,
+        -11335
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846962]",
+      "severity": 2.131683473210345
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849226,
+      "devMm": 21,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -3688,
+        -16134
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849226]",
+      "severity": 2.1281314795336748
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850902,
+      "devMm": 21,
+      "against": "plan DWG wall face lines",
+      "at": [
+        587,
+        -3935
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850902]",
+      "severity": 2.124160767386173
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849184,
+      "devMm": 21,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3251,
+        -15448
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849184]",
+      "severity": 2.1000760053994383
+    },
+    {
+      "kind": "ceiling",
+      "level": "Ground Floor",
+      "id": 846545,
+      "devMm": -40,
+      "against": "plan ceiling note 2.38 m (model 2.34 m)",
+      "at": [
+        -891,
+        -10472
+      ],
+      "fix": "set_parameters id 846545 \u0022Height Offset From Level\u0022 2380 mm",
+      "severity": 2
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Fifth Floor",
+      "id": 850920,
+      "devMm": 20,
+      "against": "DWG face pair 240 mm (model 220 mm)",
+      "at": [
+        4548,
+        -5393
+      ],
+      "fix": "dwg_wall_fit_apply ids [850920]",
+      "severity": 2
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Fifth Floor",
+      "id": 850907,
+      "devMm": -20,
+      "against": "DWG face pair 460 mm (model 480 mm)",
+      "at": [
+        3294,
+        -17408
+      ],
+      "fix": "dwg_wall_fit_apply ids [850907]",
+      "severity": 2
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848429,
+      "devMm": 19,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -2618,
+        -14163
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848429]",
+      "severity": 1.9256679035867605
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Fifth Floor",
+      "id": 850903,
+      "devMm": -19,
+      "against": "DWG face pair 621 mm (model 640 mm)",
+      "at": [
+        -5144,
+        -3890
+      ],
+      "fix": "dwg_wall_fit_apply ids [850903]",
+      "severity": 1.9
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845995,
+      "devMm": 19,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10457,
+        21417
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845995]",
+      "severity": 1.8666826701137171
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850914,
+      "devMm": 18,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3282,
+        -4073
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850914]",
+      "severity": 1.793940176791672
+    },
+    {
+      "kind": "opening",
+      "level": "First Floor",
+      "id": 847038,
+      "devMm": 54,
+      "against": "plan jambs (left -54, right 54 mm)",
+      "at": [
+        -37,
+        -3979
+      ],
+      "fix": "set_insert id 847038 (width / sill / head / move) to match plan jambs (left -54, right 54 mm)",
+      "severity": 1.7902283082782409
+    },
+    {
+      "kind": "wall_thickness",
+      "level": "Fifth Floor",
+      "id": 850914,
+      "devMm": 17,
+      "against": "DWG face pair 357 mm (model 340 mm)",
+      "at": [
+        3282,
+        -4073
+      ],
+      "fix": "dwg_wall_fit_apply ids [850914]",
+      "severity": 1.7
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850903,
+      "devMm": 17,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -5144,
+        -3890
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850903]",
+      "severity": 1.6644116422759054
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847821,
+      "devMm": 16,
+      "against": "plan DWG wall face lines",
+      "at": [
+        242,
+        -8510
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847821]",
+      "severity": 1.6351355363729947
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846002,
+      "devMm": 16,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -2809,
+        11292
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846002]",
+      "severity": 1.6342354446095015
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845996,
+      "devMm": 16,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2872,
+        21441
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845996]",
+      "severity": 1.6274117730403455
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845984,
+      "devMm": 16,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2445,
+        11751
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845984]",
+      "severity": 1.6029507950002881
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849186,
+      "devMm": 16,
+      "against": "plan DWG wall face lines",
+      "at": [
+        4860,
+        -18765
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849186]",
+      "severity": 1.5937672143171016
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850898,
+      "devMm": 15,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11883,
+        -8838
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850898]",
+      "severity": 1.5094346379644867
+    },
+    {
+      "kind": "ceiling_missing",
+      "level": "Ground Floor",
+      "devMm": 3080,
+      "against": "plan ceiling note 3.08 m",
+      "at": [
+        -10133,
+        -18834
+      ],
+      "fix": "a ceiling at 3080 mm above the level over that room",
+      "severity": 1.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "First Floor",
+      "id": 847362,
+      "devMm": -30,
+      "against": "plan ceiling note 2.59 m (model 2.56 m)",
+      "at": [
+        -8233,
+        -4756
+      ],
+      "fix": "set_parameters id 847362 \u0022Height Offset From Level\u0022 2590 mm",
+      "severity": 1.5
+    },
+    {
+      "kind": "ceiling",
+      "level": "Fifth Floor",
+      "id": 851349,
+      "devMm": -30,
+      "against": "plan ceiling note 2.64 m (model 2.61 m)",
+      "at": [
+        -7826,
+        -12100
+      ],
+      "fix": "set_parameters id 851349 \u0022Height Offset From Level\u0022 2640 mm",
+      "severity": 1.5
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849183,
+      "devMm": 15,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -4977,
+        -3783
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849183]",
+      "severity": 1.4561948435860486
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846061,
+      "devMm": 14,
+      "against": "plan DWG wall face lines",
+      "at": [
+        1762,
+        -18377
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846061]",
+      "severity": 1.4029428404057158
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846000,
+      "devMm": 14,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -701,
+        -10042
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846000]",
+      "severity": 1.3817209697662736
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849223,
+      "devMm": 14,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -7145,
+        -14204
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849223]",
+      "severity": 1.3733802023883603
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845981,
+      "devMm": 14,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -3136,
+        10457
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845981]",
+      "severity": 1.3582002296167246
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846971,
+      "devMm": 13,
+      "against": "plan DWG wall face lines",
+      "at": [
+        3257,
+        -13963
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846971]",
+      "severity": 1.3238570762225952
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846963,
+      "devMm": 13,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -4931,
+        -18653
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846963]",
+      "severity": 1.274502203968161
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fifth Floor",
+      "id": 850955,
+      "devMm": 13,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -8164,
+        -13208
+      ],
+      "fix": "dwg_wall_fit level \u0022Fifth Floor\u0022, then dwg_wall_fit_apply ids [850955]",
+      "severity": 1.2699677188238538
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 847001,
+      "devMm": 13,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -1695,
+        -14121
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [847001]",
+      "severity": 1.258371735586406
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845997,
+      "devMm": 12,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -10831,
+        21880
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845997]",
+      "severity": 1.1629854174680039
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849227,
+      "devMm": 11,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -1025,
+        -12794
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849227]",
+      "severity": 1.1479342030544974
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 847002,
+      "devMm": 11,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -5178,
+        -14100
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [847002]",
+      "severity": 1.1308370332178037
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845172,
+      "devMm": 11,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -2982,
+        10219
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845172]",
+      "severity": 1.0981916752152707
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849224,
+      "devMm": 11,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -5242,
+        -8623
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849224]",
+      "severity": 1.0880362125738483
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846988,
+      "devMm": 11,
+      "against": "plan DWG wall face lines",
+      "at": [
+        735,
+        -3981
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846988]",
+      "severity": 1.0872866570186894
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848431,
+      "devMm": 11,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -7925,
+        -7285
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848431]",
+      "severity": 1.060441167696989
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849211,
+      "devMm": 11,
+      "against": "plan DWG wall face lines",
+      "at": [
+        486,
+        -6522
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849211]",
+      "severity": 1.056832234987515
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847835,
+      "devMm": 11,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -1034,
+        -16336
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847835]",
+      "severity": 1.0528721964011623
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849228,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -8991,
+        -8591
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849228]",
+      "severity": 1.0489802768957213
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846052,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -2675,
+        -10644
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846052]",
+      "severity": 1.0415049761579578
+    },
+    {
+      "kind": "wall_face",
+      "level": "Second Floor",
+      "id": 847836,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        12,
+        -14010
+      ],
+      "fix": "dwg_wall_fit level \u0022Second Floor\u0022, then dwg_wall_fit_apply ids [847836]",
+      "severity": 1.0393278898485736
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848434,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -8105,
+        -13512
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848434]",
+      "severity": 1.0363696478292397
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848428,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -11638,
+        -8901
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848428]",
+      "severity": 1.0325549631617947
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848430,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -9630,
+        -12860
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848430]",
+      "severity": 1.0311648219195457
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846059,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -5177,
+        7644
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846059]",
+      "severity": 1.0273348273349714
+    },
+    {
+      "kind": "wall_face",
+      "level": "First Floor",
+      "id": 846984,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2301,
+        -5695
+      ],
+      "fix": "dwg_wall_fit level \u0022First Floor\u0022, then dwg_wall_fit_apply ids [846984]",
+      "severity": 1.025375678738038
+    },
+    {
+      "kind": "wall_face",
+      "level": "Fourth Floor",
+      "id": 849188,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        2040,
+        -8747
+      ],
+      "fix": "dwg_wall_fit level \u0022Fourth Floor\u0022, then dwg_wall_fit_apply ids [849188]",
+      "severity": 1.0182395683030194
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846012,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -64,
+        -6110
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846012]",
+      "severity": 1.0177353384163674
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848432,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -1687,
+        -7339
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848432]",
+      "severity": 1.015294552169067
+    },
+    {
+      "kind": "wall_face",
+      "level": "Third Floor",
+      "id": 848433,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -5653,
+        -7306
+      ],
+      "fix": "dwg_wall_fit level \u0022Third Floor\u0022, then dwg_wall_fit_apply ids [848433]",
+      "severity": 1.0110362990963988
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845165,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -1947,
+        -4144
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845165]",
+      "severity": 1.0096115885928243
+    },
+    {
+      "kind": "wall_face",
+      "level": "Basement",
+      "id": 845170,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -1914,
+        5765
+      ],
+      "fix": "dwg_wall_fit level \u0022Basement\u0022, then dwg_wall_fit_apply ids [845170]",
+      "severity": 1.004042436938009
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 845991,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -95,
+        11705
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [845991]",
+      "severity": 1.003066001012121
+    },
+    {
+      "kind": "wall_face",
+      "level": "Ground Floor",
+      "id": 846056,
+      "devMm": 10,
+      "against": "plan DWG wall face lines",
+      "at": [
+        -2073,
+        -11683
+      ],
+      "fix": "dwg_wall_fit level \u0022Ground Floor\u0022, then dwg_wall_fit_apply ids [846056]",
+      "severity": 1.0014401457056574
+    }
+  ]
+}
