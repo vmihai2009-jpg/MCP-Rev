@@ -8,6 +8,13 @@ $here   = $PSScriptRoot
 $addins = Join-Path $env:APPDATA 'Autodesk\Revit\Addins\2025'
 $root   = Join-Path $addins 'BGMCP'
 
+# 1.36.16: any failure is shown with its line, then exit 2 (it used to end with a bare exit 255, which said nothing)
+trap {
+    Write-Host ("Install failed: " + $_.Exception.Message) -ForegroundColor Red
+    Write-Host ("  at line " + $_.InvocationInfo.ScriptLineNumber + ": " + $_.InvocationInfo.Line.Trim()) -ForegroundColor Red
+    exit 2
+}
+
 if (Get-Process Revit -ErrorAction SilentlyContinue) {
     Write-Host 'Revit is running. Close it and run this again, or use the Update button in Revit (Barr Gazetas tab > MCP > Update).' -ForegroundColor Yellow
     exit 1
