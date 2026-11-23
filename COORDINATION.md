@@ -653,6 +653,15 @@ _Write your entries here, newest first. Use the "Revit run results" template for
 
 <!-- First entry goes here. -->
 
+### 2026-11-23: Survey to Revit 0.33.38, the neighbour's roof off our 1F slab, the terrace railing built
+- **Neighbour roof lines on the outline layer.** No.30's roof is drawn on BUILDINGS beside our 1F terrace: a zigzag of 60 mm lines and a 380 mm wall at x -13.0. These were kept as our walls because their midpoints were within 1.5 m of our own linework. Now an outline-layer wall whose nearest face is more than 0.3 m outside that linework's hull is the neighbour's.
+  - MR 1F: 8 more dropped. Slab 472 -> 444 m2; its west edge moves from x -14.28 to -12.83, the outer face of our 700 mm party wall.
+  - MR 4F: 237 m2. With the neighbour's line gone, our west party wall (inside face drawn only) is now carried, 14.7 m.
+  - MR 5F: 226 m2.
+  - SP: unchanged.
+- **Railing from its note.** "RAILING 0.90HT" with no wall read within 0.8 m: the nearest pair of long parallel lines 50-250 mm apart within 1.5 m (`SurveyAnalyzer.RailingFrom`) is built as a low wall at that height. MR 1F: wall 817977, 120 mm, 900 high, 15.0 m. Tests added.
+- **Side effect.** MR 5F street front is now classed SetBackStorey (0.75 m back), which matches the elevation.
+
 ### 2026-11-23: Survey to Revit 0.33.37, what the 1F terrace really is (Mihai's screenshot of the rear court)
 Mihai flagged an "extra floor and stairs" in the rear court. On the 1F plan this is the GF's flat roof, a terrace at 28.1 AOD with a roof light, plant housings, gullies and a 0.90 railing, plus an outside stair from the GF court (24.60) up to it.
 - **Stairs arriving from below.** A stair whose foot has a spot height 1.5 m or more below its plan's floor comes up from the floor below and is not built again. MR: GF 1 (the B1 stair drawn arriving), 1F 1 (the court stair), 5F 1. SP: 7F 1.
