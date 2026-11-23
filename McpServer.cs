@@ -325,14 +325,14 @@ namespace BarrGazetas.RevitMcp
             if (name == "job_status") return await JobStatus(args);
 
             var tool = AllTools().FirstOrDefault(t => t.Name == name);
-            if (tool == null) return Text("There is no tool called " + name + ". See tools/list.", true);
+            if (tool == null) return Fail(ToolError.UnknownTool, "There is no tool called " + name + ". See tools/list.");
             var clock = Stopwatch.StartNew();
             int argChars = args.ToJsonString().Length;
             if (tool.Write && _o.ReadOnly())
             {
                 Record(name, tool.Provider, clock, argChars, Task.FromException<string>(new InvalidOperationException("refused: read-only mode")), null);
-                return Text($"{name} changes the model, and this connection is in read-only mode. " +
-                            "The user can allow changes in Revit: Barr Gazetas tab > MCP > Connect > untick \"Read only\".", true);
+                return Fail(ToolError.ReadOnly, $"{name} changes the model, and this connection is in read-only mode. " +
+                            "The user can allow changes in Revit: Barr Gazetas tab > MCP > Connect > untick \"Read only\".");
             }
 
             Task<string> work;
@@ -363,7 +363,7 @@ namespace BarrGazetas.RevitMcp
         {
             string id = (args["job"] as JsonValue)?.ToString();
             if (id == null || !_jobs.TryGetValue(id, out var job))
-                return Text($"There is no job {id}. Jobs are forgotten once their result has been read, or an hour after they finish.", true);
+                return Fail(ToolError.NotFound, $"There is no job {id}. Jobs are forgotten once their result has been read, or an hour after they finish.");
             double wait = 25;
             if (args["wait_seconds"] is JsonValue w && double.TryParse(w.ToString(), out var asked)) wait = Math.Max(0, Math.Min(45, asked));
             if (await Task.WhenAny(job.Work, Task.Delay(TimeSpan.FromSeconds(wait))) != job.Work)
@@ -378,8 +378,12 @@ namespace BarrGazetas.RevitMcp
 
         private JsonObject Outcome(Task<string> work)
         {
-            if (work.IsFaulted || work.IsCanceled)
-                return Text("Error: " + (work.IsCanceled ? "the call was cancelled." : Unwrap(work.Exception).Message), true);
+            if (work.IsCanceled) return Fail(ToolError.Cancelled, "Error: the call was cancelled.");
+            if (work.IsFaulted)
+            {
+                var ex = Unwrap(work.Exception);
+                return Fail(ToolError.Classify(ex), "Error: " + ex.Message);
+            }
             string text = work.Result ?? "";
             if (ToolContent.TryDecode(text, out var content)) return Rich(content);
             if (text.Length > _o.MaxResultChars)
@@ -458,6 +462,18 @@ namespace BarrGazetas.RevitMcp
             return new JsonObject { ["content"] = items, ["isError"] = false };
         }
 
+        /// <summary>
+        /// 1.37.0: a failed call with its error code. The text keeps the message on its first line (as before) and adds the
+        /// code and whether trying again can help; structuredContent carries the same for clients that read it.
+        /// </summary>
+        private static JsonObject Fail(string code, string message)
+        {
+            bool retry = ToolError.Retryable(code);
+            var r = Text(message + $"\n[error code: {code}; " + (retry ? "trying again may help" : "do not repeat the same call unchanged") + "]", true);
+            r["structuredContent"] = new JsonObject { ["ok"] = false, ["error"] = new JsonObject { ["code"] = code, ["message"] = message, ["retryable"] = retry } };
+            return r;
+        }
+
         private static JsonObject Text(string text, bool isError) => new JsonObject
         {
             ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = text }),
@@ -485,5 +501,43 @@ namespace BarrGazetas.RevitMcp
             }
             res.Close();
         }
+    }
+
+    /// <summary>
+    /// 1.37.0: the error codes a failed tool call carries, so a client can tell a cancel from a refusal from a bug without
+    /// reading the message. Language-independent: decided by the exception's type, never by its (possibly localised) text.
+    /// </summary>
+    public static class ToolError
+    {
+        public const string UnknownTool = "unknown_tool", ReadOnly = "read_only", Cancelled = "cancelled", Timeout = "timeout",
+            BadArgument = "bad_argument", NotFound = "not_found", NoDocument = "no_document", RevitRefused = "revit_refused",
+            Busy = "busy", Failed = "tool_failed";
+
+        public static string Classify(Exception ex)
+        {
+            if (ex == null) return Failed;
+            if (ex is OperationCanceledException) return Cancelled;
+            if (ex is TimeoutException) return Timeout;
+            if (ex is System.IO.FileNotFoundException || ex is System.IO.DirectoryNotFoundException || ex is KeyNotFoundException) return NotFound;
+            if (ex is ArgumentException || ex is FormatException || ex is System.Text.Json.JsonException) return BadArgument;
+            string type = ex.GetType().FullName ?? "";
+            if (type.StartsWith("Autodesk.Revit.Exceptions.", StringComparison.Ordinal))
+            {
+                if (type.EndsWith(".ArgumentException") || type.EndsWith(".ArgumentNullException") || type.EndsWith(".ArgumentOutOfRangeException") || type.EndsWith(".InvalidObjectException")) return BadArgument;
+                if (type.EndsWith(".ModificationOutsideTransactionException") || type.EndsWith(".ModificationForbiddenException")) return Busy;
+                return RevitRefused;
+            }
+            if (ex is NoDocumentException) return NoDocument;
+            return Failed;
+        }
+
+        /// <summary>Whether the same call can succeed later without changing it (Revit was busy, a wait ran out).</summary>
+        public static bool Retryable(string code) => code == Timeout || code == Busy || code == NoDocument;
+    }
+
+    /// <summary>No Revit project is open (or none the call can use).</summary>
+    public class NoDocumentException : InvalidOperationException
+    {
+        public NoDocumentException(string message) : base(message) { }
     }
 }

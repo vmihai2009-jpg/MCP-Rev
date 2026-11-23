@@ -59,7 +59,7 @@ namespace BarrGazetas.RevitMcp
 
         private static object Run(UIApplication app, JsonObject a, IReadOnlyList<RevitTool> own, Func<object, string, JsonObject, string> other, JsonSerializerOptions json)
         {
-            var doc = app?.ActiveUIDocument?.Document ?? throw new InvalidOperationException("No Revit project is open. Ask the user to open one.");
+            var doc = app?.ActiveUIDocument?.Document ?? throw new NoDocumentException("No Revit project is open. Ask the user to open one.");
             if (doc.IsReadOnly) throw new InvalidOperationException("This project is read-only.");
             if (doc.IsModifiable) throw new InvalidOperationException("Another command is still changing the model. Ask the user to finish it in Revit, then try again.");
             var calls = (a["calls"] as JsonArray)?.OfType<JsonObject>().ToList() ?? new List<JsonObject>();

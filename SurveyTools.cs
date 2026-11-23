@@ -718,7 +718,7 @@ namespace BarrGazetas.RevitMcp
         // ---------- documents ----------
 
         private static Document Doc(UIApplication app) =>
-            Reference.Current ?? app?.ActiveUIDocument?.Document ?? throw new InvalidOperationException("No Revit project is open. Ask the user to open one.");
+            Reference.Current ?? app?.ActiveUIDocument?.Document ?? throw new NoDocumentException("No Revit project is open. Ask the user to open one.");
 
         private static Document Writable(UIApplication app)
         {

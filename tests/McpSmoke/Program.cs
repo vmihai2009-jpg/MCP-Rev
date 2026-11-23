@@ -23,6 +23,8 @@ namespace McpSmoke
             new[] { "smoke_echo", "Says back what it was given.", "{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[]}", "background" },
             new[] { "smoke_slow", "Takes a few seconds.", "{\"type\":\"object\",\"properties\":{\"seconds\":{\"type\":\"number\"}},\"required\":[]}", "background,long" },
             new[] { "smoke_boom", "Always fails.", "{\"type\":\"object\",\"properties\":{},\"required\":[]}", "background" },
+            new[] { "smoke_bad", "Refuses its arguments.", "", "background" },
+            new[] { "smoke_cancel", "Is cancelled.", "", "background" },
             new[] { "smoke_write", "Would change the model.", "", "write" },
             new[] { "smoke_revit", "Runs on the Revit thread.", "not json", "" },
             new[] { "smoke_big", "A very long answer.", "", "background" },
@@ -38,6 +40,8 @@ namespace McpSmoke
                 case "smoke_echo": return new JsonObject { ["echo"] = args["text"]?.ToString(), ["app"] = app?.ToString() }.ToJsonString();
                 case "smoke_slow": Thread.Sleep(TimeSpan.FromSeconds(double.Parse(args["seconds"]?.ToString() ?? "3"))); return "{\"slept\":true}";
                 case "smoke_boom": throw new InvalidOperationException("the wall fell over");
+                case "smoke_bad": throw new ArgumentException("width must be a number");
+                case "smoke_cancel": throw new OperationCanceledException("the user pressed Esc");
                 case "smoke_write": return "{\"written\":true}";
                 case "smoke_revit": return new JsonObject { ["app"] = app?.ToString() }.ToJsonString();
                 case "smoke_big": return new string('x', 200000);
@@ -79,6 +83,12 @@ namespace McpSmoke
             var r = await Rpc("tools/call", new JsonObject { ["name"] = name, ["arguments"] = args ?? new JsonObject() });
             var result = r["result"] as JsonObject;
             return (result?["content"]?[0]?["text"]?.ToString(), result?["isError"]?.GetValue<bool>() == true);
+        }
+
+        private static async Task<string> Code(string name)
+        {
+            var r = await Rpc("tools/call", new JsonObject { ["name"] = name, ["arguments"] = new JsonObject() });
+            return r["result"]?["structuredContent"]?["error"]?["code"]?.ToString();
         }
 
         private static async Task<int> Main(string[] argv)
@@ -140,9 +150,13 @@ namespace McpSmoke
             var revit = await Tool("smoke_revit");
             Check("a Revit tool is handed the application on the Revit thread", revit.text.Contains("the-revit-app"), revit.text);
             var boom = await Tool("smoke_boom");
-            Check("a failing tool reports its own message, not a wrapper", boom.isError && boom.text == "Error: the wall fell over", boom.text);
+            Check("a failing tool reports its own message, not a wrapper", boom.isError && boom.text.StartsWith("Error: the wall fell over\n[error code: tool_failed;"), boom.text);
+            Check("a failure carries a typed error code", (await Code("smoke_boom")) == "tool_failed");
             var missing = await Tool("no_such_tool");
             Check("an unknown tool is a tool error", missing.isError);
+            Check("an unknown tool has its own code", (await Code("no_such_tool")) == "unknown_tool");
+            Check("a bad argument has its own code", (await Code("smoke_bad")) == "bad_argument");
+            Check("a cancelled call has its own code, apart from a failure", (await Code("smoke_cancel")) == "cancelled");
             var big = await Tool("smoke_big");
             Check("a huge answer is cut with a note", !big.isError && big.text.Length < 61000 && big.text.Contains("cut: the full answer is 200000"), big.text.Length.ToString());
 
@@ -158,6 +172,7 @@ namespace McpSmoke
             readOnly = true;
             var refused = await Tool("smoke_write");
             Check("a write tool is refused in read-only mode", refused.isError && refused.text.Contains("read-only"), refused.text);
+            Check("the read-only refusal has its own code", (await Code("smoke_write")) == "read_only");
             var stillReads = await Tool("smoke_echo", new JsonObject { ["text"] = "x" });
             Check("reading still works in read-only mode", !stillReads.isError);
             Check("mcp_status says read-only", (await Tool("mcp_status")).text.Contains("\"readOnly\":true"));
@@ -189,7 +204,7 @@ namespace McpSmoke
             await Task.Delay(300);
             lock (records)
             {
-                Check("every tool call is recorded (job_status and unknown tools are not calls)", records.Count == 12, records.Count.ToString());
+                Check("every tool call is recorded (job_status and unknown tools are not calls)", records.Count == 16, records.Count.ToString());
                 Check("a change refused in read-only mode is recorded", records.Any(r => r.Tool == "smoke_write" && !r.Ok && r.Error.Contains("read-only")));
                 Check("a failure is recorded with its message", records.Any(r => r.Tool == "smoke_boom" && !r.Ok && r.Error == "the wall fell over"));
                 Check("a job is recorded when it finishes, with its time", records.Any(r => r.Tool == "smoke_slow" && r.Job == jobId && r.Ok && r.Ms >= 3500));
