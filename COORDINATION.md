@@ -680,6 +680,12 @@ _Write your entries here, newest first. Use the "Revit run results" template for
 
 <!-- First entry goes here. -->
 
+### 2026-11-26 (early): the curved corner has no detail because Elevation 4 was matched to the wrong facade (Mihai's screenshot + street photos)
+- **Seen:** the curved corner (three bays, three shop doors) is plain curved walls with wide slab-like ledges; none of the giant fluted pilasters, pedimented window pairs, balcony, cornice or dormers his photos and the drawing show.
+- **Cause (read from the drawings with `dwg_image path+box`):** Elevation 4 IS that corner (3 equal bays, 4 fluted pilasters, 3 doors, 3 dormers, Microsoft sign). `elevation_index` matched it to F45 (the straight south wall) at 50% jambs, and Elevation 5 (another ornate front) to F33 (an 11.7 m east return). So the corner got nothing and F45/F33 carry detail built from the wrong drawings (F45: 38 relief + 19 one-off, F33: 23 + 8). `facade_list` also cannot make a curved or multi-run front, so no id exists for the corner (lessons 19-21 in `docs/FACADE-LESSONS.md`).
+- **Done:** removed the E4 and E5 entries from the demo's `elevation-index.json` (backup `.bak-before-e4e5`) so nothing more is built from them. The 88 wrong pieces are still in the model, waiting for Mihai's yes.
+- **Needs the projects side:** a curved front in `facade_list` (join tangent runs/arcs, u by arc length) and a confidence report per elevation match; then Elevation 4 on the corner, Elevation 5, 2 and 9 placed.
+
 ### 2026-11-25 (night): Revit run results, S2R 0.33.64 source + hub 1.39.1, SwallowPlace_Demo.rvt: S2R facade audit and the Stage 1 GA set
 - **Latest S2R:** repo head is 0.33.64 (the elevation fix); Revit still runs the installed 0.33.63 (installing needs a Revit restart, not done). No newer branch from the projects side.
 - **SurveyLab (new engine, real SP DWGs, 37 s):** elevations still 4 drawings of 9 (3 matched). With the decisions file, E3 applied (but the drawing is labelled "Elevation 1"), E8 applied, E6 applied; E4, E5, E7 stale: "no drawing at that x range". Tried ignoring the sheet-frame layer in `Split`: no change, reverted. Next step is in S2R `docs/LESSONS.md` (dump the islands; copy the hub's window-line grouping).
