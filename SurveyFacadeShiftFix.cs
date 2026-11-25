@@ -28,7 +28,7 @@ namespace BarrGazetas.RevitMcp
                     ("facade", S("string", "Facade id (facade_list / elevation-index.json)"), true),
                     ("apply", S("boolean", "Make the moves (default false: list them)"), false),
                     ("tol_mm", S("number", "As facade_correspondence (default 20)"), false),
-                    ("max_move_mm", S("number", "Largest move made (default 1500)"), false),
+                    ("max_move_mm", S("number", "Largest move made (default 300)"), false),
                     ("storey_moves", S("boolean", "Also make storey-sized moves (default false)"), false),
                     ("ids", Arr("integer", "Only these elements"), false)),
                 Run = (app, a) =>
@@ -37,7 +37,11 @@ namespace BarrGazetas.RevitMcp
                     var doc = apply ? Writable(app) : Doc(app);
                     var c = Correspond(app, doc, a);
                     if (c.drawn == null) return new { facade = c.fid, note = "The elevation has no building lines in its sheet range: nothing to move against." };
-                    double max = Args.Dbl(a, "max_move_mm") ?? 1500; bool storey = Args.Bool(a, "storey_moves") == true;
+                    // 1.38.1: default 300, was 1500. On a repetitive classical front a window or pier "matches" the drawing after a move of
+                    // a whole bay (Swallow Place demo: a window slid in front of a pilaster, two piers moved off the plan): a real
+                    // misplacement is a few hundred mm, a bay-sized move is a coincidence. Survey-made elements (Comments
+                    // SurveyToRevit|...) are measured from the plan and are left to survey_autofix.
+                    double max = Args.Dbl(a, "max_move_mm") ?? 300; bool storey = Args.Bool(a, "storey_moves") == true;
                     var only = new HashSet<long>((a["ids"] as System.Text.Json.Nodes.JsonArray)?.Select(x => (long)x.GetValue<double>()) ?? Enumerable.Empty<long>());
                     var moves = new List<Dictionary<string, object>>();
                     var todo = new List<(Element e, ElementMatch m)>();
@@ -51,7 +55,9 @@ namespace BarrGazetas.RevitMcp
                             ["moveMm"] = new[] { Math.Round(m.ShiftU), Math.Round(m.ShiftZ) }, ["matchedNow"] = Math.Round(m.MatchedShare, 2), ["matchedAfter"] = Math.Round(m.ShiftedShare, 2),
                         };
                         string skip = e == null ? "not in the model" : m.Kind == "wall" || m.Kind == "floor" || m.Kind == "roof" ? "walls, floors and roofs are not moved here (survey_autofix)"
-                            : e.Pinned ? "pinned" : Math.Max(Math.Abs(m.ShiftU), Math.Abs(m.ShiftZ)) > max && !(storey && Math.Abs(m.ShiftZ) <= 4800) ? $"more than max_move_mm ({max:0})"
+                            : e.Pinned ? "pinned"
+                            : (e.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "").StartsWith("SurveyToRevit|", StringComparison.Ordinal) && Math.Abs(m.ShiftU) > 60 ? "built from the survey's plan: survey_autofix fits it, a facade shift would be a coincidence on a repeating front"
+                            : Math.Max(Math.Abs(m.ShiftU), Math.Abs(m.ShiftZ)) > max && !(storey && Math.Abs(m.ShiftZ) <= 4800) ? $"more than max_move_mm ({max:0})"
                             : !storey && Math.Abs(m.ShiftZ) >= 2400 && Math.Abs(m.ShiftZ) <= 4800 ? "a storey: check facade_course_check commonOffsets first (storey_moves: true to move anyway)"
                             : e is WallSweep && Math.Abs(m.ShiftU) > 1 ? "a wall sweep moves only up or down" : null;
                         if (skip != null) item["skipped"] = skip; else todo.Add((e, m));

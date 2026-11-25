@@ -343,6 +343,10 @@ namespace BarrGazetas.RevitMcp
                     if (fm.CurrentType == null) fm.NewType($"{Math.Round(p.Width)}x{Math.Round(p.Height)}");
                     void SetLen(string n, double mm) { var fp = fm.get_Parameter(n); if (fp != null) try { fm.Set(fp, mm / Mm); } catch { } }
                     SetLen("Width", p.Width); SetLen("Height", p.Height);
+                    // the pattern is drawn from the family's origin (z0 = 0 when the template's opening is gone), but Revit puts the
+                    // origin of an instance at its sill MINUS the family's default sill height (800 in the Metric Window template): an
+                    // arched window came out 800 mm below its sill (Swallow Place demo, 2026-11-25). Default sill 0 puts it on the sill.
+                    SetLen("Default Sill Height", 0);
                     if (!cut) { SetLen("Rough Width", p.Width); SetLen("Rough Height", p.Height); }
 
                     double face = hostThick / 2;
