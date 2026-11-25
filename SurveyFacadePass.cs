@@ -16,6 +16,9 @@ namespace BarrGazetas.RevitMcp
 {
     internal static partial class SurveyTools
     {
+        /// <summary>Moulded architraves + pediments + keystones + hoods + consoles on an elevation: a stone front has 25 or more, a plain brick one 0-3.</summary>
+        private const int ClassicalFeatureMin = 6;
+
         private static readonly string[] FacadePassSteps =
             { "windows", "profile", "columns", "rustication", "types", "relief", "mansard", "check" };
 
@@ -31,6 +34,7 @@ namespace BarrGazetas.RevitMcp
             InputSchema = Schema(
                 ("facades", Arr("string", "Facade ids (default: every facade in elevation-index.json)"), false),
                 ("steps", Arr("string", "Only these steps: windows, profile, columns, rustication, types, relief, mansard, check (default all, in that order)"), false),
+                ("style", S("string", "auto (default: a facade with fewer than 6 classical features on its elevation is plain and gets windows and section bands only), classical (every facade gets everything)"), false),
                 ("dry_run", S("boolean", "Each step lists what it would do and changes nothing (default false)"), false),
                 ("save", S("boolean", "save_model at the end (default false; never with dry_run)"), false)),
             Run = (app, a) =>
@@ -77,9 +81,27 @@ namespace BarrGazetas.RevitMcp
                     if (!dry) Step("window_family", "window_family", new JsonObject { ["action"] = "build", ["load"] = true });
                     Step("window_look", "window_look", new JsonObject { ["facades"] = new JsonArray(ids.Select(i => (JsonNode)JsonValue.Create(i)).ToArray()), ["dry_run"] = dry });
                 }
+                string style = (Args.Str(a, "style") ?? "auto").ToLowerInvariant();
                 foreach (var fid in ids)
                 {
+                    // 1.38.2: is this facade classical at all? facade_relief reads every wall-layer line of the elevation as carved stone,
+                    // which on a plain brick rear wall makes thin bars and blocks (Swallow Place demo: F66/F72 got 84 such pieces, Mihai:
+                    // "this side looks wrong"). The map's own kinds decide: classical features per facade were 25-41 on the stone fronts
+                    // and 2-3 on the plain ones (5 on a small corner); 6 or more is classical.
+                    bool classical = style == "classical";
+                    if (style == "auto")
+                    {
+                        var map = Step($"facade_detail_map {fid}", "facade_detail_map", new JsonObject { ["facade"] = fid, ["max_items"] = 1 });
+                        // the tool's answer is {answer: {kinds: ...}, file}: reading map["kinds"] gave 0 for every facade on the first run
+                        // of this gate (found by the dry run, which called Regent Street plain)
+                        var kinds = map?["answer"]?["kinds"] ?? map?["kinds"];
+                        int Kind(string k) { try { return kinds?[k]?.GetValue<int>() ?? 0; } catch { return 0; } }
+                        int score = Kind("architrave (moulded)") + Kind("pediment (triangular)") + Kind("pediment or arch (curved)") + Kind("keystone") + Kind("hood (window cornice)") + Kind("console");
+                        classical = score >= ClassicalFeatureMin;
+                        log.Add(new { step = $"style {fid}", ok = true, result = (object)$"{(classical ? "classical" : "plain")}: {score} classical features on the elevation (classical from {ClassicalFeatureMin})" });
+                    }
                     if (chosen.Contains("profile")) Step($"facade_profile {fid}", "facade_profile", new JsonObject { ["facade"] = fid, ["dry_run"] = dry });
+                    if (!classical) { log.Add(new { step = $"plain facade {fid}", ok = true, result = (object)"windows and section bands only: no columns, rustication, one-off pieces or relief faces (they read plain brick as carved stone)" }); continue; }
                     if (chosen.Contains("columns")) Step($"facade_columns {fid}", "facade_columns", new JsonObject { ["facade"] = fid, ["dry_run"] = dry });
                     if (chosen.Contains("rustication")) Step($"facade_rustication {fid}", "facade_rustication", new JsonObject { ["facade"] = fid, ["apply"] = !dry });
                     if (chosen.Contains("types")) Step($"facade_types {fid}", "facade_types", new JsonObject { ["facade"] = fid, ["apply"] = !dry });
