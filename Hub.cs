@@ -127,6 +127,12 @@ namespace BarrGazetas.RevitMcp
                 },
                 new PromptInfo
                 {
+                    Name = "facade_one_to_one",
+                    Description = "The facade method: where each number comes from (elevation, sections, return elevations, plan, site photos / Street View), the order of tools, how each classical detail is built editable, the checks and their targets, and the mistakes made before.",
+                    Text = SurveyGuide.Facade,
+                },
+                new PromptInfo
+                {
                     Name = "dwg_survey_build",
                     Description = "Build from a linked DWG by layer rules (dwg_analyze, dwg_build_model, survey_qa_check): the workflow, the actions, the limits and an example config.",
                     Text = SurveyGuide.ConfigGuide,

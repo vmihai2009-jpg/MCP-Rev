@@ -244,7 +244,8 @@ namespace BarrGazetas.RevitMcp
                                 "rather than listing everything. Tools that change the model are single undo steps in Revit; say so when you use one, " +
                                 "and ask before deleting or rebuilding. A call that takes long comes back as a job: check it with job_status. " +
                                 "Revit only runs requests when it is idle: if calls stall, ask the user to close any open dialog or finish the command in Revit. " +
-                                "Tools from other Barr Gazetas add-ins appear with their own prefix (survey_...) and do the heavy modelling: prefer them to placing elements one by one.",
+                                "Tools from other Barr Gazetas add-ins appear with their own prefix (survey_...) and do the heavy modelling: prefer them to placing elements one by one. " +
+                                "Before any facade detail work, call facade_guide and follow it.",
                         });
                     }
                     case "ping": return Result(id, new JsonObject());
