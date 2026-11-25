@@ -441,7 +441,7 @@ namespace BarrGazetas.RevitMcp
         /// Every wall, floor, roof, ceiling, stair and generic model the vertical plane through a..b cuts, as its outline
         /// on the plane (u along a..b, z model height, mm): each element's solids intersected with a 5 mm slice of the plane.
         /// </summary>
-        internal static List<SecElement> CutModel(Document doc, Pt a, Pt b, double zLoMm, double zHiMm, out int failed)
+        internal static List<SecElement> CutModel(Document doc, Pt a, Pt b, double zLoMm, double zHiMm, out int failed, IEnumerable<BuiltInCategory> extraCats = null)
         {
             failed = 0;
             double len = a.Dist2D(b);
@@ -459,6 +459,8 @@ namespace BarrGazetas.RevitMcp
             var corners = new[] { P(-ext, zLo), P(L + ext, zLo), P(-ext, zHi), P(L + ext, zHi) }.SelectMany(p => new[] { p, p + n.Multiply(2 * half) }).ToList();
             var outline = new Outline(new XYZ(corners.Min(p => p.X), corners.Min(p => p.Y), corners.Min(p => p.Z)), new XYZ(corners.Max(p => p.X), corners.Max(p => p.Y), corners.Max(p => p.Z)));
             var cats = new List<BuiltInCategory> { BuiltInCategory.OST_Walls, BuiltInCategory.OST_Floors, BuiltInCategory.OST_Roofs, BuiltInCategory.OST_Ceilings, BuiltInCategory.OST_Stairs, BuiltInCategory.OST_GenericModel };
+            // 1.39.0: facade_depth_check also cuts the facade detail (wall sweeps, reveals, columns, windows)
+            if (extraCats != null) cats.AddRange(extraCats.Where(c => !cats.Contains(c)));
             var found = new FilteredElementCollector(doc).WherePasses(new ElementMulticategoryFilter(cats)).WhereElementIsNotElementType()
                 .WherePasses(new BoundingBoxIntersectsFilter(outline)).ToElements();
             var opts = new Options { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false, IncludeNonVisibleObjects = false };
