@@ -60,14 +60,10 @@ Rules
    (create_floor with replace_id); stair and lift voids (create_opening). Rooms the build left unnamed or missed:
    dwg_read for the label, then place_rooms at it. The ground: dwg_terrain on the site plan (dry run first: check
    the dropped levels), holes = the building footprint, then toposolid_subdivide for paving.
-7. FACADE (editable only: families, profiles on wall sweeps, roofs; see docs/FACADE-DETAIL.md)
-   facade_detail_map facade: F.. image: true first: what the elevation draws, named (bands, rustication,
-   architraves, sills, hoods, pediments, keystones, consoles, pilasters, quoins, balustrades), repeats grouped
-   into types, how to build each. With reference: <a reference_open name> it says how the human model built
-   each item and how far it projects. Then facade_profile (bands, mansard: wall sweeps from the section),
-   facade_columns (pilasters, columns from the plan), window_family + window_look (windows), facade_relief
-   (the rest of the stonework, a family per window design). Check: facade_detail_map reference: active
-   (items with nothing built yet), view_image beside the elevation.
+7. FACADE: call facade_guide first and follow it (the method, the sources each number comes from, photos,
+   the order of tools, the checks and their targets). In short: facade_detail_map to name what the elevation
+   draws, confirmed against site photos; facade_detail_pass; then facade_check and facade_depth_check on every
+   facade. Editable only: families, profiles on wall sweeps, roofs.
 8. FINAL SCORE
    survey_fidelity on every floor must pass. Report per floor: the numbers before and after, what is left for
    a person (with element ids), and every value you could not read from the drawings." + "\n" + Sections3D;
@@ -130,5 +126,71 @@ EXAMPLE CONFIG
     { ""name"": ""site_objects"", ""match"": [""L-TREE""], ""action"": ""point_family"", ""familyMap"": [ { ""block"": ""TREE*"", ""familyName"": ""M_Tree"", ""typeName"": ""Deciduous"" } ] }
   ]
 }";
+
+        /// <summary>1.40.0: the facade method, as one text Claude reads before any facade detail (tool facade_guide, prompt
+        /// facade_one_to_one). Mihai: "write something in the plugin so it knows how to do this stuff the best way possible".
+        /// Keep it in step with docs/FACADE-1TO1-PLAN.md and docs/FACADE-LESSONS.md.</summary>
+        public const string Facade = @"FACADE DETAIL 1:1 TO THE SURVEY DWGs: THE METHOD
+Goal: the modelled facade matches the survey's elevations face-on AND its sections in depth, every element
+editable by an architect. Targets per facade: facade_check coverage 0.90+ and facade_depth_check depthPct 95+.
+Works for any building: nothing here names a building, layer or facade.
+
+A. WHERE EACH NUMBER COMES FROM (use the first source that shows it; say which one you used)
+   Outline along and up (u, z), and the height of every moulding's edge: the ELEVATION. Each horizontal line
+     in a cornice is a change of plane at that exact height.
+   Projection and profile (how far out, what curve): the SECTIONS that cross the facade (all of them, not one:
+     a section shows depth only at its own bay); then the RETURN ELEVATION at a corner (it draws the front's
+     cornice and bands in silhouette); then the PLAN at its cut height (pilasters, piers, reveals, architrave
+     steps beside openings); then the reference model if one is open.
+   What a thing IS and where it applies (moulding or flat strip, real pilaster or panel joint, stone or slate,
+     which fronts carry the mansard, balconies, dormers, cartouches): SITE PHOTOS or Street View.
+   Last resort only: a default or classical proportion. Mark it guessed (Comments ...|depth:guessed) and list it
+     for a person. Never take a size from a photo: perspective makes it wrong.
+
+B. PHOTOS AND STREET VIEW (before building any facade detail)
+   1. Ask the user for photos if there are none in the survey folder (photos\ beside the DWGs; never in a
+      public repo). Useful set: each facade straight on; each corner from close by looking along the building
+      (the cornice shows its outline); one close-up per window design, one from the side; the roofline; anything
+      carved. Street View screenshots are fine: several positions per street, zoomed; taken by hand.
+   2. Look at them (view the image files) beside facade_detail_map facade: F.. image: true.
+   3. For each type the map lists, say which photo confirms it and what it really is. Map items the photos
+      contradict (e.g. pairs of lines called pilasters that are joints) are not built. Things the photos show
+      that the map missed are listed with their box on the elevation.
+   4. Note the photos' date limits: shopfronts and signs change; where photo and DWG disagree on size or
+      position the DWG wins, on what a thing is the photo wins.
+   5. Record each decision (photo file, facade line in model mm, item box, what it is, where it applies) in the
+      run's notes and in docs/FACADE-LESSONS.md if it teaches a rule, so the next run does not ask again.
+      Identify a facade by its line, not its id: facade ids change when facade_list runs again.
+
+C. THE ORDER OF WORK
+   1. facade_list, elevation_index (every elevation on the sheet), section_index. survey_autofix openings.
+   2. Photos (B). facade_detail_map per facade: plain brick or render fronts get no stone detail.
+   3. facade_detail_pass dry_run: true, read its log, then run it.
+   4. Per facade: facade_check (face-on) and facade_depth_check (depth). Look: facade_correspondence image: true
+      and dwg_image on any bay that looks wrong; element_geometry when parameters and picture disagree.
+   5. Fix by the issue's kind, then check again. Report coverage, precision and depthPct per facade; say
+      ""unchecked"" where no section crosses a facade (depth unknown), never a guess.
+
+D. HOW EACH DETAIL IS BUILT (editable: what an architect would draw)
+   Cornices, string courses, plinths: a Profile family on native wall sweeps; the profile from the section's own
+     lines with arcs kept as arcs, its heights checked against the elevation's lines. A cornice that changes
+     along the facade is several sweeps, each with its own profile.
+   Pilasters and columns: facade_columns, only for real shafts (tall, often fluted, confirmed by a photo); capital
+     and base from the elevation's line heights.
+   Window surrounds (architrave, sill with horns, hood, pediment, keystone): one family per window design placed
+     at every window of it; the architrave a stepped profile swept round the opening, an arched head one arc.
+   Repeated pieces (consoles, modillions, balusters, quoin blocks): facade_types, one family placed many times;
+     side profile from a section or return elevation when one shows it.
+   Rustication: facade_rustication (reveals). Mansard: mansard_roof; dormers sit on the slope, not the facade plane.
+   Windows: window_look; reveal depth from the plan (window_detail), not a default.
+   Relief (facade_relief) only for what nothing above covers, and never over an opening.
+   Curves stay curves: one curved wall or sweep, never a run of short pieces (curve_check, curve_walls).
+   Never DirectShapes in a model to hand over. Every write stays in the survey's phase.
+
+E. WHAT HAS GONE WRONG BEFORE (docs/FACADE-LESSONS.md has the full list; add to it when you find a new one)
+   facade_shift_fix can slide a window a whole bay on a repeating front: look at a moved element with dwg_image.
+   Plain rear walls got carved-stone relief: classify the facade first. detail_support_check ""floating"" verdicts
+   can be false: check with element_geometry before deleting. Type numbers from facade_detail_map change every run:
+   don't name families by them. Face-on scores say nothing about depth: always run facade_depth_check.";
     }
 }

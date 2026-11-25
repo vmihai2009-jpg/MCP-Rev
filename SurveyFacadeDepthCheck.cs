@@ -17,6 +17,18 @@ namespace BarrGazetas.RevitMcp
     {
         public static IEnumerable<RevitTool> FacadeDepthTools()
         {
+            // 1.40.0: the facade method as a tool, so Claude reads it before facade work without the user picking a prompt
+            yield return new RevitTool
+            {
+                Name = "facade_guide",
+                Description = "READ THIS FIRST before any facade detail work (facade_detail_map, facade_detail_pass, facade_profile, window_look, " +
+                              "facade_types, facade_relief...): the method for a facade that matches the survey DWGs 1:1. Where each number comes " +
+                              "from (elevation, sections, return elevations, plan, site photos / Street View), how to use photos, the order of tools, " +
+                              "how each classical detail is built editable, the checks and targets, and the mistakes made before. Changes nothing.",
+                InputSchema = Schema(),
+                Run = (app, a) => new { guide = SurveyGuide.Facade, more = new[] { "docs/FACADE-1TO1-PLAN.md", "docs/FACADE-LESSONS.md", "docs/FACADE-DETAIL.md" } },
+            };
+
             yield return new RevitTool
             {
                 Name = "facade_depth_check",
