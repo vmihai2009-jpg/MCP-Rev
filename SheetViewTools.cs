@@ -38,6 +38,8 @@ namespace BarrGazetas.RevitMcp
                     ("stack", S("boolean", "Put the building at the same spot on every sheet (default true: the middle of where the plans on the scope box sit now); false: each sheet keeps its own spot"), false),
                     ("title_like_sheet", S("string", "Put every viewport title where the plan's title sits on this sheet (e.g. a sheet already drawn the way the client wants). Default: each title stays where it was on its sheet (turning the view otherwise throws it off the sheet)"), false),
                     ("bubbles", S("string", "Grid bubbles in the turned plans: top_left (default: the top end of up-down grids, the left end of across grids, the other end hidden), or keep"), false),
+                    ("legend", S("string", "A legend on these sheets holding the north point (e.g. \"Scale and Arrow\"): a copy named \"<legend> <angle>\" is made with the north point turned, and put in place of the legend on the turned sheets only (same spot); other sheets keep the original"), false),
+                    ("north_symbol_contains", S("string", "Which symbols in the legend turn: family name containing this (default \"North\")"), false),
                     ("dry_run", S("boolean", "Do it, report, undo (default true)"), false)),
                 Run = (app, a) =>
                 {
@@ -104,6 +106,7 @@ namespace BarrGazetas.RevitMcp
                     }
                     string bubbles = (Args.Str(a, "bubbles") ?? "top_left").ToLowerInvariant();
                     int bubblesSet = 0; var bubbleFails = new List<string>();
+                    int legendTurned = 0; var legendSheets = new List<string>(); var legendNotes = new List<string>(); string legendName = null;
                     var srcUsers = targets.Where(t => BoxOf(t.view) == src.Id).ToList();
                     var basis = (srcUsers.Count > 0 ? srcUsers : targets).Select(t => before0[t.vp.Id.Value]).ToList();
                     double Med(IEnumerable<double> xs) { var l = xs.OrderBy(x => x).ToList(); return l.Count % 2 == 1 ? l[l.Count / 2] : (l[l.Count / 2 - 1] + l[l.Count / 2]) / 2; }
@@ -196,6 +199,43 @@ namespace BarrGazetas.RevitMcp
                                 var d = new XYZ(want.X - now.X, want.Y - now.Y, 0);
                                 if (d.GetLength() > 1e-6) c.vp.LabelOffset = c.vp.LabelOffset + d;
                             }
+                            // 1.44.3: the north point lives in a legend shared by many sheets: turn it in a copy and swap the copy in on the turned sheets.
+                            if (Args.Str(a, "legend") is string lgName)
+                            {
+                                var allViews = new FilteredElementCollector(doc).OfClass(typeof(View)).Cast<View>().Where(v => !v.IsTemplate && v.ViewType == ViewType.Legend).ToList();
+                                var lg = allViews.FirstOrDefault(v => v.Name.Equals(lgName, cmp)) ?? throw new ArgumentException($"No legend called \"{lgName}\".");
+                                string lgNew = $"{lg.Name} {deg:0}";
+                                var lg2 = allViews.FirstOrDefault(v => v.Name.Equals(lgNew, cmp));
+                                string contains = Args.Str(a, "north_symbol_contains") ?? "North";
+                                if (lg2 == null)
+                                {
+                                    lg2 = (View)doc.GetElement(lg.Duplicate(ViewDuplicateOption.WithDetailing));
+                                    lg2.Name = lgNew;
+                                    doc.Regenerate();
+                                    foreach (var fi in new FilteredElementCollector(doc, lg2.Id).OfClass(typeof(FamilyInstance)).Cast<FamilyInstance>()
+                                                 .Where(f => f.Symbol?.FamilyName?.IndexOf(contains, cmp) >= 0).ToList())
+                                    {
+                                        var at = (fi.Location as LocationPoint)?.Point ?? fi.get_BoundingBox(lg2)?.Min;
+                                        if (at == null) continue;
+                                        ElementTransformUtils.RotateElement(doc, fi.Id, Line.CreateBound(at, at + lg2.ViewDirection), ang);
+                                        legendTurned++;
+                                    }
+                                    if (legendTurned == 0) legendNotes.Add($"No symbol with \"{contains}\" in its family name in \"{lg.Name}\": nothing turned.");
+                                }
+                                else legendNotes.Add($"\"{lgNew}\" already exists: reused, not turned again.");
+                                foreach (var sh in changed.Select(c => c.sheet).GroupBy(s => s.Id.Value).Select(g => g.First()))
+                                    foreach (var vpId in sh.GetAllViewports().ToList())
+                                    {
+                                        if (!(doc.GetElement(vpId) is Viewport lvp) || lvp.ViewId != lg.Id) continue;
+                                        var centre = lvp.GetBoxCenter(); var typeId = lvp.GetTypeId();
+                                        doc.Delete(lvp.Id);
+                                        var nvp = Viewport.Create(doc, sh.Id, lg2.Id, centre);
+                                        if (typeId != ElementId.InvalidElementId) nvp.ChangeTypeId(typeId);
+                                        nvp.SetBoxCenter(centre);
+                                        legendSheets.Add(sh.SheetNumber);
+                                    }
+                                legendName = lg2.Name;
+                            }
                             doc.Regenerate();
                             foreach (var c in changed)
                             {
@@ -222,6 +262,7 @@ namespace BarrGazetas.RevitMcp
                         scope_box = new { source = src.Name, turned = boxName, id = dry ? (long?)null : boxId, in_place = inPlace, reused_existing = existing != null },
                         stack_point_on_sheet_mm = stack ? new[] { Math.Round(stackAt.X * Mm, 1), Math.Round(stackAt.Y * Mm, 1) } : null,
                         plans = rows, left_alone = left,
+                        legend = legendName == null ? null : new { name = legendName, symbols_turned = legendTurned, swapped_on = legendSheets, notes = legendNotes },
                         grid_bubbles = bubbles == "top_left" ? new { set = bubblesSet, failed = bubbleFails.Take(20).ToList() } : null,
                         sheets_without_plans = noPlan,
                         other_views_on_source_box = inPlace ? elsewhere : null,
