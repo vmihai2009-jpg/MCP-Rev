@@ -360,6 +360,7 @@ namespace BarrGazetas.RevitMcp
                     ("columns", S("boolean", "Leave out the faces round columns replace (facade_columns; default true)"), false),
                     ("as", S("string", "families (default: editable Generic Model families, a surround family per window design and one per storey) or shapes (DirectShapes, for checking only)"), false),
                     ("strip_mm", S("number", "Depth of a tall strip (default 80)"), false),
+                    ("storey_faces", S("boolean", "Also build one family per storey from the faces no window surround claims (default FALSE since 1.41.2: they are guessed depths and read as random bars and panels)"), false),
                     ("dry_run", S("boolean", "Only report (default true)"), false)),
                 Run = (app, a) =>
                 {
@@ -557,8 +558,12 @@ namespace BarrGazetas.RevitMcp
                             foreach (var f in mine) left.Remove(f);
                             groups.Add(("surround", (w.u0 + w.u1) / 2, lv.Elevation * Mm, lv, mine));
                         }
-                        foreach (var g in left.GroupBy(f => LevelAt((f.Z0 + f.Z1) / 2)).Where(g => g.Key != null))
-                            groups.Add(($"relief {g.Key.Name}", 0, g.Key.Elevation * Mm, g.Key, g.ToList()));
+                        // 1.41.2: the per-storey family of LEFTOVER faces is off unless storey_faces: true. It extrudes every unclaimed line of the
+                        // elevation at a guessed depth (band 120, strip 80, small 50, panel 30 mm): on the Swallow Place demo it made the thin bars,
+                        // ledges and floating panels Mihai called "really bad" (35 families, deleted with his yes). Surround families stay.
+                        if (Args.Bool(a, "storey_faces") == true)
+                            foreach (var g in left.GroupBy(f => LevelAt((f.Z0 + f.Z1) / 2)).Where(g => g.Key != null))
+                                groups.Add(($"relief {g.Key.Name}", 0, g.Key.Elevation * Mm, g.Key, g.ToList()));
                         // outward is +Y in the family when the facade's outside is to the left of its direction
                         int outSign = Math.Abs(nx + fr.Uy) + Math.Abs(ny - fr.Ux) < 1e-6 ? 1 : -1;
                         string folder = Path.Combine(ReportsFolder(doc), "detail-families");

@@ -680,6 +680,13 @@ _Write your entries here, newest first. Use the "Revit run results" template for
 
 <!-- First entry goes here. -->
 
+### 2026-11-26 (late morning): hub 1.41.2, "whole facade looks really bad": the storey-face relief families are off
+- **Seen (Mihai's corner close-up):** thin bars, slab-like ledges, floating panels and cartouche rings at random depths, on all fronts.
+- **Cause:** `facade_relief`'s per-storey "BG Facade" families (every elevation line no window surround claimed, extruded at guessed depths). 35 of them: F24 7, corner F13 7, F14 7, F6 5, F8 4, F4 2, F3, F7, F12 1 each.
+- **Done:** deleted the 35 with Mihai's yes (surround families 129, windows, the 4 real pilaster families, wall sweeps and the mansard stay); `facade_relief` now builds surround families only unless `storey_faces: true`; `facade_detail_pass` inherits that. Lesson 27 in `docs/FACADE-LESSONS.md`. The 3D after the deletion reads as windows with surrounds, pediments and a balustrade on Regent Street, and a plainer, clean curved corner.
+- **Still to build (honest depths needed, plan P2/P4/P5):** cornices and string courses from the sections (F24 entablature and 4F cornice exist as sweeps), the corner's giant fluted pilasters and cornice, balcony slabs and sills with horns at their bays, the mansard dormers, the shopfronts.
+- **Files:** `SurveyFacadeReliefTools.cs`, `BGMCP.csproj` (1.41.2), `docs/FACADE-LESSONS.md` (row 27), this file.
+
 ### 2026-11-26 (morning): hub 1.41.1, "facade is wrong, keep going": pilaster noise removed, what the depth check really says about F24
 - **Read first:** the projects side's `facade_guide` (1.40.0): its method (photos, map items the photos contradict are not built, depth from every section) is what the org-side lessons had been finding the hard way; I followed it.
 - **Done:** `pilaster` removed from the one-off piece kinds (`FacadeTypes.NotPieces`): 48 narrow "pilaster" pieces (F24 35, F61 3, corner F8 4, F13 2, F14 4) had been built from pairs of verticals while the photos show three real shafts; deleted with Mihai's yes. `facade_detail_pass` no longer builds them.
