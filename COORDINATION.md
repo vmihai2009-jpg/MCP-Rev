@@ -688,6 +688,12 @@ _Write your entries here, newest first. Use the "Revit run results" template for
 
 <!-- First entry goes here. -->
 
+### 2026-11-26: hub 1.44.1, new tool rotate_plan_views (sheet work, not survey)
+
+New file `SheetViewTools.cs` (registered in `Hub.cs` as `SurveyTools.SheetViews()`). `rotate_plan_views` turns the plans on a set of sheets by an angle through a scope box: a turned copy of the scope box most plans use (default), given to the chosen plans; plans with no scope box get it too, so all floors share one crop. Each viewport is moved so the scope-box centre lands at one spot on every sheet (exports stack), each title is put back on the sheet (or where `title_like_sheet`'s title sits), and grid bubbles are set to the top/left ends (`bubbles: top_left`). Re-runs reuse the turned box by name and never turn twice. Dry run by default; does not save.
+
+Run on Swallow Place feasibility (Mihai's live model, not testmcp), 10.199-10.208 and 20.20x, excluding the two "Original Orientation" sheets: 26 plans turned 180 onto "GA Plans 180" (the "GA Plans" box is left unturned for SK20.205/206 and one other view); 20.203 and 20.203.1 moved 79.3 mm on the sheet to stack with the rest; 380 grid bubbles set, 0 failures; titles at sheet (87.1, 43.4) mm as on 10.203 (1). Not saved: Mihai checks first. Lessons in `docs/SHEET-LESSONS.md`.
+
 ### 2026-11-26 (PAUSED by Mihai mid-task): hub 1.43.4, the whole-facade pass, where it stands
 - **Asked:** "do the entire facade, not just one element, and do it correctly". Plan: (1) inventory, (2) cornices and bands on all fronts incl. the corner, (3) giant columns with capitals, bases and end columns, (4) windows, surrounds, balconies, (5) mansard dormers and balustrade, (6) measure every facade, fix, record.
 - **Done (SwallowPlace_Demo saved 10:16):** columns step mostly: F24 now has its 2 giant fluted columns (7.17-16.31 m) with bases and Ionic capitals, 2 ground-floor piers with bases, 3 upper pilasters with capitals (16 elements); corner CG1/CG2 shafts with bases. Code: `EdgeRun` near-vertical + above-cut search (1.43.1), `CapitalAndBase` / `CapitalsFor` (1.43.0-1.43.3), `curved_front` end piers CG0/CGn (1.43.0), `facade_profile profile_from` + source-cover rule (1.43.0/1.43.4). Lessons 30-32. Core tests 433 pass.
