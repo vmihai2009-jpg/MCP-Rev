@@ -700,6 +700,8 @@ Run on Swallow Place feasibility (Mihai's live model, not testmcp), 10.199-10.20
 
 1.45.1: new file `SheetRevisionTools.cs`, tool `sheet_revision`. Run: revision "Stage 1 Issue - for information", 26.11.26, added to all 43 sheets of the 10. and 20. series (shows as revision 1 on each; the project numbers per sheet); Sheet Status S0, Drawn By MV, Checked By CB set on all 43, 0 failures. Revit's default placeholder revision ("Revision 1", "Date 1", on no sheet) left alone. Not saved.
 
+1.45.2: tool `viewport_title_fit` (in `SheetRevisionTools.cs`). Run on the 10. and 20. series: 43 viewport title lines fitted to their text (e.g. 20.205 A 621.9 -> 78.7 mm), 0 skipped. Not saved.
+
 ### 2026-11-26 (PAUSED by Mihai mid-task): hub 1.43.4, the whole-facade pass, where it stands
 - **Asked:** "do the entire facade, not just one element, and do it correctly". Plan: (1) inventory, (2) cornices and bands on all fronts incl. the corner, (3) giant columns with capitals, bases and end columns, (4) windows, surrounds, balconies, (5) mansard dormers and balustrade, (6) measure every facade, fix, record.
 - **Done (SwallowPlace_Demo saved 10:16):** columns step mostly: F24 now has its 2 giant fluted columns (7.17-16.31 m) with bases and Ionic capitals, 2 ground-floor piers with bases, 3 upper pilasters with capitals (16 elements); corner CG1/CG2 shafts with bases. Code: `EdgeRun` near-vertical + above-cut search (1.43.1), `CapitalAndBase` / `CapitalsFor` (1.43.0-1.43.3), `curved_front` end piers CG0/CGn (1.43.0), `facade_profile profile_from` + source-cover rule (1.43.0/1.43.4). Lessons 30-32. Core tests 433 pass.
