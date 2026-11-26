@@ -46,6 +46,7 @@ The human-made 7 Swallow Place model is a benchmark for how to model, not for po
 | Facade detail | `facade_guide` (tool), then `docs/FACADE-LESSONS.md` |
 | Changing a tool's code | The tool's own file, its test in `tests/SurveyCore`, the matching Part 1 row in `COORDINATION.md` (update it in the same commit) |
 | Planning what to build | `PLAN.md`, `docs/FACADE-1TO1-PLAN.md` |
+| Learning from a finished model | `model_tools` (tool), then `docs/MODEL-LIBRARY.md` |
 | What happened on earlier runs | `COORDINATION.md` Part 2, newest entries first; stop when you reach dates older than the work you need |
 
 Part 2 of `COORDINATION.md` is a dated log. Do not read it end to end; search it for the tool, facade or floor you
