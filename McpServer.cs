@@ -28,6 +28,8 @@ namespace BarrGazetas.RevitMcp
         public bool Write;
         /// <summary>Can take minutes.</summary>
         public bool Long;
+        /// <summary>Left out of tools/list (a group another tool lists on demand) but callable by name.</summary>
+        public bool Hidden;
         /// <summary>Runs it and returns the answer as text (JSON). May throw; the message is shown to the assistant.</summary>
         public Func<JsonObject, Task<string>> Invoke;
     }
@@ -251,7 +253,7 @@ namespace BarrGazetas.RevitMcp
                     case "ping": return Result(id, new JsonObject());
 
                     case "tools/list":
-                        return Result(id, new JsonObject { ["tools"] = new JsonArray(AllTools().Select(Describe).ToArray()) });
+                        return Result(id, new JsonObject { ["tools"] = new JsonArray(AllTools().Where(t => !t.Hidden).Select(Describe).ToArray()) });
 
                     case "tools/call": return Result(id, await CallTool(p));
 

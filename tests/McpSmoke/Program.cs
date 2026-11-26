@@ -99,6 +99,7 @@ namespace McpSmoke
             var own = new List<ToolInfo>
             {
                 new ToolInfo { Name = "get_model_info", Description = "Own tool.", InputSchema = McpServer.Obj(), Invoke = _ => Task.FromResult("{\"title\":\"Test\"}") },
+                new ToolInfo { Name = "model_hidden", Description = "In a group listed on demand.", InputSchema = McpServer.Obj(), Hidden = true, Invoke = _ => Task.FromResult("{\"hidden\":true}") },
             };
             int port = 48990 + new Random().Next(0, 500);
             var server = new McpServer(port, () => own.Concat(providers.Tools()).ToList(), () => providers.Prompts(), new ServerOptions
@@ -140,6 +141,9 @@ namespace McpSmoke
             Check("tools/list has the server's own, the hub's and the add-in's tools",
                 new[] { "mcp_status", "job_status", "get_model_info", "smoke_echo", "smoke_revit" }.All(names.Contains), string.Join(", ", names));
             Check("a tool with a bad name is left out", !names.Contains("bad name!"));
+            Check("a hidden tool (learning group) is left out of tools/list", !names.Contains("model_hidden"));
+            var hidden = await Tool("model_hidden");
+            Check("a hidden tool can still be called by name", !hidden.isError && hidden.text.Contains("\"hidden\":true"), hidden.text);
             Check("add-in tools are labelled with where they come from", tools.First(t => t["name"].ToString() == "smoke_echo")["description"].ToString().StartsWith("[Smoke add-in]"));
             Check("a broken schema falls back to an empty object schema", tools.First(t => t["name"].ToString() == "smoke_revit")["inputSchema"]?["type"]?.ToString() == "object");
             Check("write tools are marked", tools.First(t => t["name"].ToString() == "smoke_write")["annotations"]?["readOnlyHint"]?.GetValue<bool>() == false);
@@ -204,7 +208,7 @@ namespace McpSmoke
             await Task.Delay(300);
             lock (records)
             {
-                Check("every tool call is recorded (job_status and unknown tools are not calls)", records.Count == 16, records.Count.ToString());
+                Check("every tool call is recorded (job_status and unknown tools are not calls)", records.Count == 17, records.Count.ToString());
                 Check("a change refused in read-only mode is recorded", records.Any(r => r.Tool == "smoke_write" && !r.Ok && r.Error.Contains("read-only")));
                 Check("a failure is recorded with its message", records.Any(r => r.Tool == "smoke_boom" && !r.Ok && r.Error == "the wall fell over"));
                 Check("a job is recorded when it finishes, with its time", records.Any(r => r.Tool == "smoke_slow" && r.Job == jobId && r.Ok && r.Ms >= 3500));

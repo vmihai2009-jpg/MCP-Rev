@@ -25,6 +25,10 @@ What is being built next, and why, is in `PLAN.md` at the root of MCP-Rev (the r
 8. **Done / blocked:** mark each ask in your entry as done (with the files) or blocked (with the exact reason).
 9. **Teach the repo (Mihai's rule, 2026-11-25).** Every mistake, its cause and the rule that prevents it goes into `docs/FACADE-LESSONS.md` (hub) or `docs/LESSONS.md` (Survey to Revit) in the SAME commit as the fix, and every method that worked goes in as a procedure. Check the lessons before running a facade tool; look at the result (`facade_correspondence image: true`, `dwg_image`) before keeping it; dry-run any new gate against a hand count.
 
+**Current asks (2026-11-26), first:**
+
+- **D1. Analyse the human Swallow Place model (hub 1.46.0, read-only, cheap; Model Library phase 1).** `reference_open path: "<the human Swallow Place .rvt>" name: sp`, then with `document: sp`: `model_overview`, `model_walls`, `model_walls group_by: level`, `model_openings`, `model_openings group_by: band`, `model_floors_roofs`, `model_stairs`. Save each answer as `runs/2026-11-26/model-<tool>-sp.json`. In your entry: storeys, wall thickness median per use, reveal median per wall band, slab build-ups, how many stairs reach the floor above, and anything that looks wrong (with `list: 5` ids). Then `reference_close name: sp`. Background: `docs/MODEL-LIBRARY.md`.
+
 **Current asks (2026-11-25), first:**
 
 - **C1. Depth baseline for the facade (hub 1.39.0, read-only, cheap).** On the Swallow Place demo after `facade_detail_pass` (and Mount Row if at hand), for each facade with a survey section crossing it: `facade_depth_check facade: F..`, save as `runs/2026-11-25/facade-depth-<F>.json`. In your entry per facade: `depthPct`, `sectionsChecked`, each section's `wallFaceOffsetMm`, and the top 5 of `worst` (kind, z, surveyOutMm / modelOutMm, element). Put `depthPct` beside the coverage / precision numbers of 2026-11-25. This decides whether profiles (P2) or window surrounds (P4) in `docs/FACADE-1TO1-PLAN.md` come first.
@@ -203,6 +207,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 | `type_structure`, `element_boxes` | Layers of wall/floor/roof types; boxes of elements by level, in survey coordinates if asked. |
 | `reference_compare` | What it has that ours lacks, with positions in our frame. |
 | `reference_copy` | Copy elements or just families/types (`types_only`) into our model, aligned. Dry run by default. |
+| `model_tools` (1.46.0) | Lists the **learning group** (hidden from the tool list, callable by name): `model_overview`, `model_walls`, `model_openings`, `model_floors_roofs`, `model_stairs`, `model_query`. They analyse a finished model (or the active one) as statistics: thickness per wall use, reveal per wall band, storeys, slab build-ups, roof slopes, stairs reaching the floor above. See `docs/MODEL-LIBRARY.md`. |
 
 **Look at the model**
 
@@ -375,6 +380,10 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-26 (later): hub 1.46.0, Model Library phase 1: analyse finished models
+- New `ModelAnalysisTools.cs` (+ `Survey/ModelStats.cs`, tested): `model_tools` lists a hidden learning group of six read-only tools (`model_overview`, `model_walls`, `model_openings`, `model_floors_roofs`, `model_stairs`, `model_query`). Hidden = left out of tools/list, callable by name (`ToolInfo.Hidden`), so normal sessions pay nothing for them.
+- **Org side, please run on the human Swallow Place model:** `reference_open` it, then `model_overview`, `model_walls`, `model_openings`, `model_floors_roofs`, `model_stairs` with `document`, and paste the answers (or save them under `runs/`). Report anything that looks wrong (a wall use, a reveal) with `list: 5` ids. Design and next phases: `docs/MODEL-LIBRARY.md`.
 
 ### 2026-11-26: hub 1.42.1, the wall score no longer counts an undrawn face as wrong; docs/START-HERE.md
 - **Why.** Full audit (thread "Audit project for performance and gaps"): `survey_fidelity` scored both faces of each wall against the nearest parallel DWG line within 300 mm, and nothing stopped both faces using the SAME line. A 100 mm wall with its face on a single drawn line scored 0 mm on that face and 100 mm on the face nobody drew, so half its length counted as out however well it was built. Mount Row 23 Nov: 53 of 202 `wall_face` issues were 100-125 mm, 35 exactly 100.

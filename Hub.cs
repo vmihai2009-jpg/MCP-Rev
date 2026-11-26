@@ -42,7 +42,7 @@ namespace BarrGazetas.RevitMcp
 
             var revitTools = RevitTools.All().Concat(RevitTools.Repair()).Concat(BuildTools.All()).Concat(SurveyTools.All()).Concat(SurveyTools.Facade())
                 .Concat(SurveyTools.Phase1()).Concat(SurveyTools.Phase2()).Concat(SurveyTools.Phase2Index()).Concat(SurveyTools.Phase3())
-                .Concat(ReferenceTools.All()).Concat(HostTools.All()).Concat(SurveyTools.Phase4()).Concat(SurveyTools.WindowLook()).Concat(SurveyTools.FacadeReliefTools()).Concat(SurveyTools.FacadeMapTools()).Concat(SurveyTools.FacadeCheckTools()).Concat(SurveyTools.FacadeCourseTools()).Concat(SurveyTools.FacadeSupportTools()).Concat(SurveyTools.CurveTools()).Concat(SurveyTools.FacadeShiftTools()).Concat(SurveyTools.ElevationFitTools()).Concat(SurveyTools.RusticationTools()).Concat(SurveyTools.RoofTools()).Concat(SurveyTools.FacadeTypeTools()).Concat(SurveyTools.RegistrationTools()).Concat(SurveyTools.LayerRoleTools()).Concat(SurveyTools.ConflictTools()).Concat(SurveyTools.ReviewQueueTools()).Concat(SurveyTools.EditabilityTools()).Concat(SurveyTools.OpeningClusterTools()).Concat(SurveyTools.CoreTools()).Concat(SurveyTools.RoofSolverTools()).Concat(SurveyTools.EnclosureTools()).Concat(SurveyTools.FacadeDepthTools()).Concat(SurveyTools.CurvedFrontTools())
+                .Concat(ReferenceTools.All()).Concat(ModelAnalysisTools.All()).Concat(HostTools.All()).Concat(SurveyTools.Phase4()).Concat(SurveyTools.WindowLook()).Concat(SurveyTools.FacadeReliefTools()).Concat(SurveyTools.FacadeMapTools()).Concat(SurveyTools.FacadeCheckTools()).Concat(SurveyTools.FacadeCourseTools()).Concat(SurveyTools.FacadeSupportTools()).Concat(SurveyTools.CurveTools()).Concat(SurveyTools.FacadeShiftTools()).Concat(SurveyTools.ElevationFitTools()).Concat(SurveyTools.RusticationTools()).Concat(SurveyTools.RoofTools()).Concat(SurveyTools.FacadeTypeTools()).Concat(SurveyTools.RegistrationTools()).Concat(SurveyTools.LayerRoleTools()).Concat(SurveyTools.ConflictTools()).Concat(SurveyTools.ReviewQueueTools()).Concat(SurveyTools.EditabilityTools()).Concat(SurveyTools.OpeningClusterTools()).Concat(SurveyTools.CoreTools()).Concat(SurveyTools.RoofSolverTools()).Concat(SurveyTools.EnclosureTools()).Concat(SurveyTools.FacadeDepthTools()).Concat(SurveyTools.CurvedFrontTools())
                 .Concat(SurveyTools.FloorSteps()).Concat(SurveyTools.Terrain()).Concat(RoomTools.All()).Concat(SurveyTools.Sections3D()).Concat(SurveyTools.Views()).Concat(SurveyTools.SheetViews()).Concat(SurveyTools.SheetRevisions()).Concat(SurveyTools.Speed()).ToList();
             // batch runs the others (and other add-ins' tools, called directly: it is already on Revit's thread) as one undo step
             revitTools.Add(BatchTool.Make(revitTools, (app, tool, args) => Providers.CallHere(app, tool, args), Compact));
@@ -55,6 +55,8 @@ namespace BarrGazetas.RevitMcp
             _own = revitTools.Select(t => new ToolInfo
             {
                 Name = t.Name, Description = t.Description, InputSchema = WithDocument(t), Write = t.Write,
+                // the learning group (model_*) is left out of tools/list until model_tools lists it: callable, never paid for by every turn
+                Hidden = ModelAnalysisTools.Group.Contains(t.Name),
                 Invoke = async args => (string)await _dispatcher.InvokeAsync(app =>
                 {
                     // read tools can look at a reference model opened with reference_open instead of the active project
