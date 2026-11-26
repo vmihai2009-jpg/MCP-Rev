@@ -16,7 +16,7 @@ namespace BarrGazetas.RevitMcp
     /// read tools. They sit in the "learning" group: hidden from the tool list until model_tools is called, so normal
     /// sessions pay nothing for them. The arithmetic is in Survey/ModelStats.cs (tested without Revit).
     /// </summary>
-    internal static class ModelAnalysisTools
+    internal static partial class ModelAnalysisTools
     {
         private const double Mm = 304.8;
         private const double M2 = 0.09290304;
@@ -25,6 +25,7 @@ namespace BarrGazetas.RevitMcp
         public static readonly HashSet<string> Group = new HashSet<string>(StringComparer.Ordinal)
         {
             "model_overview", "model_walls", "model_openings", "model_floors_roofs", "model_stairs", "model_query",
+            "model_profiles", "model_cut", "model_facade",
         };
 
         public static IEnumerable<RevitTool> All()
@@ -124,6 +125,8 @@ namespace BarrGazetas.RevitMcp
                     ("list", "integer", "Example ids (default 0, at most 50)", false)),
                 Run = (app, a) => Query(Doc(app), a),
             };
+
+            foreach (var t in FacadeTools()) yield return t;
         }
 
         // ---------------------------------------------------------------- overview

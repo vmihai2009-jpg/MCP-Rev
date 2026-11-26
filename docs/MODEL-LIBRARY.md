@@ -13,7 +13,7 @@ Order of authority, highest first: this project's drawings > Survey to Revit's l
 | Phase | Tools | State |
 |---|---|---|
 | 1. Look inside a model | `model_tools`, `model_overview`, `model_walls`, `model_openings`, `model_floors_roofs`, `model_stairs`, `model_query` | **built, 1.46.0; needs a live run** |
-| 2. Facade and profiles | `model_facade`, `model_profiles`, `model_cut` | planned |
+| 2. Facade and profiles | `model_facade`, `model_profiles`, `model_cut` | **built, 1.47.0; needs a live run** |
 | 3. The library | `library_add`, `library_ask`; folder `learning\library\` beside S2R's learning folder | planned |
 | 4. Pair with the survey | `model_pair` + an S2R audit per model | planned |
 | 5. Use it | build tools and S2R read `adopted/priors.json`; bench gate scores wall positions | planned |
@@ -32,8 +32,11 @@ for them) but can be called by name. `model_tools` (always listed) shows them wi
    `model_openings` (sizes, sill/head, reveal per wall band), `model_floors_roofs` (storeys, slab build-ups, ceiling
    heights as a share of the storey, roof slopes), `model_stairs` (riser/going, reaches the floor above?),
    `model_query` for anything else (category + filters + one parameter's spread).
-4. Add `list: N` to see example ids, then `element_geometry` / `family_detail` on one of them.
-5. `reference_close name: m1`.
+4. Facade (phase 2): `model_facade` (every detail per facade, classified, with height, projection and depth ratio),
+   `model_profiles shape: true` (the moulding profiles as lines and arcs, height 1), `model_cut` (a vertical plane
+   through a facade gives its built section, curves kept; compare with the survey section).
+5. Add `list: N` to see example ids, then `element_geometry` / `family_detail` on one of them.
+6. `reference_close name: m1`.
 
 What each answer means:
 
@@ -43,6 +46,16 @@ What each answer means:
 - **Reveal** = the wall's outer face to the first piece of the window/door geometry that lies inside the wall
   (more than 5 mm from either face). Architraves and sills in front of the wall are ignored. Openings in curved
   walls are skipped. On big models a spread sample of `max_reveal` (400) openings is measured.
+- **Facades** are the straight external walls grouped by the plane of their outer face (same facing within 3 deg,
+  faces within 400 mm), named by facing in model axes and their face line. A piece belongs to a facade when it is a
+  sweep on one of its walls, or a Generic Model / column / in-place family sitting on that plane.
+- **Detail kind** comes from generic words in the family/type name (cornice, surround, corbel, pilaster, string,
+  sill, quoin...); with no such word it is guessed from the shape (long and low near the top = cornice, lower =
+  string course, tall and narrow = pilaster, small = ornament) and counted as `guessed`.
+- **Projection** = how far the piece reaches in front of the wall's outer face; **depth ratio** = projection /
+  height. These are the numbers the facade builders need when no section cuts a detail.
+- **Profiles** are read from the Profile families themselves (opened in memory, never saved): their lines and arcs,
+  normalised to height 1 so the same moulding at any size gives the same outline.
 - **Storeys** use each level's elevation to the next one up.
 - **Stairs reach the floor above** when their top is within `tol_mm` (30) of the next level more than 500 mm above
   their base.

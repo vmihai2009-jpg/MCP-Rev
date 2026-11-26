@@ -27,7 +27,7 @@ What is being built next, and why, is in `PLAN.md` at the root of MCP-Rev (the r
 
 **Current asks (2026-11-26), first:**
 
-- **D1. Analyse the human Swallow Place model (hub 1.46.0, read-only, cheap; Model Library phase 1).** `reference_open path: "<the human Swallow Place .rvt>" name: sp`, then with `document: sp`: `model_overview`, `model_walls`, `model_walls group_by: level`, `model_openings`, `model_openings group_by: band`, `model_floors_roofs`, `model_stairs`. Save each answer as `runs/2026-11-26/model-<tool>-sp.json`. In your entry: storeys, wall thickness median per use, reveal median per wall band, slab build-ups, how many stairs reach the floor above, and anything that looks wrong (with `list: 5` ids). Then `reference_close name: sp`. Background: `docs/MODEL-LIBRARY.md`.
+- **D1. Analyse the human Swallow Place model (hub 1.46.0, read-only, cheap; Model Library phase 1).** `reference_open path: "<the human Swallow Place .rvt>" name: sp`, then with `document: sp`: `model_overview`, `model_walls`, `model_walls group_by: level`, `model_openings`, `model_openings group_by: band`, `model_floors_roofs`, `model_stairs`, and (1.47.0) `model_facade list: 3`, `model_profiles shape: true`. Save each answer as `runs/2026-11-26/model-<tool>-sp.json`. In your entry: storeys, wall thickness median per use, reveal median per wall band, slab build-ups, how many stairs reach the floor above, the depth ratio per detail kind from `model_facade` (and how many are `guessed`), and anything that looks wrong (with `list: 5` ids). Then `reference_close name: sp`. Background: `docs/MODEL-LIBRARY.md`.
 
 **Current asks (2026-11-25), first:**
 
@@ -207,7 +207,7 @@ Grouped by purpose. "S2R" = Survey to Revit's tool; everything else is the hub's
 | `type_structure`, `element_boxes` | Layers of wall/floor/roof types; boxes of elements by level, in survey coordinates if asked. |
 | `reference_compare` | What it has that ours lacks, with positions in our frame. |
 | `reference_copy` | Copy elements or just families/types (`types_only`) into our model, aligned. Dry run by default. |
-| `model_tools` (1.46.0) | Lists the **learning group** (hidden from the tool list, callable by name): `model_overview`, `model_walls`, `model_openings`, `model_floors_roofs`, `model_stairs`, `model_query`. They analyse a finished model (or the active one) as statistics: thickness per wall use, reveal per wall band, storeys, slab build-ups, roof slopes, stairs reaching the floor above. See `docs/MODEL-LIBRARY.md`. |
+| `model_tools` (1.46.0) | Lists the **learning group** (hidden from the tool list, callable by name): `model_overview`, `model_walls`, `model_openings`, `model_floors_roofs`, `model_stairs`, `model_query`, and from 1.47.0 `model_facade`, `model_profiles`, `model_cut`. They analyse a finished model (or the active one) as statistics: thickness per wall use, reveal per wall band, storeys, slab build-ups, roof slopes, stairs reaching the floor above, facade details per kind with projection and depth ratio, moulding profiles as lines and arcs. See `docs/MODEL-LIBRARY.md`. |
 
 **Look at the model**
 
@@ -381,8 +381,9 @@ Entry format (copy this):
 
 ## Projects side (Mihai's personal account)
 
-### 2026-11-26 (later): hub 1.46.0, Model Library phase 1: analyse finished models
+### 2026-11-26 (later): hub 1.46.0-1.47.0, Model Library phases 1-2: analyse finished models
 - New `ModelAnalysisTools.cs` (+ `Survey/ModelStats.cs`, tested): `model_tools` lists a hidden learning group of six read-only tools (`model_overview`, `model_walls`, `model_openings`, `model_floors_roofs`, `model_stairs`, `model_query`). Hidden = left out of tools/list, callable by name (`ToolInfo.Hidden`), so normal sessions pay nothing for them.
+- 1.47.0 (`ModelFacadeTools.cs`, `Survey/ModelShapes.cs`, tested): `model_facade` (facade details per facade, classified by name else shape, projection and depth ratio per kind), `model_profiles` (Profile families as lines and arcs, normalised to height 1), `model_cut` (a plane cut, arcs kept).
 - **Org side, please run on the human Swallow Place model:** `reference_open` it, then `model_overview`, `model_walls`, `model_openings`, `model_floors_roofs`, `model_stairs` with `document`, and paste the answers (or save them under `runs/`). Report anything that looks wrong (a wall use, a reveal) with `list: 5` ids. Design and next phases: `docs/MODEL-LIBRARY.md`.
 
 ### 2026-11-26: hub 1.42.1, the wall score no longer counts an undrawn face as wrong; docs/START-HERE.md
