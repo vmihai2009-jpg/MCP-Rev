@@ -31,6 +31,7 @@ namespace BarrGazetas.RevitMcp
                 InputSchema = Schema(
                     ("facade", S("string", "Facade id (F29...)"), true),
                     ("flutes", S("integer", "Flutes round the shaft (default 24; 0 = plain)"), false),
+                    ("capitals", S("boolean", "Also build each pilaster's base and capital from the elevation's short horizontals below and above the shaft (default true)"), false),
                     ("dry_run", S("boolean", "Only list (default true)"), false)),
                 Run = (app, a) =>
                 {
@@ -50,6 +51,14 @@ namespace BarrGazetas.RevitMcp
                     var list = cols.Select(c => { var (zb, zt) = ColumnEnds(c); return new { alongMm = Math.Round(c.U), outMm = Math.Round(c.V), radiusMm = Math.Round(c.Radius), baseMm = Math.Round(zb), shaft = new[] { Math.Round(c.ShaftZ0), Math.Round(c.ShaftZ1) }, shaftRadius = new[] { Math.Round(c.ShaftR0), Math.Round(c.ShaftR1) }, topMm = Math.Round(zt), plans = c.Level }; }).ToList();
 
                     var ids = new List<long>(); List<string> revit = null; int made = 0, failed = 0; var problems = new List<string>();
+                    var capitalLog = new List<object>();
+                    var caps = CapitalsFor(segs, pieces);
+                    if (dry && Args.Bool(a, "capitals") != false)
+                        for (int i = 0; i < pieces.Count; i++)
+                        {
+                            var (ring, u0, u1, z0, z1, lv) = pieces[i]; var (bse, cap, from) = caps[i];
+                            capitalLog.Add(new { shaft = new[] { Math.Round(u0), Math.Round(u1) }, z = new[] { Math.Round(z0), Math.Round(z1) }, @base = bse is (double b0, double b1, double bw) ? new[] { Math.Round(b0), Math.Round(b1), Math.Round(bw) } : null, capital = cap is (double c0, double c1, double cw) ? new[] { Math.Round(c0), Math.Round(c1), Math.Round(cw) } : null, from });
+                        }
                     if (!dry && (cols.Count > 0 || pieces.Count > 0))
                     {
                         string tag = $"MCP|facade_columns|{fid}";
@@ -66,6 +75,24 @@ namespace BarrGazetas.RevitMcp
                             string name = $"BG Pilaster {fid} {uo:0} {z0:0}";
                             try { toPlace.Add((name, DetailFamilyBuilder.BuildVertical(app, ring.Select(q => new Pt(q.X - uo, q.Y)).ToList(), z0 - lz, z1 - lz, outSign, Path.Combine(folder, name + ".rfa")), uo, level)); }
                             catch (Exception ex) { failed++; problems.Add($"{name}: {McpServer.Unwrap(ex).Message}"); }
+                            // 1.43.0: base and capital from the elevation: the short horizontals just below and above the shaft, wider than it;
+                            // the overhang taken equal all round (as a classical base/capital is cut), so the depth is shaft depth + overhang
+                            if (Args.Bool(a, "capitals") != false)
+                            {
+                                int pi = pieces.FindIndex(p => p.u0 == u0 && p.z0 == z0);
+                                var (bse, cap, _) = pi >= 0 ? caps[pi] : (CapitalAndBase(segs, u0, u1, z0, z1).bse, CapitalAndBase(segs, u0, u1, z0, z1).cap, "");
+                                double shaftW = u1 - u0, depth = ring.Max(p => p.Y);
+                                foreach (var (part, got) in new[] { ("base", bse), ("capital", cap) })
+                                {
+                                    if (got is not (double pz0, double pz1, double pw)) { problems.Add($"{name}: no {part} drawn on the elevation (no short horizontals wider than the shaft {(part == "base" ? "below" : "above")} it)"); continue; }
+                                    double ov = Math.Max(0, (pw - shaftW) / 2);
+                                    var rect = new List<Pt> { new Pt(-shaftW / 2 - ov, 0), new Pt(shaftW / 2 + ov, 0), new Pt(shaftW / 2 + ov, depth + ov), new Pt(-shaftW / 2 - ov, depth + ov) };
+                                    var plevel = levels.LastOrDefault(l => l.Elevation * Mm <= pz0 + 50) ?? levels.First(); double plz = plevel.Elevation * Mm;
+                                    string pname = $"BG Pilaster {part} {fid} {uo:0} {pz0:0}";
+                                    try { toPlace.Add((pname, DetailFamilyBuilder.BuildVertical(app, rect, pz0 - plz, pz1 - plz, outSign, Path.Combine(folder, pname + ".rfa")), uo, plevel)); capitalLog.Add(new { piece = pname, z = new[] { Math.Round(pz0), Math.Round(pz1) }, widthMm = Math.Round(pw), overhangMm = Math.Round(ov), depthMm = Math.Round(depth + ov), depthFrom = "plan shaft + elevation overhang" }); }
+                                    catch (Exception ex) { failed++; problems.Add($"{pname}: {McpServer.Unwrap(ex).Message}"); }
+                                }
+                            }
                         }
                         // round columns (revolved base/capital, fluted shaft) need a family builder of their own: not built rather than frozen
                         if (cols.Count > 0) problems.Add($"{cols.Count} round column(s) found but not built: the round column family builder is still to do (DirectShapes are not editable).");
@@ -92,7 +119,7 @@ namespace BarrGazetas.RevitMcp
                             }
                         });
                     }
-                    return new { facade = fid, columns = list, planPieces = pieces.Count, candidates = pieceLog, pieceList = pieces.Take(40).Select(x => new { along = new[] { Math.Round(x.u0), Math.Round(x.u1) }, outMm = Math.Round(x.ring.Max(p => p.Y)), z = new[] { Math.Round(x.z0), Math.Round(x.z1) }, points = x.ring.Count, x.level }).ToList(), made, failed, problems = problems.Count > 0 ? problems : null, shapes = ids, revit,
+                    return new { facade = fid, columns = list, planPieces = pieces.Count, candidates = pieceLog, capitalsAndBases = capitalLog, pieceList = pieces.Take(40).Select(x => new { along = new[] { Math.Round(x.u0), Math.Round(x.u1) }, outMm = Math.Round(x.ring.Max(p => p.Y)), z = new[] { Math.Round(x.z0), Math.Round(x.z1) }, points = x.ring.Count, x.level }).ToList(), made, failed, problems = problems.Count > 0 ? problems : null, shapes = ids, revit,
                                  next = dry ? "dry_run: false to build them; then facade_relief again (it leaves out what they replace)." : "facade_relief dry_run:false (to drop the faces the columns replace), then check_view + view_image." };
                 }
             };
@@ -111,6 +138,8 @@ namespace BarrGazetas.RevitMcp
                     ("facade", S("string", "Facade id (F29...)"), true),
                     ("section", S("string", "Section name (default: the one whose cut crosses the facade nearest its middle)"), false),
                     ("roof_mm", S("number", "Mansard/parapet skin thickness (default 250)"), false),
+                    ("profile_from", S("string", "Take the profile from the section that crosses THIS other facade (a curved corner or return whose cornice runs on from a neighbouring front no section of its own crosses); bands are still swept only where this facade's elevation draws them"), false),
+                    ("bands_only", S("boolean", "Leave the mansard out (default false; always true with profile_from)"), false),
                     ("as", S("string", "sweeps (default: profile families + native wall sweeps, editable) or shapes (DirectShapes)"), false),
                     ("dry_run", S("boolean", "Only report (default true)"), false)),
                 Run = (app, a) =>
@@ -127,7 +156,18 @@ namespace BarrGazetas.RevitMcp
                     double wallTop = walls.Where(w => { var c = ((LocationCurve)w.Location).Curve.Evaluate(0.5, true); double v = (c.X * Mm - fa.X) * nx + (c.Y * Mm - fa.Y) * ny, uu = (c.X * Mm - fa.X) * ux + (c.Y * Mm - fa.Y) * uy; return Math.Abs(v) < 1500 && uu > -500 && uu < fl + 500; })
                         .Select(w => w.get_BoundingBox(null)?.Max.Z * Mm ?? double.MinValue).DefaultIfEmpty(0).Max();
 
-                    // the section crossing the facade
+                    // 1.43.0: profile_from: a front no section crosses (a curved corner, a short return) whose cornice is the same one that runs
+                    // on round from a neighbouring front: the profile is read from the section crossing THAT front (its line, its wall top), and
+                    // swept here only where this front's own elevation draws the band. Bands only (the mansard is mansard_roof's).
+                    string srcId = Args.Str(a, "profile_from") ?? fid;
+                    bool fromOther = !string.Equals(srcId, fid, StringComparison.OrdinalIgnoreCase);
+                    var (sfa, sfb) = fromOther ? SavedFacade(doc, srcId) : (fa, fb);
+                    double sfl = sfa.Dist2D(sfb), sux = (sfb.X - sfa.X) / sfl, suy = (sfb.Y - sfa.Y) / sfl, snx = -suy, sny = sux;
+                    if ((cx - (sfa.X + sux * sfl / 2)) * snx + (cy - (sfa.Y + suy * sfl / 2)) * sny > 0) { snx = -snx; sny = -sny; }
+                    double sWallTop = !fromOther ? wallTop : walls.Where(w => { var c = ((LocationCurve)w.Location).Curve.Evaluate(0.5, true); double v = (c.X * Mm - sfa.X) * snx + (c.Y * Mm - sfa.Y) * sny, uu = (c.X * Mm - sfa.X) * sux + (c.Y * Mm - sfa.Y) * suy; return Math.Abs(v) < 1500 && uu > -500 && uu < sfl + 500; })
+                        .Select(w => w.get_BoundingBox(null)?.Max.Z * Mm ?? double.MinValue).DefaultIfEmpty(0).Max();
+
+                    // the section crossing the facade (or the facade the profile comes from)
                     string file = Path.Combine(ReportsFolder(doc), "section-index.json");
                     if (!File.Exists(file)) throw new ArgumentException("No section-index.json: section_index first.");
                     var secs = (JsonNode.Parse(File.ReadAllText(file))["sections"] as JsonArray)?.OfType<JsonObject>().ToList() ?? new List<JsonObject>();
@@ -138,16 +178,16 @@ namespace BarrGazetas.RevitMcp
                         if (want != null && !string.Equals(Args.Str(s, "name"), want, StringComparison.OrdinalIgnoreCase)) continue;
                         var c = Args.Numbers(s, "cut"); if (c.Count != 4 || s["offset"] == null) continue;
                         double dx = c[2] - c[0], dy = c[3] - c[1], len = Math.Sqrt(dx * dx + dy * dy);
-                        double den = dx * uy - dy * ux; if (Math.Abs(den) < 1e-9) continue;
-                        // c0 + t*d = fa + u*f
-                        double t = ((fa.X - c[0]) * uy - (fa.Y - c[1]) * ux) / den * len, uAt = ((fa.X - c[0]) * dy - (fa.Y - c[1]) * dx) / den;
-                        if (t < -500 || t > len + 500 || uAt < 0 || uAt > fl) continue;
-                        double cos = Math.Abs((dx * nx + dy * ny) / len);
+                        double den = dx * suy - dy * sux; if (Math.Abs(den) < 1e-9) continue;
+                        // c0 + t*d = sfa + u*f
+                        double t = ((sfa.X - c[0]) * suy - (sfa.Y - c[1]) * sux) / den * len, uAt = ((sfa.X - c[0]) * dy - (sfa.Y - c[1]) * dx) / den;
+                        if (t < -500 || t > len + 500 || uAt < 0 || uAt > sfl) continue;
+                        double cos = Math.Abs((dx * snx + dy * sny) / len);
                         if (cos < 0.7) continue; // cuts the facade at a slant
-                        cands.Add((s, t, uAt, (dx * nx + dy * ny) / len));
+                        cands.Add((s, t, uAt, (dx * snx + dy * sny) / len));
                     }
-                    if (cands.Count == 0) throw new InvalidOperationException($"No survey section crosses {fid} square enough (section_index lists them).");
-                    var pick = cands.OrderBy(x => Math.Abs(x.uAlong - fl / 2)).First();
+                    if (cands.Count == 0) throw new InvalidOperationException($"No survey section crosses {srcId} square enough (section_index lists them)." + (fromOther ? "" : " If this front's bands run on round from a neighbouring front that a section does cross, give profile_from: that front's id."));
+                    var pick = cands.OrderBy(x => Math.Abs(x.uAlong - sfl / 2)).First();
                     var sec = pick.s;
                     int sdir = (int)(Args.Dbl(sec, "dir") ?? 1); double soff = Args.Dbl(sec, "offset") ?? 0;
                     double sheetX0 = sdir * pick.t + soff;
@@ -165,7 +205,7 @@ namespace BarrGazetas.RevitMcp
                     if (prof.Count == 0) throw new InvalidOperationException($"{Args.Str(sec, "name")}: no profile lines near {fid}.");
                     // the section's own wall face: its fit along the cut can be out by a reveal or more; the face is where it
                     // draws the most vertical wall over the storeys
-                    double face = SectionProfile.WallFace(prof, 0, wallTop);
+                    double face = SectionProfile.WallFace(prof, 0, sWallTop);
                     prof = prof.Select(l => (new Pt(l.Item1.X - face, l.Item1.Y), new Pt(l.Item2.X - face, l.Item2.Y))).ToList();
                     double z0 = prof.Min(l => Math.Min(l.Item1.Y, l.Item2.Y)), z1 = prof.Max(l => Math.Max(l.Item1.Y, l.Item2.Y));
                     var env = SectionProfile.Envelope(prof, z0, z1);
@@ -206,6 +246,31 @@ namespace BarrGazetas.RevitMcp
                         var runs = roof ? new List<(double a, double b)> { (0, fl) } : RunsAt(zt, zb);
                         if (runs.Count == 0) { why.Add($"{zb:0}-{zt:0} ({r.Max(p => p.X):0} out): not drawn as a band on the elevation"); continue; }
                         placed.Add((r, runs, roof));
+                    }
+                    if (fromOther || Args.Bool(a, "bands_only") == true) { foreach (var x in placed.Where(x => x.roof)) why.Add($"{x.r.Min(p => p.Y):0}-{x.r.Max(p => p.Y):0}: mansard left to mansard_roof (bands only)"); placed.RemoveAll(x => x.roof); }
+                    // a profile borrowed from another front is carried round only where it is a BAND on that front too (drawn along half of it or
+                    // more): a part the section shows at its own bay only (a balcony slab, a pediment) must not become a ledge round the corner
+                    // (Swallow Place: 857 mm at 9.8-10.5 m covered 46 % of Regent Street, its balcony bay, but 75-80 % of the corner's bays)
+                    if (fromOther)
+                    {
+                        var sspec = ElevationSpecs(doc, null).FirstOrDefault(s => string.Equals(Args.Str(s, "facade"), srcId, StringComparison.OrdinalIgnoreCase));
+                        if (sspec == null) throw new InvalidOperationException($"{srcId} has no elevation to tell its bands from its local pieces: profile_from needs a front with one.");
+                        Func<IEnumerable<string>, Dictionary<string, string>> srl = null; try { srl = ReadingFor(app, doc, a)?.Roles; } catch { }
+                        var sfr = ElevationFrame(doc, sspec, srl);
+                        var sh = sfr.Lines.Where(l => !DwgFile.LayerMatches(l.Layer, ReliefSkip) && Math.Abs(l.A.Y - l.B.Y) < 2)
+                            .Select(l => (u0: Math.Min(sfr.U(l.A.X), sfr.U(l.B.X)), u1: Math.Max(sfr.U(l.A.X), sfr.U(l.B.X)), z: sfr.Z(l.A.Y))).Where(h => h.u1 - h.u0 >= 500).ToList();
+                        double SrcCover(double zt, double zb)
+                        {
+                            var iv = sh.Where(h => h.z >= zb - 80 && h.z <= zt + 80).Select(h => (a: Math.Max(0, h.u0), b: Math.Min(sfl, h.u1))).Where(x => x.b > x.a).OrderBy(x => x.a).ToList();
+                            var runs = new List<(double a, double b)>();
+                            foreach (var x in iv) { if (runs.Count > 0 && x.a <= runs[^1].b + 300) runs[^1] = (runs[^1].a, Math.Max(runs[^1].b, x.b)); else runs.Add(x); }
+                            return runs.Where(r => r.b - r.a >= 1000).Sum(r => r.b - r.a) / sfl;
+                        }
+                        foreach (var x in placed.ToList())
+                        {
+                            double zb = x.r.Min(p => p.Y), zt = x.r.Max(p => p.Y), cov = SrcCover(zt, zb);
+                            if (cov < 0.5) { why.Add($"{zb:0}-{zt:0} ({x.r.Max(p => p.X):0} out): only {cov:P0} of {srcId} draws it, a piece at that section's bay, not a band to carry round"); placed.Remove(x); }
+                        }
                     }
                     var summary = placed.Select(x => new { z = new[] { Math.Round(x.r.Min(p => p.Y)), Math.Round(x.r.Max(p => p.Y)) }, outMm = Math.Round(x.r.Max(p => p.X)), points = x.r.Count, x.roof,
                         runs = x.runs.Select(q => new[] { Math.Round(q.a), Math.Round(q.b) }).ToList(), coverPct = Math.Round(100 * x.runs.Sum(q => q.b - q.a) / fl) }).ToList();
@@ -701,6 +766,57 @@ namespace BarrGazetas.RevitMcp
         /// One piece per element (the same one cut on several storeys is kept once, from the plan that cuts it lowest).
         /// </summary>
         [ThreadStatic] internal static List<string> PieceLog;
+        /// <summary>
+        /// A pilaster's base and capital as an elevation draws them: short horizontal lines (0.6x to the shaft's width + 1 m long) over the shaft,
+        /// within 900 mm below its foot (the base: from the lowest to the foot) and 1200 mm above its head (the capital: from the head to the
+        /// highest); the width is the longest of those lines. Null where fewer than 80 mm (base) / 100 mm (capital) of such lines are drawn.
+        /// </summary>
+        /// <summary>Bases and capitals for every piece, the same design shared: a shaft the elevation draws without one takes it from an
+        /// identical shaft (width within 40 mm, foot and head within 100 mm) that has it, shifted to its own foot/head (model one, repeat many).</summary>
+        internal static List<((double z0, double z1, double w)? bse, (double z0, double z1, double w)? cap, string from)> CapitalsFor(IList<Seg> segs, IList<(List<Pt> ring, double u0, double u1, double z0, double z1, string level)> pieces)
+        {
+            var own = pieces.Select(p => CapitalAndBase(segs, p.u0, p.u1, p.z0, p.z1)).ToList();
+            var res = new List<((double, double, double)?, (double, double, double)?, string)>();
+            for (int i = 0; i < pieces.Count; i++)
+            {
+                var (b, c) = own[i]; string from = "drawn";
+                bool Twin(int j) => j != i && Math.Abs((pieces[j].u1 - pieces[j].u0) - (pieces[i].u1 - pieces[i].u0)) < 40 && Math.Abs(pieces[j].z0 - pieces[i].z0) < 100 && Math.Abs(pieces[j].z1 - pieces[i].z1) < 100;
+                if (b == null) { int j = Enumerable.Range(0, pieces.Count).FirstOrDefault(k => Twin(k) && own[k].bse != null, -1); if (j >= 0) { var x = own[j].bse.Value; b = (pieces[i].z0 - (x.z1 - x.z0), pieces[i].z0, x.w); from = "base from its twin"; } }
+                if (c == null) { int j = Enumerable.Range(0, pieces.Count).FirstOrDefault(k => Twin(k) && own[k].cap != null, -1); if (j >= 0) { var x = own[j].cap.Value; c = (pieces[i].z1, pieces[i].z1 + (x.z1 - x.z0), x.w); from = from == "drawn" ? "capital from its twin" : from + ", capital from its twin"; } }
+                res.Add((b, c, from));
+            }
+            return res;
+        }
+
+        internal static ((double z0, double z1, double w)? bse, (double z0, double z1, double w)? cap) CapitalAndBase(IList<Seg> segs, double u0, double u1, double z0, double z1)
+        {
+            double w0 = u1 - u0, uc = (u0 + u1) / 2;
+            var hs = segs.Where(s => Math.Abs(s.A.Y - s.B.Y) < 3)
+                .Select(s => (a: Math.Min(s.A.X, s.B.X), b: Math.Max(s.A.X, s.B.X), z: (s.A.Y + s.B.Y) / 2))
+                .Where(h => h.b > u0 - 300 && h.a < u1 + 300 && Math.Abs((h.a + h.b) / 2 - uc) < w0 && h.b - h.a <= w0 + 1000 && h.b - h.a >= 0.6 * w0).ToList();
+            // a base or capital is WIDER than its shaft: a shorter line there is a moulding's detail (a volute's eye), not its width
+            var below = hs.Where(h => h.z <= z0 + 30 && h.z >= z0 - 900 && h.b - h.a > w0 + 20).ToList();
+            var above = hs.Where(h => h.z >= z1 - 30 && h.z <= z1 + 1200 && h.b - h.a > w0 + 20).ToList();
+            (double, double, double)? b = below.Count > 0 && z0 - below.Min(h => h.z) >= 80 ? (below.Min(h => h.z), z0, Math.Min(w0 + 800, below.Max(h => h.b - h.a))) : null;
+            (double, double, double)? c = above.Count > 0 && above.Max(h => h.z) - z1 >= 100 ? (z1, above.Max(h => h.z), Math.Min(w0 + 800, above.Max(h => h.b - h.a))) : null;
+            // a capital drawn with volutes (arcs as short chords) whose top runs on into the architrave: no short horizontal above the
+            // head. Then its top is the first LONG horizontal over the shaft within 1.2 m (the architrave's underside) and its width the
+            // spread of everything drawn between the head and that line, within the shaft's width + 800 mm
+            if (c == null)
+            {
+                var roof = segs.Where(s => Math.Abs(s.A.Y - s.B.Y) < 3 && Math.Min(s.A.X, s.B.X) < u0 && Math.Max(s.A.X, s.B.X) > u1)
+                    .Select(s => (s.A.Y + s.B.Y) / 2).Where(z => z >= z1 + 100 && z <= z1 + 1200).OrderBy(z => z).ToList();
+                if (roof.Count > 0)
+                {
+                    double top = roof[0], half = w0 / 2 + 400;
+                    var xs = segs.Where(s => Math.Min(s.A.Y, s.B.Y) >= z1 - 30 && Math.Max(s.A.Y, s.B.Y) <= top + 30)
+                        .SelectMany(s => new[] { s.A.X, s.B.X }).Where(x => Math.Abs(x - uc) <= half).ToList();
+                    if (xs.Count >= 4 && xs.Max() - xs.Min() > w0 + 40) c = (z1, top, Math.Min(w0 + 800, xs.Max() - xs.Min()));
+                }
+            }
+            return (b, c);
+        }
+
         internal static List<(List<Pt> ring, double u0, double u1, double z0, double z1, string level)> PiecesFor(Document doc, ElevFrame fr, double nx, double ny, IList<Seg> segs)
         {
             var all = new List<(List<Pt> ring, double u0, double u1, double z0, double z1, string level)>();

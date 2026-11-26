@@ -41,6 +41,7 @@ namespace BarrGazetas.RevitMcp
                     ("pad_mm", S("number", "Extra drawing taken at each end of a run's slice (default 150)"), false),
                     ("include_gaps", S("boolean", "Also make a small facade (CG1, CG2...) of each gap between two runs of the chain, the piers where the plan's pilaster outlines stand, with a fixed position along the drawing (default true)"), false),
                     ("gap_extend_mm", S("number", "How far a pier facade reaches past each end of its gap (default 150)"), false),
+                    ("include_ends", S("boolean", "Also a pier facade at each end of the chain (CG0 before the first run, CGn after the last), as long as the mean gap (default true)"), false),
                     ("dry_run", S("boolean", "Only report (default true)"), false)),
                 Run = (app, a) =>
                 {
@@ -175,6 +176,38 @@ namespace BarrGazetas.RevitMcp
                                 ["curved_front"] = new JsonObject { ["s_mm"] = new JsonArray(Math.Round(sa), Math.Round(sb)), ["total_mm"] = Math.Round(total), ["pier"] = true },
                             });
                             table.Add(new { facade = gid, levels = lv, lengthMm = Math.Round(gl + 2 * ext), s = new[] { Math.Round(sa), Math.Round(sb) }, sheetX = new[] { Math.Round(lo), Math.Round(hi) }, distFromCurveMm = 0.0, angleOffDeg = 0.0, inChain = (bool?)null, pier = true });
+                        }
+                        // the piers at the two ends of the chain (where the curve meets the straight fronts): as long as the mean gap, on the
+                        // first run's line before its start and the last run's line after its end; only where the drawing still reaches
+                        if (Args.Bool(a, "include_ends") != false && gaps.Count > 0)
+                        {
+                            double g = gaps.Average();
+                            foreach (var (gid, run, atStart) in new[] { ("CG0", chain[0], true), ("CG" + chain.Count, chain[^1], false) })
+                            {
+                                double rl = Math.Sqrt((run.Bx - run.Ax) * (run.Bx - run.Ax) + (run.By - run.Ay) * (run.By - run.Ay)); if (rl < 1) continue;
+                                double ux = (run.Bx - run.Ax) / rl, uy = (run.By - run.Ay) / rl;
+                                double ax, ay, bx, by, sa, sb;
+                                if (atStart) { bx = run.Ax + ux * ext; by = run.Ay + uy * ext; ax = run.Ax - ux * (g + ext); ay = run.Ay - uy * (g + ext); sa = -g - ext; sb = ext; }
+                                else { ax = run.Bx - ux * ext; ay = run.By - uy * ext; bx = run.Bx + ux * (g + ext); by = run.By + uy * (g + ext); sa = total - ext; sb = total + g + ext; }
+                                double lo = Math.Max(xr[0], Math.Min(SheetX(sa), SheetX(sb)) - pad), hi = Math.Min(xr[1], Math.Max(SheetX(sa), SheetX(sb)) + pad);
+                                if (hi - lo < 300) continue;
+                                double offset = dir > 0 ? -(xs0 + sa) : xs0 + total - sa;
+                                gapFacades.Add(new JsonObject
+                                {
+                                    ["id"] = gid, ["name"] = "curved front end pier", ["line"] = new JsonArray(Math.Round(ax, 1), Math.Round(ay, 1), Math.Round(bx, 1), Math.Round(by, 1)),
+                                    ["outwardBearingDeg"] = run.Bearing, ["lengthMm"] = Math.Round(g + 2 * ext), ["baseMm"] = run.BaseZ, ["topMm"] = run.TopZ,
+                                    ["levels"] = new JsonArray(run.Levels.Select(l => (JsonNode)JsonValue.Create(l)).ToArray()), ["windows"] = 0, ["walls"] = run.WallIds.Count,
+                                    ["wallIds"] = new JsonArray(run.WallIds.Select(w => (JsonNode)JsonValue.Create(w)).ToArray()), ["main"] = true, ["curved_gap"] = true,
+                                });
+                                entries.Add(new JsonObject
+                                {
+                                    ["name"] = $"{title} (curved front end pier {gid})", ["facade"] = gid, ["facade_line_saved"] = new JsonArray(Math.Round(ax, 1), Math.Round(ay, 1), Math.Round(bx, 1), Math.Round(by, 1)),
+                                    ["path"] = path, ["sheet_x_range"] = new JsonArray(Math.Round(lo), Math.Round(hi)), ["sheet_y_range"] = new JsonArray(yr[0], yr[1]),
+                                    ["along_direction"] = dir, ["along_offset_mm"] = Math.Round(offset),
+                                    ["curved_front"] = new JsonObject { ["s_mm"] = new JsonArray(Math.Round(sa), Math.Round(sb)), ["total_mm"] = Math.Round(total), ["pier"] = true, ["end"] = true },
+                                });
+                                table.Add(new { facade = gid, levels = run.Levels, lengthMm = Math.Round(g + 2 * ext), s = new[] { Math.Round(sa), Math.Round(sb) }, sheetX = new[] { Math.Round(lo), Math.Round(hi) }, distFromCurveMm = 0.0, angleOffDeg = 0.0, inChain = (bool?)null, pier = true });
+                            }
                         }
                     }
 

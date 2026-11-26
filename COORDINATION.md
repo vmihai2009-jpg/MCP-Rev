@@ -688,6 +688,12 @@ _Write your entries here, newest first. Use the "Revit run results" template for
 
 <!-- First entry goes here. -->
 
+### 2026-11-26 (PAUSED by Mihai mid-task): hub 1.43.4, the whole-facade pass, where it stands
+- **Asked:** "do the entire facade, not just one element, and do it correctly". Plan: (1) inventory, (2) cornices and bands on all fronts incl. the corner, (3) giant columns with capitals, bases and end columns, (4) windows, surrounds, balconies, (5) mansard dormers and balustrade, (6) measure every facade, fix, record.
+- **Done (SwallowPlace_Demo saved 10:16):** columns step mostly: F24 now has its 2 giant fluted columns (7.17-16.31 m) with bases and Ionic capitals, 2 ground-floor piers with bases, 3 upper pilasters with capitals (16 elements); corner CG1/CG2 shafts with bases. Code: `EdgeRun` near-vertical + above-cut search (1.43.1), `CapitalAndBase` / `CapitalsFor` (1.43.0-1.43.3), `curved_front` end piers CG0/CGn (1.43.0), `facade_profile profile_from` + source-cover rule (1.43.0/1.43.4). Lessons 30-32. Core tests 433 pass.
+- **Not done yet (resume here):** run `facade_profile facade: F4/F8/F13/F14 profile_from: F24` (dry run first, read the dropped bands) then for real; corner capitals (not drawn wider than the shaft there: borrow from F24's giant column, same order); end columns (CG0 found no plan piece; the right one stands inside run F13, not in a gap); steps 4-6. `curved_front` for the corner was last applied with `sheet_offset_mm` 114720.
+- **Files:** `SurveyFacadeReliefTools.cs`, `Survey/FacadeColumns.cs`, `SurveyCurvedFront.cs`, `BGMCP.csproj` (1.43.4), `docs/FACADE-LESSONS.md`, this file.
+
 ### 2026-11-26 (midday): hub 1.42.0, the corner's giant pilasters (curved_front pier facades) on SwallowPlace_Demo
 - **Mihai:** "Yes, corner first". Order followed: corner pilasters first (depth from the PLAN, an honest source), cornice next.
 - **Built (hub 1.42.0):** `curved_front` now makes a facade for each gap between runs (`CG1`, `CG2`, `include_gaps`, `gap_extend_mm`), with a fixed position along the drawing: an elevation entry may carry `along_offset_mm` (honoured by `ElevationFrame`, no jamb fit). `facade_columns facade: CG1` then found the plan piece in the gap. Lessons 28-29.

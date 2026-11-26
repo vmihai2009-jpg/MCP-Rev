@@ -137,19 +137,27 @@ namespace BarrGazetas.RevitMcp.Survey
         /// </summary>
         public static (double z0, double z1)? EdgeRun(IList<Seg> elev, double u0, double u1, double nearZ, double tol = 40, double gap = 150)
         {
+            // 1.43.0: near-vertical lines count (a shaft with entasis tapers ~50 mm over 9 m: up to 1 % off plumb), and if the plan's cut
+            // height falls in the base or plinth, the shaft is looked for up to 1.5 m above it (Swallow Place: the cut at level + 1 m sat in
+            // the columns' bases, 300 mm below the shafts, so no giant column on the Regent Street front was found)
             List<(double lo, double hi)> Cover(double u)
             {
-                var iv = elev.Where(s => Math.Abs(s.A.X - s.B.X) < 5 && Math.Abs((s.A.X + s.B.X) / 2 - u) <= tol)
+                var iv = elev.Where(s => Math.Abs(s.A.X - s.B.X) <= Math.Max(5, 0.01 * Math.Abs(s.A.Y - s.B.Y)) && Math.Abs((s.A.X + s.B.X) / 2 - u) <= tol)
                     .Select(s => (lo: Math.Min(s.A.Y, s.B.Y), hi: Math.Max(s.A.Y, s.B.Y))).OrderBy(x => x.lo).ToList();
                 var runs = new List<(double lo, double hi)>();
                 foreach (var x in iv) { if (runs.Count > 0 && x.lo <= runs[^1].hi + gap) runs[^1] = (runs[^1].lo, Math.Max(runs[^1].hi, x.hi)); else runs.Add(x); }
                 return runs;
             }
-            var l = Cover(u0).FirstOrDefault(r => r.lo <= nearZ && r.hi >= nearZ);
-            var r2 = Cover(u1).FirstOrDefault(r => r.lo <= nearZ && r.hi >= nearZ);
-            if (l.hi <= l.lo || r2.hi <= r2.lo) return null;
-            double z0 = Math.Max(l.lo, r2.lo), z1 = Math.Min(l.hi, r2.hi);
-            return z1 - z0 > 300 ? (z0, z1) : null;
+            var cl = Cover(u0); var cr = Cover(u1);
+            foreach (double z in new[] { nearZ, nearZ + 500, nearZ + 1000, nearZ + 1500 })
+            {
+                var l = cl.FirstOrDefault(r => r.lo <= z && r.hi >= z);
+                var r2 = cr.FirstOrDefault(r => r.lo <= z && r.hi >= z);
+                if (l.hi <= l.lo || r2.hi <= r2.lo) continue;
+                double z0 = Math.Max(l.lo, r2.lo), z1 = Math.Min(l.hi, r2.hi);
+                if (z1 - z0 > 300) return (z0, z1);
+            }
+            return null;
         }
 
         /// <summary>Least-squares circle (Kasa).</summary>
