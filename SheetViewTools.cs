@@ -39,6 +39,12 @@ namespace BarrGazetas.RevitMcp
                     ("title_like_sheet", S("string", "Put every viewport title where the plan's title sits on this sheet (e.g. a sheet already drawn the way the client wants). Default: each title stays where it was on its sheet (turning the view otherwise throws it off the sheet)"), false),
                     ("bubbles", S("string", "Grid bubbles in the turned plans: top_left (default: the top end of up-down grids, the left end of across grids, the other end hidden), or keep"), false),
                     ("legend", S("string", "A legend on these sheets holding the north point (e.g. \"Scale and Arrow\"): a copy named \"<legend> <angle>\" is made with the north point turned, and put in place of the legend on the turned sheets only (same spot); other sheets keep the original"), false),
+                    ("centre", S("string", "Move every plan up or down by the same amount (sheets still stack) so it sits in the vertical middle of the title block's frame: vertical = the crop box, grids = what is drawn (the grids and their bubble heads); default none"), false),
+                    ("grid_head_mm", S("number", "With centre: grids, the bubble head size on the sheet added at a bubble end (default 10)"), false),
+                    ("title_from_sheet", S("boolean", "Set each plan's Title on Sheet to its sheet's name (default false)"), false),
+                    ("legend_add_prefixes", Arr("string", "Also put the turned legend on every sheet whose number starts with one of these (replacing the original legend there), at the same place relative to the title block's top-right corner as on legend_like_sheet"), false),
+                    ("legend_like_sheet", S("string", "Reference sheet for legend_add_prefixes (default: the first turned sheet with the legend)"), false),
+                    ("legend_skip_sheets", Arr("string", "Sheet numbers, or text in the name, that legend_add_prefixes leaves alone (e.g. site plans that are not turned)"), false),
                     ("north_symbol_contains", S("string", "Which symbols in the legend turn: family name containing this (default \"North\")"), false),
                     ("dry_run", S("boolean", "Do it, report, undo (default true)"), false)),
                 Run = (app, a) =>
@@ -106,6 +112,10 @@ namespace BarrGazetas.RevitMcp
                     }
                     string bubbles = (Args.Str(a, "bubbles") ?? "top_left").ToLowerInvariant();
                     int bubblesSet = 0; var bubbleFails = new List<string>();
+                    string centre = (Args.Str(a, "centre") ?? "none").ToLowerInvariant();
+                    bool titleFromSheet = Args.Bool(a, "title_from_sheet") ?? false;
+                    double centreShiftMm = 0; int titlesSet = 0; object centreInfo = null; bool frameFromLines = false;
+                    var legendAdded = new List<string>();
                     int legendTurned = 0; var legendSheets = new List<string>(); var legendNotes = new List<string>(); string legendName = null;
                     var srcUsers = targets.Where(t => BoxOf(t.view) == src.Id).ToList();
                     var basis = (srcUsers.Count > 0 ? srcUsers : targets).Select(t => before0[t.vp.Id.Value]).ToList();
@@ -174,6 +184,82 @@ namespace BarrGazetas.RevitMcp
                                 if (d.GetLength() > 1e-6) c.vp.SetBoxCenter(c.vp.GetBoxCenter() + d);
                             }
                             doc.Regenerate();
+                            // 1.44.4: centre the plan's crop box up-down on the title block, by one shift for all, so the sheets still stack.
+                            string centreOn = centre == "grids" ? "grids" : "crop";
+                            if ((centre == "vertical" || centre == "grids") && changed.Count > 0)
+                            {
+                                var c0 = changed[0];
+                                var tbEl = new FilteredElementCollector(doc, c0.sheet.Id).OfCategory(BuiltInCategory.OST_TitleBlocks).FirstElement();
+                                var tb = tbEl?.get_BoundingBox(c0.sheet);
+                                // 1.44.6: the title block's box is taller than its drawn frame (hidden lines, crop marks): centre between the frame's
+                                // top and bottom lines, i.e. the longest horizontal lines it draws.
+                                if (tbEl != null && tb != null)
+                                {
+                                    var hs = new List<(double y, double len)>();
+                                    void Walk(GeometryElement ge)
+                                    {
+                                        foreach (var go in ge)
+                                            if (go is GeometryInstance gi) Walk(gi.GetInstanceGeometry());
+                                            else if (go is Line ln && Math.Abs(ln.Direction.Y) < 1e-6) hs.Add(((ln.GetEndPoint(0).Y + ln.GetEndPoint(1).Y) / 2, ln.Length));
+                                    }
+                                    try { Walk(tbEl.get_Geometry(new Options { View = c0.sheet })); } catch { }
+                                    if (hs.Count >= 2)
+                                    {
+                                        double maxLen = hs.Max(h => h.len);
+                                        var frame = hs.Where(h => h.len >= 0.8 * maxLen).ToList();
+                                        if (frame.Count >= 2 && frame.Max(h => h.y) - frame.Min(h => h.y) > 0.25 * (tb.Max.Y - tb.Min.Y))
+                                        { tb = new BoundingBoxXYZ { Min = new XYZ(tb.Min.X, frame.Min(h => h.y), 0), Max = new XYZ(tb.Max.X, frame.Max(h => h.y), 0) }; frameFromLines = true; }
+                                    }
+                                }
+                                if (tb == null) legendNotes.Add("No title block on " + c0.sheet.SheetNumber + ": not centred.");
+                                else
+                                {
+                                    // 1.44.8: measured over ALL the plans (they stack, so one sheet frame holds them all): one floor's grids can run
+                                    // longer than another's, and centring on the first sheet alone left the rest off-centre.
+                                    double head = (Args.Dbl(a, "grid_head_mm") ?? 10) / Mm;
+                                    var ys = new List<double>();
+                                    foreach (var c in changed)
+                                    {
+                                        var cb = c.view.CropBox;
+                                        var m2p = c.view.GetModelToProjectionTransforms().First().GetModelToProjectionTransform();
+                                        var p2s = c.vp.GetProjectionToSheetTransform();
+                                        var cys = new[] { cb.Min, cb.Max, new XYZ(cb.Min.X, cb.Max.Y, cb.Min.Z), new XYZ(cb.Max.X, cb.Min.Y, cb.Min.Z) }
+                                            .Select(q => p2s.OfPoint(m2p.OfPoint(cb.Transform.OfPoint(q))).Y).ToList();
+                                        double cLo = cys.Min(), cHi = cys.Max();
+                                        if (centreOn != "grids") { ys.Add(cLo); ys.Add(cHi); continue; }
+                                        // centre: grids centres what is drawn (the grids, bubble heads included), not the crop box,
+                                        // which can hold empty space below the plan.
+                                        foreach (var g in new FilteredElementCollector(doc, c.view.Id).OfClass(typeof(Grid)).Cast<Grid>())
+                                        {
+                                            var cv = g.GetCurvesInView(DatumExtentType.ViewSpecific, c.view).FirstOrDefault();
+                                            if (cv == null) continue;
+                                            foreach (var e in new[] { DatumEnds.End0, DatumEnds.End1 })
+                                            {
+                                                double y = p2s.OfPoint(m2p.OfPoint(cv.GetEndPoint(e == DatumEnds.End0 ? 0 : 1))).Y;
+                                                bool bubble = false; try { bubble = g.IsBubbleVisibleInView(e, c.view); } catch { }
+                                                var pts = bubble ? new[] { y, y + head, y - head } : new[] { y };
+                                                // not clipped to the crop: grid ends and bubbles are drawn outside the model crop (annotation crop)
+                                                ys.AddRange(pts);
+                                            }
+                                        }
+                                    }
+                                    double dy = (tb.Min.Y + tb.Max.Y) / 2 - (ys.Min() + ys.Max()) / 2;
+                                    centreInfo = new { frame_y_mm = new[] { Math.Round(tb.Min.Y * Mm, 1), Math.Round(tb.Max.Y * Mm, 1) }, content_y_mm = new[] { Math.Round(ys.Min() * Mm, 1), Math.Round(ys.Max() * Mm, 1) }, frame_from_lines = frameFromLines };
+                                    centreShiftMm = dy * Mm;
+                                    if (Math.Abs(dy) > 1e-6)
+                                    {
+                                        foreach (var c in changed) c.vp.SetBoxCenter(c.vp.GetBoxCenter() + new XYZ(0, dy, 0));
+                                        stackAt = new XYZ(stackAt.X, stackAt.Y + dy, 0);
+                                        doc.Regenerate();
+                                    }
+                                }
+                            }
+                            if (titleFromSheet)
+                                foreach (var c in changed)
+                                {
+                                    var tp = c.view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION);
+                                    if (tp != null && !tp.IsReadOnly) { tp.Set(c.sheet.Name); titlesSet++; }
+                                }
                             if (bubbles == "top_left")
                                 foreach (var c in changed)
                                     foreach (var g in new FilteredElementCollector(doc, c.view.Id).OfClass(typeof(Grid)).Cast<Grid>())
@@ -234,6 +320,37 @@ namespace BarrGazetas.RevitMcp
                                         nvp.SetBoxCenter(centre);
                                         legendSheets.Add(sh.SheetNumber);
                                     }
+                                // 1.44.4: also put the turned legend on other sheets (same place relative to the title block's top-right corner as on the reference sheet)
+                                var addPrefixes = Args.Strings(a, "legend_add_prefixes"); var addSkip = Args.Strings(a, "legend_skip_sheets");
+                                if (addPrefixes.Count > 0)
+                                {
+                                    doc.Regenerate();
+                                    XYZ TbMax(ViewSheet s) => new FilteredElementCollector(doc, s.Id).OfCategory(BuiltInCategory.OST_TitleBlocks).FirstElement()?.get_BoundingBox(s)?.Max;
+                                    var refNo = Args.Str(a, "legend_like_sheet");
+                                    var allSheets = new FilteredElementCollector(doc).OfClass(typeof(ViewSheet)).Cast<ViewSheet>().Where(s => !s.IsPlaceholder).ToList();
+                                    var refSheet = refNo != null ? allSheets.FirstOrDefault(s => s.SheetNumber.Equals(refNo, cmp)) ?? throw new ArgumentException($"No sheet numbered \"{refNo}\".")
+                                                                 : changed.Select(c => c.sheet).FirstOrDefault(s => s.GetAllViewports().Any(i => (doc.GetElement(i) as Viewport)?.ViewId == lg2.Id));
+                                    var refVp = refSheet?.GetAllViewports().Select(i => doc.GetElement(i) as Viewport).FirstOrDefault(v => v != null && v.ViewId == lg2.Id);
+                                    var refTb = refSheet == null ? null : TbMax(refSheet);
+                                    if (refVp == null || refTb == null) legendNotes.Add("No reference sheet with the turned legend and a title block: legend not added elsewhere.");
+                                    else
+                                    {
+                                        var off = refVp.GetBoxCenter() - refTb; var refType = refVp.GetTypeId();
+                                        foreach (var sh in allSheets.Where(s => addPrefixes.Any(p => s.SheetNumber.StartsWith(p, cmp))
+                                                                               && !addSkip.Any(x => s.SheetNumber.Equals(x, cmp) || s.Name.IndexOf(x, cmp) >= 0)).OrderBy(s => s.SheetNumber))
+                                        {
+                                            var tbm = TbMax(sh);
+                                            if (tbm == null) { legendNotes.Add($"{sh.SheetNumber}: no title block, legend not added."); continue; }
+                                            var at = tbm + off;
+                                            foreach (var vpId in sh.GetAllViewports().ToList())
+                                                if (doc.GetElement(vpId) is Viewport ov && (ov.ViewId == lg.Id || ov.ViewId == lg2.Id)) doc.Delete(ov.Id);
+                                            var nvp = Viewport.Create(doc, sh.Id, lg2.Id, at);
+                                            if (refType != ElementId.InvalidElementId) nvp.ChangeTypeId(refType);
+                                            nvp.SetBoxCenter(at);
+                                            legendAdded.Add(sh.SheetNumber);
+                                        }
+                                    }
+                                }
                                 legendName = lg2.Name;
                             }
                             doc.Regenerate();
@@ -262,7 +379,10 @@ namespace BarrGazetas.RevitMcp
                         scope_box = new { source = src.Name, turned = boxName, id = dry ? (long?)null : boxId, in_place = inPlace, reused_existing = existing != null },
                         stack_point_on_sheet_mm = stack ? new[] { Math.Round(stackAt.X * Mm, 1), Math.Round(stackAt.Y * Mm, 1) } : null,
                         plans = rows, left_alone = left,
-                        legend = legendName == null ? null : new { name = legendName, symbols_turned = legendTurned, swapped_on = legendSheets, notes = legendNotes },
+                        centred_shift_mm = centre == "vertical" || centre == "grids" ? Math.Round(centreShiftMm, 1) : (double?)null,
+                        centring = centreInfo,
+                        titles_from_sheet_name = titleFromSheet ? titlesSet : (int?)null,
+                        legend = legendName == null ? null : new { name = legendName, symbols_turned = legendTurned, swapped_on = legendSheets, placed_on = legendAdded, notes = legendNotes },
                         grid_bubbles = bubbles == "top_left" ? new { set = bubblesSet, failed = bubbleFails.Take(20).ToList() } : null,
                         sheets_without_plans = noPlan,
                         other_views_on_source_box = inPlace ? elsewhere : null,
