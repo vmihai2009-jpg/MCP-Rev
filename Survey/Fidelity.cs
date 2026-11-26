@@ -264,6 +264,13 @@ namespace BarrGazetas.RevitMcp.Survey
             return (sill, head);
         }
 
+        /// <summary>
+        /// 1.42.1: is a drawn line at signed offset <paramref name="offsetMm"/> from a wall's centre line (or ring) on the
+        /// side of face <paramref name="side"/> (-1 / +1)? Each drawn line is matched to the nearer face only; a line on the
+        /// centre line counts for the -1 face.
+        /// </summary>
+        public static bool OnFaceSide(double offsetMm, int side) => side > 0 ? offsetMm > 0 : offsetMm <= 0;
+
         /// <summary>One floor against the gate. Issues come back in the floor's own list (all of them, worst first).</summary>
         public static (FloorScore score, List<FidIssue> issues) Measure(FidelityInput f, FidelityGate g)
         {
@@ -311,6 +318,11 @@ namespace BarrGazetas.RevitMcp.Survey
                             double dl = d.Length2D, dux = (d.B.X - d.A.X) / dl, duy = (d.B.Y - d.A.Y) / dl;
                             double along = (px - d.A.X) * dux + (py - d.A.Y) * duy;
                             if (along < -20 || along > dl + 20) continue;
+                            // 1.42.1: a drawn line is one face. It scores only the face on its own side of the wall's
+                            // centre line, so a wall drawn with one line (the other face not drawn) is not marked a
+                            // wall-thickness off on the face nobody drew; that face stays unverified.
+                            double fx = d.A.X + dux * along, fy = d.A.Y + duy * along;
+                            if (!OnFaceSide((fx - w.A.X) * nx + (fy - w.A.Y) * ny, side)) continue;
                             double perp = Math.Abs((px - d.A.X) * -duy + (py - d.A.Y) * dux);
                             if (perp < best) best = perp;
                         }

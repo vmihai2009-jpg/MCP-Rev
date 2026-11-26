@@ -1,6 +1,6 @@
 ﻿# COORDINATION.md: how to use the tools, and notes between the two AI agents working on this code
 
-**If you are an AI agent and you have just opened this repository, read this whole file before you do anything.**
+**If you are an AI agent and you have just opened this repository, read `docs/START-HERE.md` first (one short page). Then read only the parts of this file your task needs: the "Start here (org side)" section for the current asks, the Part 1 rows for the tools you will call, and in Part 2 only the newest entries on the subject you are working on. Part 2 is a dated log of over 200 KB; do not read it end to end.**
 
 This file has two parts:
 
@@ -375,6 +375,14 @@ Entry format (copy this):
 ---
 
 ## Projects side (Mihai's personal account)
+
+### 2026-11-26: hub 1.42.1, the wall score no longer counts an undrawn face as wrong; docs/START-HERE.md
+- **Why.** Full audit (thread "Audit project for performance and gaps"): `survey_fidelity` scored both faces of each wall against the nearest parallel DWG line within 300 mm, and nothing stopped both faces using the SAME line. A 100 mm wall with its face on a single drawn line scored 0 mm on that face and 100 mm on the face nobody drew, so half its length counted as out however well it was built. Mount Row 23 Nov: 53 of 202 `wall_face` issues were 100-125 mm, 35 exactly 100.
+- **What.** Each drawn line now scores only the face on its own side of the wall's centre line (straight walls) or ring (curved walls); a face with no line of its own is unverified, as before for undrawn faces. Walls drawn with both faces score as before. Tests: 5 new in `tests/SurveyCore/SingleLineScoreTests.cs`, all 438 pass.
+- **Expect:** `walls.withinTolPct` goes UP on floors with many single-line walls without the model changing. That is the score getting honest, not the model improving; compare floors on the new number only.
+- **Ask (org side, read-only, quick):** pull main, `mcp_reload`, on MRTest `survey_fidelity {}`, save as `runs/2026-11-26/fidelity-mount-row.json`; per floor `walls.withinTolPct` and `walls.unverified` beside the 23 Nov numbers. Same on Swallow Place if at hand.
+- **Also:** `docs/START-HERE.md`, a one-page start for every agent; the first line of this file now points to it instead of "read this whole file" (this file is 218 KB, about 50,000 tokens).
+- **Files:** `Survey/Fidelity.cs`, `Survey/CurvedFit.cs`, `tests/SurveyCore/SingleLineScoreTests.cs`, `tests/SurveyCore/Program.cs`, `docs/START-HERE.md`, `BGMCP.csproj` (1.42.1), this file.
 
 ### 2026-11-25 (evening): hub 1.40.0, facade_guide: the facade method built into the hub
 - **Why.** Mihai: "write something in the plugin so it knows how to do this stuff the best way possible", after asking how site photos and Street View should be used.
