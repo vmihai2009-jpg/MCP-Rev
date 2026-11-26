@@ -76,6 +76,9 @@ namespace BarrGazetas.RevitMcp.Survey
                         if (Math.Abs(dux * tx + duy * ty) < cosTol) continue;
                         double along = (px - d.A.X) * dux + (py - d.A.Y) * duy;
                         if (along < -20 || along > dl + 20) continue;
+                        // 1.42.1: a drawn line scores only the face on its side of the wall's ring (see Fidelity.OnFaceSide)
+                        double fx = d.A.X + dux * along - w.Cx, fy = d.A.Y + duy * along - w.Cy;
+                        if (!Fidelity.OnFaceSide(Math.Sqrt(fx * fx + fy * fy) - w.Radius, side)) continue;
                         double perp = Math.Abs((px - d.A.X) * -duy + (py - d.A.Y) * dux);
                         if (perp < best) { best = perp; double a2 = Math.Clamp(along, 0, dl); foot = new Pt(d.A.X + dux * a2, d.A.Y + duy * a2); }
                     }
