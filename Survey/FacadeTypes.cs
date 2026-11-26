@@ -10,9 +10,11 @@ namespace BarrGazetas.RevitMcp.Survey
 {
     public static class FacadeTypes
     {
-        /// <summary>Kinds that are runs along the facade, not repeated pieces: built by other tools.</summary>
+        /// <summary>Kinds that are runs along the facade, not repeated pieces: built by other tools. "pilaster" is here since 1.41.1: the map
+        /// calls every pair of verticals a pilaster (164 on one front, 35 of them built as one-off pieces on the Swallow Place demo while
+        /// the photos show three real shafts): real shafts are facade_columns' job, confirmed by a photo or the plan.</summary>
         public static readonly HashSet<string> NotPieces = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "rustication", "unclassified", "quoins", "band", "cornice", "entablature", "string course", "plinth" };
+        { "rustication", "unclassified", "quoins", "band", "cornice", "entablature", "string course", "plinth", "pilaster" };
 
         public static bool IsPieceType(FacadeType t) => t != null && t.Count >= 1 && !NotPieces.Any(k => (t.Kind ?? "").IndexOf(k, StringComparison.OrdinalIgnoreCase) >= 0);
 
