@@ -979,6 +979,10 @@ namespace BarrGazetas.RevitMcp
                 }
             int? dir = Args.Dbl(spec, "along_direction") is double dg ? (dg < 0 ? -1 : 1) : 1;
             var along = ElevationFit.Along(ElevationFit.Jambs(winLines), inserts, heights.A, 60, dir, lines.Count > 0 ? lines.Min(l => Math.Min(l.A.X, l.B.X)) : (double?)null, lines.Count > 0 ? lines.Max(l => Math.Max(l.A.X, l.B.X)) : (double?)null, fl);
+            // 1.42.0: an entry may fix the position along itself (curved_front writes it for a pier between two bays of a curved front,
+            // which has no window to fit): along = dir * sheet x + along_offset_mm, no jamb fit
+            if (Args.Dbl(spec, "along_offset_mm") is double fixedOff)
+                along = new AlongFit { Dir = dir ?? 1, Offset = fixedOff, Matched = 0, Note = "position fixed by the index entry (along_offset_mm)" };
             return new ElevFrame
             {
                 Lines = lines, A = fa, Ux = ux, Uy = uy, Length = fl,

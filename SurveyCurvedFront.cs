@@ -39,6 +39,8 @@ namespace BarrGazetas.RevitMcp
                     ("reach_mm", S("number", "How far from the chain a run may stand to belong to the curve (default 2500)"), false),
                     ("angle_deg", S("number", "How far a run's direction may differ from the curve's there (default 25)"), false),
                     ("pad_mm", S("number", "Extra drawing taken at each end of a run's slice (default 150)"), false),
+                    ("include_gaps", S("boolean", "Also make a small facade (CG1, CG2...) of each gap between two runs of the chain, the piers where the plan's pilaster outlines stand, with a fixed position along the drawing (default true)"), false),
+                    ("gap_extend_mm", S("number", "How far a pier facade reaches past each end of its gap (default 150)"), false),
                     ("dry_run", S("boolean", "Only report (default true)"), false)),
                 Run = (app, a) =>
                 {
@@ -135,11 +137,62 @@ namespace BarrGazetas.RevitMcp
                     }
                     if (entries.Count == 0) throw new ArgumentException("No run lies along the chain: raise reach_mm or check the ids.");
 
+                    // 1.42.0: the piers between two bays. On a curved front the plan's pilaster outlines stand in the GAPS between the runs, where no
+                    // run's plan reading sees them, so each gap becomes a small facade of its own ("CG1"...): its line from one run's end to the next
+                    // run's start (a little longer), its slice of the drawing, and a FIXED position along it (along_offset_mm: a pier has no window to
+                    // fit). facade_columns / facade_detail_map / facade_types then work on it like on any facade.
+                    var gapFacades = new List<JsonObject>();
+                    if (Args.Bool(a, "include_gaps") != false)
+                    {
+                        double ext = Args.Dbl(a, "gap_extend_mm") ?? 150;
+                        for (int i = 0; i + 1 < chain.Count; i++)
+                        {
+                            double gx = chain[i + 1].Ax - chain[i].Bx, gy = chain[i + 1].Ay - chain[i].By, gl = Math.Sqrt(gx * gx + gy * gy);
+                            if (gl < 300 || gl > 2500) continue;
+                            double ux = gx / gl, uy = gy / gl;
+                            double ax = chain[i].Bx - ux * ext, ay = chain[i].By - uy * ext, bx = chain[i + 1].Ax + ux * ext, by = chain[i + 1].Ay + uy * ext;
+                            double sa = pts[2 * i + 1].s - ext, sb = pts[2 * i + 2].s + ext;
+                            string gid = "CG" + (i + 1);
+                            double lo = Math.Max(xr[0], Math.Min(SheetX(sa), SheetX(sb)) - pad), hi = Math.Min(xr[1], Math.Max(SheetX(sa), SheetX(sb)) + pad);
+                            double offset = dir > 0 ? -(xs0 + sa) : xs0 + total - sa;
+                            var lv = chain[i].Levels.Union(chain[i + 1].Levels).Distinct().ToList();
+                            gapFacades.Add(new JsonObject
+                            {
+                                ["id"] = gid, ["name"] = "curved front pier", ["line"] = new JsonArray(Math.Round(ax, 1), Math.Round(ay, 1), Math.Round(bx, 1), Math.Round(by, 1)),
+                                ["outwardBearingDeg"] = chain[i].Bearing, ["lengthMm"] = Math.Round(Math.Sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay))),
+                                ["baseMm"] = Math.Min(chain[i].BaseZ, chain[i + 1].BaseZ), ["topMm"] = Math.Max(chain[i].TopZ, chain[i + 1].TopZ),
+                                ["levels"] = new JsonArray(lv.Select(l => (JsonNode)JsonValue.Create(l)).ToArray()), ["windows"] = 0,
+                                ["walls"] = chain[i].WallIds.Count + chain[i + 1].WallIds.Count,
+                                ["wallIds"] = new JsonArray(chain[i].WallIds.Concat(chain[i + 1].WallIds).Distinct().Select(w => (JsonNode)JsonValue.Create(w)).ToArray()),
+                                ["main"] = true, ["curved_gap"] = true,
+                            });
+                            entries.Add(new JsonObject
+                            {
+                                ["name"] = $"{title} (curved front pier {gid})", ["facade"] = gid,
+                                ["facade_line_saved"] = new JsonArray(Math.Round(ax, 1), Math.Round(ay, 1), Math.Round(bx, 1), Math.Round(by, 1)),
+                                ["path"] = path, ["sheet_x_range"] = new JsonArray(Math.Round(lo), Math.Round(hi)), ["sheet_y_range"] = new JsonArray(yr[0], yr[1]),
+                                ["along_direction"] = dir, ["along_offset_mm"] = Math.Round(offset),
+                                ["curved_front"] = new JsonObject { ["s_mm"] = new JsonArray(Math.Round(sa), Math.Round(sb)), ["total_mm"] = Math.Round(total), ["pier"] = true },
+                            });
+                            table.Add(new { facade = gid, levels = lv, lengthMm = Math.Round(gl + 2 * ext), s = new[] { Math.Round(sa), Math.Round(sb) }, sheetX = new[] { Math.Round(lo), Math.Round(hi) }, distFromCurveMm = 0.0, angleOffDeg = 0.0, inChain = (bool?)null, pier = true });
+                        }
+                    }
+
                     string indexFile = Path.Combine(reports, "elevation-index.json"), written = null, groupFile = null;
                     if (!dry)
                     {
                         var idx = File.Exists(indexFile) ? JsonNode.Parse(File.ReadAllText(indexFile)) as JsonObject ?? new JsonObject() : new JsonObject();
                         if (File.Exists(indexFile)) File.Copy(indexFile, indexFile + ".bak-curved", true);
+                        if (gapFacades.Count > 0)
+                        {
+                            File.Copy(facadesFile, facadesFile + ".bak-curved", true);
+                            var fl = (root["facades"] as JsonArray)?.OfType<JsonObject>().ToList() ?? new List<JsonObject>();
+                            var gids = new HashSet<string>(gapFacades.Select(g => g["id"].GetValue<string>()), StringComparer.OrdinalIgnoreCase);
+                            fl.RemoveAll(f => f["id"] != null && gids.Contains(f["id"].GetValue<string>()));
+                            fl.AddRange(gapFacades);
+                            root["facades"] = new JsonArray(fl.Select(f => (JsonNode)f.DeepClone()).ToArray());
+                            File.WriteAllText(facadesFile, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                        }
                         var list = (idx["elevations"] as JsonArray)?.OfType<JsonObject>().ToList() ?? new List<JsonObject>();
                         var ids = new HashSet<string>(entries.Select(e => e["facade"].GetValue<string>()), StringComparer.OrdinalIgnoreCase);
                         list.RemoveAll(x => x["facade"] != null && ids.Contains(x["facade"].GetValue<string>()));
@@ -177,7 +230,7 @@ namespace BarrGazetas.RevitMcp
 
         private sealed class CfRun
         {
-            public string Id; public double Ax, Ay, Bx, By, Bearing, BaseZ, TopZ, Length; public List<string> Levels = new List<string>(); public bool Ok;
+            public string Id; public double Ax, Ay, Bx, By, Bearing, BaseZ, TopZ, Length; public List<string> Levels = new List<string>(); public List<long> WallIds = new List<long>(); public bool Ok;
             public CfRun(JsonObject f)
             {
                 try
@@ -188,6 +241,7 @@ namespace BarrGazetas.RevitMcp
                     Bearing = f["outwardBearingDeg"]?.GetValue<double>() ?? 0; BaseZ = f["baseMm"]?.GetValue<double>() ?? 0; TopZ = f["topMm"]?.GetValue<double>() ?? 0;
                     Length = f["lengthMm"]?.GetValue<double>() ?? Math.Sqrt((Bx - Ax) * (Bx - Ax) + (By - Ay) * (By - Ay));
                     Levels = (f["levels"] as JsonArray)?.Select(v => v.GetValue<string>()).ToList() ?? new List<string>();
+                    WallIds = (f["wallIds"] as JsonArray)?.Select(v => v.GetValue<long>()).ToList() ?? new List<long>();
                     Ok = true;
                 }
                 catch { Ok = false; }

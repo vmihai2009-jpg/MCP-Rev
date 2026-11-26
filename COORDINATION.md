@@ -680,6 +680,13 @@ _Write your entries here, newest first. Use the "Revit run results" template for
 
 <!-- First entry goes here. -->
 
+### 2026-11-26 (midday): hub 1.42.0, the corner's giant pilasters (curved_front pier facades) on SwallowPlace_Demo
+- **Mihai:** "Yes, corner first". Order followed: corner pilasters first (depth from the PLAN, an honest source), cornice next.
+- **Built (hub 1.42.0):** `curved_front` now makes a facade for each gap between runs (`CG1`, `CG2`, `include_gaps`, `gap_extend_mm`), with a fixed position along the drawing: an elevation entry may carry `along_offset_mm` (honoured by `ElevationFrame`, no jamb fit). `facade_columns facade: CG1` then found the plan piece in the gap. Lessons 28-29.
+- **Revit run results (demo):** chain F4+F8+F13, `sheet_offset_mm` 114720 (from two column axes read in the drawing, 118,614 and 123,170; the model's pier centres are 4,565 apart, the drawing's 4,556). `facade_columns` on CG1 and CG2: plan pieces found on all four floors (projections 283/206/206/197 mm and 449/330/330/310), elevation edges found at the 2nd and 3rd floor cut; shafts z 7.17-16.29 m and 7.18-16.34 m built as editable families `BG Pilaster CG1 616 7170` and `CG2 688 7178` (0.99 m3 each), in the gaps; in the 3D two tall columns now stand in the bays from the 1st to the 3rd floor.
+- **Open on the corner:** capitals and bases (from the elevation's line heights: the drawing shows an Ionic-type capital and a moulded base), the two end columns (left at the Regent Street junction, right towards the north front), the cornice (no section crosses it: take the profile from the return elevation or a photo-confirmed default marked guessed), ground-floor shopfront piers, dormers.
+- **Files:** `SurveyCurvedFront.cs`, `SurveyFacadeReliefTools.cs`, `BGMCP.csproj` (1.42.0), `docs/FACADE-LESSONS.md` (rows 28-29), this file.
+
 ### 2026-11-26 (late morning): hub 1.41.2, "whole facade looks really bad": the storey-face relief families are off
 - **Seen (Mihai's corner close-up):** thin bars, slab-like ledges, floating panels and cartouche rings at random depths, on all fronts.
 - **Cause:** `facade_relief`'s per-storey "BG Facade" families (every elevation line no window surround claimed, extruded at guessed depths). 35 of them: F24 7, corner F13 7, F14 7, F6 5, F8 4, F4 2, F3, F7, F12 1 each.
